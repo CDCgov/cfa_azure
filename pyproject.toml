@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "cfa_azure"
+version = "0.1.0"
+description = "module for use with Azure and Azure Batch"
+authors = ["Ryan Raasch <xng3@cdc.gov>"]
+readme = "README.md"
+packages = [{include = "cfa_azure"}]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+azure-identity = "1.13.0"
+azure-keyvault = "4.2.0"
+azure-batch = "14.0.0"
+azure-mgmt-batch = "17.1.0"
+azure-storage-blob = "12.17.0"
+azure-containerregistry = "1.2.0"
+toml = "0.10.2"
+pandas = "*"
+pathlib = "*"
+docker = "*"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

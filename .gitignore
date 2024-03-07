@@ -1,0 +1,17 @@
+test*
+config*
+venv/
+__pycache__
+main*
+Make*
+Dockerfile
+docker*
+build/*
+cfaAzure.egg_info*
+.ruff_cache
+dist
+.ipynb_checkpoints
+yaml/*
+working*
+acr*
+venv*

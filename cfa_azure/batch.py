@@ -5,14 +5,14 @@ import toml
 
 from cfa_azure import helpers
 
+
 def create_pool(
     pool_id: str,
     input_container_name: str,
     output_container_name: str,
     config_path: str,
-
-    autoscale_formula_path: str
-    ):
+    autoscale_formula_path: str,
+):
     """Creates pool(s) in Azure Batch if not exists along with input
     and output containers based on config.
 
@@ -40,7 +40,9 @@ def create_pool(
 
     # Create blob service account
     print("Setting up Blob service client...")
-    blob_service_client = helpers.get_blob_service_client(sp_credential, config)
+    blob_service_client = helpers.get_blob_service_client(
+        sp_credential, config
+    )
 
     print("Setting up Azure Batch management client...")
     batch_mgmt_client = helpers.get_batch_mgmt_client(sp_credential, config)
@@ -74,15 +76,15 @@ def create_pool(
         print(f"Created: {pool_info.creation_time}")
         print(f"Last modified: {pool_info.last_modified}")
         print(f"VM size: {pool_info.vm_size}")
-    except Exception as e:
-        print(f"Pool '{pool_id}' does not exist or an error occurred while checking: {e}")
 
     # Check if user wants to proceed if the pool already exists
     if exists == 1:
         cont = input("Do you still want to use this pool? [Y/n]:  ")
         if cont.lower() != "y":
-            print("No pool created since it already exists. Exiting the process.")
-            return None    
+            print(
+                "No pool created since it already exists. Exiting the process."
+            )
+            return None
 
     print("Creating input and output containers...")
 
@@ -105,6 +107,7 @@ def create_pool(
         "creation_time": creation_time,
     }
 
+
 def upload_files_to_container(
     folder_names: list[str],
     input_container_name: str,
@@ -126,9 +129,12 @@ def upload_files_to_container(
     for _folder in folder_names:
         # Add uploaded file names to input files list
         uploaded_files = helpers.upload_files_in_folder(
-            _folder, input_container_name, blob_service_client,
-           verbose,
-           force_upload)
+            _folder,
+            input_container_name,
+            blob_service_client,
+            verbose,
+            force_upload,
+        )
         input_files += uploaded_files
         print(f"Uploaded {len(uploaded_files)} files from {_folder}.")
     print(f"Finished uploading files to container: {input_container_name}")
@@ -200,6 +206,7 @@ def run_job(
     else:
         print("Cleaning up - deleting job.")
         batch_client.job.delete(job_id)
+
 
 def package_and_upload_dockerfile(config: dict):
     """Packages and uploads Dockerfile to Azure Container Registry.

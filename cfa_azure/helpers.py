@@ -13,18 +13,15 @@ import numpy as np
 import pandas as pd
 import toml
 import yaml
-from yaml import load, SafeLoader, dump
-
-from azure.identity import DefaultAzureCredential, ClientSecretCredential
-from azure.keyvault.secrets import SecretClient
-from azure.storage.blob import BlobServiceClient, ContainerClient
-from azure.mgmt.batch import BatchManagementClient
-from azure.core.exceptions import HttpResponseError
-
 from azure.batch import BatchServiceClient
 from azure.common.credentials import ServicePrincipalCredentials
+from azure.core.exceptions import HttpResponseError
+from azure.identity import ClientSecretCredential, DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
+from azure.mgmt.batch import BatchManagementClient
+from azure.storage.blob import BlobServiceClient, ContainerClient
 from docker.errors import DockerException
-
+from yaml import SafeLoader, dump, load
 
 
 def read_config(config_path: str = "./configuration.toml"):
@@ -45,10 +42,14 @@ def read_config(config_path: str = "./configuration.toml"):
         print("Configuration file loaded successfully.")
         return config
     except FileNotFoundError as e:
-        print("Configuration file not found. Make sure the location (path) is correct.")
+        print(
+            "Configuration file not found. Make sure the location (path) is correct."
+        )
         print(e)
     except Exception as e:
-        print("Error occurred while loading the configuration file. Check file format and contents.")
+        print(
+            "Error occurred while loading the configuration file. Check file format and contents."
+        )
         print(e)
 
 
@@ -62,12 +63,16 @@ def create_container(container_name: str, blob_service_client: object):
        object: ContainerClient object
     """
     print(f"Attempting to create or access container: {container_name}")
-    container_client = blob_service_client.get_container_client(container=container_name)
+    container_client = blob_service_client.get_container_client(
+        container=container_name
+    )
     if not container_client.exists():
         container_client.create_container()
         print(f"Container [{container_name}] created successfully.")
     else:
-        print(f"Container [{container_name}] already exists. No action needed.")
+        print(
+            f"Container [{container_name}] already exists. No action needed."
+        )
     return container_client
 
 
@@ -83,21 +88,29 @@ def get_autoscale_formula(filepath: str = None, text_input: str = None):
     """
     print("Retrieving autoscale formula...")
     if filepath is None and text_input is None:
-        print("No filepath or text input provided. Attempting to find autoscale_formula.txt...")
+        print(
+            "No filepath or text input provided. Attempting to find autoscale_formula.txt..."
+        )
         for l1, _, files in os.walk(os.path.join(sys.path[0], "")):
             if "autoscale_formula.txt" in files:
                 autoscale_file = os.path.join(l1, "autoscale_formula.txt")
-                print(f"Autoscale formula found and read from {autoscale_file}.")
+                print(
+                    f"Autoscale formula found and read from {autoscale_file}."
+                )
                 with open(autoscale_file, "r") as autoscale_text:
                     return autoscale_text.read()
-        print("Autoscale formula file not found. Please provide a filepath or text input.")
+        print(
+            "Autoscale formula file not found. Please provide a filepath or text input."
+        )
     elif filepath is not None:
         try:
             with open(filepath, "r") as autoscale_text:
                 print(f"Autoscale formula successfully read from {filepath}.")
                 return autoscale_text.read()
         except Exception:
-            print(f"Error reading autoscale formula from {filepath}. Check file path and permissions.")
+            print(
+                f"Error reading autoscale formula from {filepath}. Check file path and permissions."
+            )
     elif text_input is not None:
         print("Autoscale formula provided via text input.")
         return text_input
@@ -123,18 +136,25 @@ def get_sp_secret(config: dict):
         print("Error obtaining user credentials:", e)
 
     try:
-        secret_client = SecretClient(vault_url=config["Authentication"]["vault_url"], credential=user_credential)
+        secret_client = SecretClient(
+            vault_url=config["Authentication"]["vault_url"],
+            credential=user_credential,
+        )
         print("Secret client initialized.")
     except KeyError as e:
         print("Error:", e, "Key not found in configuration.")
 
     try:
-        sp_secret = secret_client.get_secret(config["Authentication"]["vault_sp_secret_id"]).value
+        sp_secret = secret_client.get_secret(
+            config["Authentication"]["vault_sp_secret_id"]
+        ).value
         print("Service principal secret successfully retrieved.")
         return sp_secret
     except Exception as e:
         print("Error retrieving secret:", e)
-        print("Check that vault_uri and vault_sp_secret_id are correctly configured in the config file.")
+        print(
+            "Check that vault_uri and vault_sp_secret_id are correctly configured in the config file."
+        )
 
 
 def get_sp_credential(config: dict):
@@ -161,6 +181,7 @@ def get_sp_credential(config: dict):
             f"Configuration error: '{e}' does not exist in the config file. Please add it in the Authentication section.",
         )
 
+
 def get_blob_service_client(config: dict):
     """establishes Blob Service Client using credentials
 
@@ -183,7 +204,6 @@ def get_blob_service_client(config: dict):
         print(
             f"Configuration error: '{e}' does not exist in the config file. Please add it in the Storage section.",
         )
-
 
 
 def get_batch_mgmt_client(config: dict):
@@ -224,16 +244,25 @@ def create_blob_containers(
     """
     print("Preparing to create blob containers...")
     if input_container_name:
-        print(f"Attempting to create input container: '{input_container_name}'...")
+        print(
+            f"Attempting to create input container: '{input_container_name}'..."
+        )
         create_container(input_container_name, blob_service_client)
     else:
-        print("Input container name not specified. Skipping input container creation.")
+        print(
+            "Input container name not specified. Skipping input container creation."
+        )
 
     if output_container_name:
-        print(f"Attempting to create output container: '{output_container_name}'...")
+        print(
+            f"Attempting to create output container: '{output_container_name}'..."
+        )
         create_container(output_container_name, blob_service_client)
     else:
-        print("Output container name not specified. Skipping output container creation.")
+        print(
+            "Output container name not specified. Skipping output container creation."
+        )
+
 
 def get_batch_pool_json(
     input_container_name: str,
@@ -264,7 +293,7 @@ def get_batch_pool_json(
         },
     }
     print("User identity configuration prepared.")
-    
+
     # Network configuration with no public IP and virtual network
     network_config = {
         "subnetId": config["Authentication"]["subnet_id"],
@@ -272,7 +301,7 @@ def get_batch_pool_json(
         "dynamicVnetAssignmentScope": "None",
     }
     print("Network configuration prepared.")
-    
+
     # Virtual machine configuration
     deployment_config = {
         "virtualMachineConfiguration": {
@@ -305,7 +334,7 @@ def get_batch_pool_json(
         }
     }
     print("VM and container configurations prepared.")
-    
+
     # Mount configuration
     mount_config = [
         {
@@ -336,10 +365,9 @@ def get_batch_pool_json(
         },
     ]
     print("Mount configuration prepared.")
-    
+
     # Assemble the pool parameters JSON
     print("Generating autoscale formula...")
-    autoscale_formula = get_autoscale_formula(filepath=autoscale_formula_path)
     pool_parameters = {
         "identity": user_identity,
         "properties": {
@@ -357,7 +385,6 @@ def get_batch_pool_json(
                 # }
                 "autoScale": {
                     "evaluationInterval": "PT5M",
-
                     "formula": get_autoscale_formula(
                         filepath=autoscale_formula_path
                     ),
@@ -377,7 +404,7 @@ def get_batch_pool_json(
         },
     }
     print("Batch pool parameters assembled.")
-    
+
     pool_id = config["Batch"]["pool_id"]
     account_name = config["Batch"]["batch_account_name"]
     resource_group_name = config["Authentication"]["resource_group"]
@@ -414,7 +441,7 @@ def create_batch_pool(batch_mgmt_client: object, batch_json: dict):
         account_name = batch_json["account_name"]
         pool_id = batch_json["pool_id"]
         parameters = batch_json["pool_parameters"]
-        
+
         print(f"Creating pool: {pool_id} in the account: {account_name}...")
         batch_mgmt_client.pool.create(
             resource_group_name=resource_group_name,
@@ -455,6 +482,7 @@ def list_containers(blob_service_client: object):
     print("Completed listing containers.")
     return container_list
 
+
 def upload_files_in_folder(
     folder_name: str,
     input_container_name: str,
@@ -477,10 +505,14 @@ def upload_files_in_folder(
     # check the input container exists
     check = input_container_name in list_containers(blob_service_client)
     if not check:
-        print(f"Container '{input_container_name}' does not exist in the Blob Storage. Upload aborted.")
+        print(
+            f"Container '{input_container_name}' does not exist in the Blob Storage. Upload aborted."
+        )
         return None
 
-    print(f"Uploading files from folder '{folder_name}' to container '{input_container_name}'...")
+    print(
+        f"Uploading files from folder '{folder_name}' to container '{input_container_name}'..."
+    )
     # Upload the input files
     if not force_upload:
         fnum = []
@@ -566,6 +598,7 @@ def add_task_to_job(
     input_files: list[str] = [],
     input_mount_dir=None,
     output_mount_dir=None,
+    depends_on: str | list[str] | None = None,
     batch_client: object = None,
     config: dict = None,
     task_id_max=0,
@@ -595,6 +628,13 @@ def add_task_to_job(
             elevation_level=batchmodels.ElevationLevel.admin,
         )
     )
+    task_deps = None
+    if depends_on is not None:
+        # Create a TaskDependencies object to pass in
+        if isinstance(depends_on, str):
+            depends_on = [depends_on]  # type: ignore
+        task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
+
     if input_files:
         for input_file in input_files:
             config_stem = "_".join(input_file.split(".")[:-1])
@@ -616,11 +656,14 @@ def add_task_to_job(
                     + f"/{output_mount_dir},target=/output ",  # /output,target=/output
                 ),
                 user_identity=user_identity,
+                depends_on=task_deps,
             )
             batch_client.task.add(job_id=job_id, task=task)
-            print(f"Task '{task_id}' added to job '{job_id}'.")
+            print(f"Task '{id}' added to job '{job_id}'.")
     else:
-        print("No input files provided, adding a generic task with provided docker command.")
+        print(
+            "No input files provided, adding a generic task with provided docker command."
+        )
         task_id = f"{task_id_base}-generic-{str(task_id_max + 1)}"
         command_line = d_cmd_str
         task = batchmodels.TaskAddParameter(
@@ -629,7 +672,10 @@ def add_task_to_job(
             user_identity=user_identity,
         )
         batch_client.task.add(job_id=job_id, task=task)
-        print(f"Generic task '{task_id}' added to job '{job_id}' without specific input files.")
+        print(
+            f"Generic task '{task_id}' added to job '{job_id}' without specific input files."
+        )
+
 
 def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     """monitors tasks running in the job based on job ID
@@ -645,12 +691,16 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     Returns:
         dict: dictionary with keys completed (whether the job completed) and runtime (total elapsed time)
     """
-    print(f"Starting to monitor tasks for job '{job_id}' with a timeout of {timeout} minutes.")
+    print(
+        f"Starting to monitor tasks for job '{job_id}' with a timeout of {timeout} minutes."
+    )
     start_time = datetime.datetime.now().replace(microsecond=0)
     _timeout = datetime.timedelta(minutes=timeout)
     timeout_expiration = start_time + _timeout
 
-    print(f"Job '{job_id}' monitoring started at {start_time}. Timeout at {timeout_expiration}.")
+    print(
+        f"Job '{job_id}' monitoring started at {start_time}. Timeout at {timeout_expiration}."
+    )
     print("-" * 20)
 
     # count tasks and print to user the starting value
@@ -667,10 +717,21 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     while datetime.datetime.now() < timeout_expiration:
         time.sleep(5)  # Polling interval
         tasks = list(batch_client.task.list(job_id))
-        incomplete_tasks = [task for task in tasks if task.state != batchmodels.TaskState.completed]
-        completed_tasks = [task for task in tasks if task.state == batchmodels.TaskState.completed]
+        incomplete_tasks = [
+            task
+            for task in tasks
+            if task.state != batchmodels.TaskState.completed
+        ]
+        completed_tasks = [
+            task
+            for task in tasks
+            if task.state == batchmodels.TaskState.completed
+        ]
 
-        print(f"{len(completed_tasks)} out of {total_tasks} tasks completed.", end="\r")
+        print(
+            f"{len(completed_tasks)} out of {total_tasks} tasks completed.",
+            end="\r",
+        )
 
         if not incomplete_tasks:
             print("\nAll tasks completed.")
@@ -678,9 +739,13 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
             break
 
     if completed:
-        print("All tasks have reached 'Completed' state within the timeout period.")
+        print(
+            "All tasks have reached 'Completed' state within the timeout period."
+        )
     else:
-        raise RuntimeError(f"ERROR: Tasks did not reach 'Completed' state within timeout period of {timeout} minutes.")
+        raise RuntimeError(
+            f"ERROR: Tasks did not reach 'Completed' state within timeout period of {timeout} minutes."
+        )
 
     end_time = datetime.datetime.now().replace(microsecond=0)
     runtime = end_time - start_time
@@ -722,6 +787,7 @@ def list_files_in_container(
         )  # gather a list of file names from list_blob_names iterator
     return files
 
+
 def df_to_yaml(df: pd.DataFrame):
     """converts a pandas dataframe to yaml
 
@@ -732,9 +798,12 @@ def df_to_yaml(df: pd.DataFrame):
         dict:  yaml string converted from dataframe
     """
     print("Converting DataFrame to YAML format...")
-    yaml_str = dump(df.to_dict(orient="records"), sort_keys=False, default_flow_style=False)
+    yaml_str = dump(
+        df.to_dict(orient="records"), sort_keys=False, default_flow_style=False
+    )
     print("Conversion complete.")
     return yaml_str
+
 
 def yaml_to_df(yaml_file: dict):
     """converts a yaml file to pandas dataframe
@@ -750,6 +819,7 @@ def yaml_to_df(yaml_file: dict):
     print("Conversion complete.")
     return df
 
+
 def edit_yaml_r0(file: str, r0_start=1, r0_end=4, step=0.1):
     """takes in a yaml file and produces replicate yaml files with the r0 changed based on the start, stop, and step provided. Output yamls go to yaml/ folder.
 
@@ -759,7 +829,9 @@ def edit_yaml_r0(file: str, r0_start=1, r0_end=4, step=0.1):
         r0_end (int, optional): The upped end of the r0 range (inclusive). Defaults to 4.
         step (float, optional): The step size of each r0 increase. Defaults to 0.1.
     """
-    print(f"Starting to edit YAML file '{file}' with r0 range from {r0_start} to {r0_end} by steps of {step}.")
+    print(
+        f"Starting to edit YAML file '{file}' with r0 range from {r0_start} to {r0_end} by steps of {step}."
+    )
     _path = os.path.join("yaml", file)
 
     with open(_path, "r") as file:
@@ -770,11 +842,14 @@ def edit_yaml_r0(file: str, r0_start=1, r0_end=4, step=0.1):
         r0 = round(r0, len(str(step).split(".")[1]))
         y["baseScenario"]["r0"] = r0
         y["outputDirectory"] = os.path.join(y["outputDirectory"], str(r0))
-        outfile = f"{_path.replace('.yaml', '')}_{str(r0).replace('.', '-')}.yaml"
+        outfile = (
+            f"{_path.replace('.yaml', '')}_{str(r0).replace('.', '-')}.yaml"
+        )
         with open(outfile, "w") as f:
             yaml.dump(y, f, default_flow_style=False)
         print(f"Generated modified YAML file with r0={r0} at '{outfile}'.")
     print("Completed editing YAML files.")
+
 
 def get_user_identity(config: str):
     """gets the user identity based on the config information.
@@ -795,6 +870,7 @@ def get_user_identity(config: str):
         },
     }
     return user_identity
+
 
 def get_network_config(config: str):
     """gets the network configuration based on the config information
@@ -857,6 +933,7 @@ def get_deployment_config(config: str):
     }
     return deployment_config
 
+
 def get_blob_config(container_name: str, rel_mount_path: str, config: dict):
     """gets the blob storage configuration based on the config information
 
@@ -868,7 +945,9 @@ def get_blob_config(container_name: str, rel_mount_path: str, config: dict):
     Returns:
         dict: dictionary containing info for blob storage configuration. Used as input to get_mount_config().
     """
-    print(f"Generating blob configuration for container '{container_name}' with mount path '{rel_mount_path}'...")
+    print(
+        f"Generating blob configuration for container '{container_name}' with mount path '{rel_mount_path}'..."
+    )
     blob_config = {
         "azureBlobFileSystemConfiguration": {
             "accountName": config["Storage"]["storage_account_name"],
@@ -884,6 +963,7 @@ def get_blob_config(container_name: str, rel_mount_path: str, config: dict):
     }
     return blob_config
 
+
 def get_mount_config(*blob_configs):
     """takes blob configurations as input and combines them to create a mount configuration.
 
@@ -898,6 +978,7 @@ def get_mount_config(*blob_configs):
         if blob != {}:
             mount_config.append(blob)
     return mount_config
+
 
 def get_pool_parameters(
     mode: str,
@@ -922,7 +1003,9 @@ def get_pool_parameters(
     Returns:
         _type_: _description_
     """
-    print(f"Setting up pool parameters in '{mode}' mode with timeout={timeout} minutes...")
+    print(
+        f"Setting up pool parameters in '{mode}' mode with timeout={timeout} minutes..."
+    )
     if mode == "fixed":
         scale_settings = {
             "fixedScale": {
@@ -1288,4 +1371,3 @@ def check_config_req(config: str):
             "missing from the config file and will be required by client.",
         )
         return False
-

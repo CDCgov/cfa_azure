@@ -658,15 +658,10 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     # print remaining number of tasks
     tasks = list(batch_client.task.list(job_id))
 
-    total_tasks = len(tasks)
+    total_tasks = len([task for task in tasks])
     print(f"Total tasks to monitor: {total_tasks}")
 
-    subtasks = batch_client.task.list_subtasks(job_id)
-    total_subtasks = len(subtasks)
-    print(f"Total subtasks to monitor: {total_subtasks}")
-
     print("Total Tasks:", total_tasks)
-    print("Total Subtasks:", total_subtasks)
 
     completed = False
     while datetime.datetime.now() < timeout_expiration:

@@ -577,7 +577,9 @@ def add_job(job_id: str, pool_id: str, batch_client: object, config: dict):
     print(f"Attempting to create job '{job_id}'...")
 
     job = batchmodels.JobAddParameter(
-        id=job_id, pool_info=batchmodels.PoolInformation(pool_id=pool_id)
+        id=job_id,
+        pool_info=batchmodels.PoolInformation(pool_id=pool_id),
+        uses_task_dependencies=True
     )
     try:
         batch_client.job.add(job)

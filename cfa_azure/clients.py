@@ -14,6 +14,11 @@ class AzureClient:
         self.files = []
         self.task_id_max = 0
         self.jobs = set()
+        self.container_registry_server = None
+        self.registry_url = None
+        self.container_image_name = None
+        self.full_container_name = None
+
         # load config
         self.config = helpers.read_config(config_path)
 
@@ -132,6 +137,9 @@ class AzureClient:
             # create batch_json with fixed
             self.pool_parameters = helpers.get_pool_parameters(
                 mode,
+                self.container_image_name,
+                self.container_registry_url,
+                self.container_registry_server,
                 self.config,
                 self.mount_config,
                 autoscale_formula_path,
@@ -453,6 +461,10 @@ class AzureClient:
         self.full_container_name = helpers.package_and_upload_dockerfile(
             registry_name, repo_name, tag
         )
+        self.container_registry_server = f"{registry_name}.azurecr.io"
+        self.registry_url = f"https://{self.container_registry_server}"
+        self.container_image_name = f"https://{self.full_container_name}"
+
         return self.full_container_name
 
     def download_file(

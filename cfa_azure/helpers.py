@@ -579,7 +579,7 @@ def add_job(job_id: str, pool_id: str, batch_client: object, config: dict):
     job = batchmodels.JobAddParameter(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
-        uses_task_dependencies=True
+        uses_task_dependencies=True,
     )
     try:
         batch_client.job.add(job)
@@ -634,7 +634,7 @@ def add_task_to_job(
     if depends_on is not None:
         # Create a TaskDependencies object to pass in
         if isinstance(depends_on, str):
-            depends_on = [depends_on]  # type: ignore
+            depends_on = [depends_on]
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
 
     if input_files:
@@ -891,7 +891,12 @@ def get_network_config(config: str):
     return network_config
 
 
-def get_deployment_config(config: str):
+def get_deployment_config(
+    container_image_name: str,
+    container_registry_url: str,
+    container_registry_server: str,
+    config: str,
+):
     """gets the deployment config based on the config information
 
     Args:
@@ -911,23 +916,17 @@ def get_deployment_config(config: str):
             "nodeAgentSkuId": "batch.node.ubuntu 20.04",
             "containerConfiguration": {
                 "type": "dockercompatible",
-                "containerImageNames": [
-                    config["Container"]["container_image_name"]
-                ],
+                "containerImageNames": [container_image_name],
                 "containerRegistries": [
                     {
-                        "registryUrl": config["Container"][
-                            "container_registry_url"
-                        ],
+                        "registryUrl": container_registry_url,
                         "userName": config["Container"][
                             "container_registry_username"
                         ],
                         "password": config["Container"][
                             "container_registry_password"
                         ],
-                        "registryServer": config["Container"][
-                            "container_registry_server"
-                        ],
+                        "registryServer": container_registry_server,
                     }
                 ],
             },
@@ -984,6 +983,9 @@ def get_mount_config(*blob_configs):
 
 def get_pool_parameters(
     mode: str,
+    container_image_name: str,
+    container_registry_url: str,
+    container_registry_server: str,
     config: dict,
     mount_config: list,
     autoscale_formula_path: str = None,
@@ -1035,7 +1037,12 @@ def get_pool_parameters(
             "interNodeCommunication": "Disabled",
             "taskSlotsPerNode": 1,
             "taskSchedulingPolicy": {"nodeFillType": "Spread"},
-            "deploymentConfiguration": get_deployment_config(config),
+            "deploymentConfiguration": get_deployment_config(
+                container_image_name,
+                container_registry_url,
+                container_registry_server,
+                config,
+            ),
             "networkConfiguration": get_network_config(config),
             "scaleSettings": scale_settings,
             "resizeOperationStatus": {

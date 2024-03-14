@@ -1,7 +1,9 @@
 import datetime
+
 from azure.core.exceptions import HttpResponseError
+
 from cfa_azure import batch, helpers
-import subprocess as sp
+
 
 class AzureClient:
     def __init__(self, config_path: str):
@@ -12,6 +14,11 @@ class AzureClient:
         self.files = []
         self.task_id_max = 0
         self.jobs = set()
+        self.container_registry_server = None
+        self.registry_url = None
+        self.container_image_name = None
+        self.full_container_name = None
+
         # load config
         self.config = helpers.read_config(config_path)
 
@@ -130,6 +137,9 @@ class AzureClient:
             # create batch_json with fixed
             self.pool_parameters = helpers.get_pool_parameters(
                 mode,
+                self.container_image_name,
+                self.container_registry_url,
+                self.container_registry_server,
                 self.config,
                 self.mount_config,
                 autoscale_formula_path,
@@ -345,7 +355,11 @@ class AzureClient:
         self.jobs.add(job_id_r)
 
     def add_task(
-        self, job_id: str, docker_cmd: list[str], input_files: list[str] = []
+        self,
+        job_id: str,
+        docker_cmd: list[str],
+        input_files: list[str] = [],
+        depends_on=None,
     ) -> None:
         """adds task to existing job.
         If files have been uploaded, the docker command will be applied to each file.
@@ -366,15 +380,16 @@ class AzureClient:
 
         # run tasks for input files
         helpers.add_task_to_job(
-            job_id,
-            job_id,
-            docker_cmd,
-            in_files,
-            self.input_mount_dir,
-            self.output_mount_dir,
-            self.batch_client,
-            self.config,
-            self.task_id_max,
+            job_id=job_id,
+            task_id=job_id,
+            docker_command=docker_cmd,
+            input_files=in_files,
+            input_mount_dir=self.input_mount_dir,
+            output_mount_dir=self.output_mount_dir,
+            depends_on=depends_on,
+            batch_client=self.batch_client,
+            config=self.config,
+            task_id_max=self.task_id_max,
         )
 
     def monitor_job(self, job_id: str) -> None:
@@ -446,6 +461,10 @@ class AzureClient:
         self.full_container_name = helpers.package_and_upload_dockerfile(
             registry_name, repo_name, tag
         )
+        self.container_registry_server = f"{registry_name}.azurecr.io"
+        self.registry_url = f"https://{self.container_registry_server}"
+        self.container_image_name = f"https://{self.full_container_name}"
+
         return self.full_container_name
 
     def download_file(

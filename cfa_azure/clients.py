@@ -1,5 +1,5 @@
 import datetime
-
+import yaml
 from azure.core.exceptions import HttpResponseError
 
 from cfa_azure import batch, helpers

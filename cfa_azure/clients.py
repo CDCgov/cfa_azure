@@ -138,7 +138,7 @@ class AzureClient:
             self.pool_parameters = helpers.get_pool_parameters(
                 mode,
                 self.container_image_name,
-                self.container_registry_url,
+                self.registry_url,
                 self.container_registry_server,
                 self.config,
                 self.mount_config,

@@ -650,7 +650,7 @@ def add_task_to_job(
             tasks.append(id)
             task = batchmodels.TaskAddParameter(
                 id=id,
-                command_line=d_cmd_str + input_mount_dir + input_file,
+                command_line=d_cmd_str+ " "+ input_mount_dir +" "+ input_file,
                 container_settings=batchmodels.TaskContainerSettings(
                     image_name=config["Container"]["container_image_name"][8:],
                     container_run_options=f"--name={job_id} --rm "

@@ -36,7 +36,7 @@ def read_config(config_path: str = "./configuration.toml"):
     Example:
         config = read_config("/path/to/config.toml")
     """
-    print("Attempting to read configuration from:", config_path)
+    #print("Attempting to read configuration from:", config_path)
     try:
         config = toml.load(config_path)
         #print("Configuration file loaded successfully.")
@@ -131,7 +131,7 @@ def get_sp_secret(config: dict):
     #print("Retrieving service principal secret from Azure Key Vault...")
     try:
         user_credential = DefaultAzureCredential()
-        print("User credential obtained.")
+        #print("User credential obtained.")
     except Exception as e:
         print("Error obtaining user credentials:", e)
 

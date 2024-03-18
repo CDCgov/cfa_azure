@@ -39,7 +39,7 @@ def read_config(config_path: str = "./configuration.toml"):
     print("Attempting to read configuration from:", config_path)
     try:
         config = toml.load(config_path)
-        print("Configuration file loaded successfully.")
+        #print("Configuration file loaded successfully.")
         return config
     except FileNotFoundError as e:
         print(
@@ -86,7 +86,7 @@ def get_autoscale_formula(filepath: str = None, text_input: str = None):
     Returns:
         str: autoscale formula
     """
-    print("Retrieving autoscale formula...")
+    #print("Retrieving autoscale formula...")
     if filepath is None and text_input is None:
         print(
             "No filepath or text input provided. Attempting to find autoscale_formula.txt..."
@@ -128,7 +128,7 @@ def get_sp_secret(config: dict):
     Example:
         sp_secret = get_sp_secret(config)
     """
-    print("Retrieving service principal secret from Azure Key Vault...")
+    #print("Retrieving service principal secret from Azure Key Vault...")
     try:
         user_credential = DefaultAzureCredential()
         print("User credential obtained.")
@@ -140,7 +140,7 @@ def get_sp_secret(config: dict):
             vault_url=config["Authentication"]["vault_url"],
             credential=user_credential,
         )
-        print("Secret client initialized.")
+        #print("Secret client initialized.")
     except KeyError as e:
         print("Error:", e, "Key not found in configuration.")
 
@@ -148,7 +148,7 @@ def get_sp_secret(config: dict):
         sp_secret = secret_client.get_secret(
             config["Authentication"]["vault_sp_secret_id"]
         ).value
-        print("Service principal secret successfully retrieved.")
+        #print("Service principal secret successfully retrieved.")
         return sp_secret
     except Exception as e:
         print("Error retrieving secret:", e)
@@ -166,7 +166,7 @@ def get_sp_credential(config: dict):
     Returns:
         class: client credential for Azure Blob Service Client
     """
-    print("Attempting to obtain service principal credentials...")
+    #print("Attempting to obtain service principal credentials...")
     sp_secret = get_sp_secret(config)
     try:
         sp_credential = ClientSecretCredential(
@@ -174,7 +174,7 @@ def get_sp_credential(config: dict):
             client_id=config["Authentication"]["application_id"],
             client_secret=sp_secret,
         )
-        print("Service principal credentials obtained successfully.")
+        #print("Service principal credentials obtained successfully.")
         return sp_credential
     except KeyError as e:
         print(
@@ -191,14 +191,14 @@ def get_blob_service_client(config: dict):
     Returns:
         class: an instance of BlobServiceClient
     """
-    print("Initializing Blob Service Client...")
+    #print("Initializing Blob Service Client...")
     sp_credential = get_sp_credential(config)
     try:
         blob_service_client = BlobServiceClient(
             account_url=config["Storage"]["storage_account_url"],
             credential=sp_credential,
         )
-        print("Blob Service Client successfully created.")
+        #print("Blob Service Client successfully created.")
         return blob_service_client
     except KeyError as e:
         print(
@@ -215,20 +215,19 @@ def get_batch_mgmt_client(config: dict):
     Returns:
         class: an instance of the Batch Management Client
     """
-    print("Initializing Batch Management Client...")
+    #print("Initializing Batch Management Client...")
     sp_credential = get_sp_credential(config)
     try:
         batch_mgmt_client = BatchManagementClient(
             credential=sp_credential,
             subscription_id=config["Authentication"]["subscription_id"],
         )
-        print("Batch Management Client successfully created.")
+        #print("Batch Management Client successfully created.")
         return batch_mgmt_client
     except KeyError as e:
         print(
             f"Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section.",
         )
-
 
 def create_blob_containers(
     blob_service_client: BlobServiceClient,
@@ -242,7 +241,7 @@ def create_blob_containers(
         input_container_name (str): user specified name for input container
         output_container_name (str): user specified name for output container
     """
-    print("Preparing to create blob containers...")
+    #print("Preparing to create blob containers...")
     if input_container_name:
         print(
             f"Attempting to create input container: '{input_container_name}'..."

@@ -614,6 +614,9 @@ def add_task_to_job(
         input_files (list[str]): a  list of input files
         batch_client (object): batch client object
         config (dict): a config file
+
+    Returns:
+        list: list of task IDs created
     """
     print(f"Adding tasks to job '{job_id}'...")
     # convert docker command to string if in list format
@@ -638,12 +641,14 @@ def add_task_to_job(
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
 
     if input_files:
+        tasks = []
         for input_file in input_files:
             config_stem = "_".join(input_file.split(".")[:-1])
             id = task_id_base + "-" + config_stem
             # shorten the id name to fit the 64 char limit of task ids
             if len(id) > 63:
                 id = id[:63]
+            tasks.append(id)
             task = batchmodels.TaskAddParameter(
                 id=id,
                 command_line=d_cmd_str + input_mount_dir + input_file,
@@ -662,6 +667,7 @@ def add_task_to_job(
             )
             batch_client.task.add(job_id=job_id, task=task)
             print(f"Task '{id}' added to job '{job_id}'.")
+        return tasks
     else:
         print(
             "No input files provided, adding a generic task with provided docker command."
@@ -677,6 +683,7 @@ def add_task_to_job(
         print(
             f"Generic task '{task_id}' added to job '{job_id}' without specific input files."
         )
+        return list(task_id)
 
 
 def monitor_tasks(job_id: str, timeout: int, batch_client: object):

@@ -1,5 +1,5 @@
 import datetime
-import yaml
+
 from azure.core.exceptions import HttpResponseError
 
 from cfa_azure import batch, helpers
@@ -370,6 +370,9 @@ class AzureClient:
             job_id (str): job id
             docker_cmd (list[str]): docker command
             input_files (list[str], optional): list of files to be used with the docker command. Defaults to [].
+
+        Returns:
+            list: list of task IDs created
         """
         if input_files:
             in_files = input_files
@@ -379,7 +382,7 @@ class AzureClient:
             in_files = []
 
         # run tasks for input files
-        helpers.add_task_to_job(
+        task_ids = helpers.add_task_to_job(
             job_id=job_id,
             task_id=job_id,
             docker_command=docker_cmd,
@@ -391,6 +394,7 @@ class AzureClient:
             config=self.config,
             task_id_max=self.task_id_max,
         )
+        return task_ids
 
     def monitor_job(self, job_id: str) -> None:
         """monitor the tasks running in a job

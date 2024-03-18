@@ -550,7 +550,7 @@ def get_batch_service_client(config: dict):
     Returns:
         object: Batch Service Client object
     """
-    print("Initializing Batch Service Client...")
+    #print("Initializing Batch Service Client...")
     sp_secret = get_sp_secret(config)
     batch_client = BatchServiceClient(
         credentials=ServicePrincipalCredentials(
@@ -561,7 +561,7 @@ def get_batch_service_client(config: dict):
         ),
         batch_url=config["Batch"]["batch_service_url"],
     )
-    print("Batch Service Client initialized successfully.")
+    #print("Batch Service Client initialized successfully.")
     return batch_client
 
 

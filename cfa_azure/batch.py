@@ -2,6 +2,7 @@ import datetime
 import subprocess as sp
 
 import toml
+import yaml
 
 from cfa_azure import helpers
 

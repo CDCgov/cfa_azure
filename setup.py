@@ -18,6 +18,6 @@ setup(
         "pandas",
         "pathlib",
         "docker",
-        "pyyaml",
+        "PyYAML",
     ],
 )

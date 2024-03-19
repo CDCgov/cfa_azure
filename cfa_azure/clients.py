@@ -18,6 +18,8 @@ class AzureClient:
         self.registry_url = None
         self.container_image_name = None
         self.full_container_name = None
+        self.input_mount_dir = None
+        self.output_mount_dir = None
 
         # load config
         self.config = helpers.read_config(config_path)

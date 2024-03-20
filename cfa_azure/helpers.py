@@ -36,10 +36,10 @@ def read_config(config_path: str = "./configuration.toml"):
     Example:
         config = read_config("/path/to/config.toml")
     """
-    print("Attempting to read configuration from:", config_path)
+    #print("Attempting to read configuration from:", config_path)
     try:
         config = toml.load(config_path)
-        print("Configuration file loaded successfully.")
+        #print("Configuration file loaded successfully.")
         return config
     except FileNotFoundError as e:
         print(
@@ -86,7 +86,7 @@ def get_autoscale_formula(filepath: str = None, text_input: str = None):
     Returns:
         str: autoscale formula
     """
-    print("Retrieving autoscale formula...")
+    #print("Retrieving autoscale formula...")
     if filepath is None and text_input is None:
         print(
             "No filepath or text input provided. Attempting to find autoscale_formula.txt..."
@@ -128,10 +128,10 @@ def get_sp_secret(config: dict):
     Example:
         sp_secret = get_sp_secret(config)
     """
-    print("Retrieving service principal secret from Azure Key Vault...")
+    #print("Retrieving service principal secret from Azure Key Vault...")
     try:
         user_credential = DefaultAzureCredential()
-        print("User credential obtained.")
+        #print("User credential obtained.")
     except Exception as e:
         print("Error obtaining user credentials:", e)
 
@@ -140,7 +140,7 @@ def get_sp_secret(config: dict):
             vault_url=config["Authentication"]["vault_url"],
             credential=user_credential,
         )
-        print("Secret client initialized.")
+        #print("Secret client initialized.")
     except KeyError as e:
         print("Error:", e, "Key not found in configuration.")
 
@@ -148,7 +148,7 @@ def get_sp_secret(config: dict):
         sp_secret = secret_client.get_secret(
             config["Authentication"]["vault_sp_secret_id"]
         ).value
-        print("Service principal secret successfully retrieved.")
+        #print("Service principal secret successfully retrieved.")
         return sp_secret
     except Exception as e:
         print("Error retrieving secret:", e)
@@ -166,7 +166,7 @@ def get_sp_credential(config: dict):
     Returns:
         class: client credential for Azure Blob Service Client
     """
-    print("Attempting to obtain service principal credentials...")
+    #print("Attempting to obtain service principal credentials...")
     sp_secret = get_sp_secret(config)
     try:
         sp_credential = ClientSecretCredential(
@@ -174,7 +174,7 @@ def get_sp_credential(config: dict):
             client_id=config["Authentication"]["application_id"],
             client_secret=sp_secret,
         )
-        print("Service principal credentials obtained successfully.")
+        #print("Service principal credentials obtained successfully.")
         return sp_credential
     except KeyError as e:
         print(
@@ -191,14 +191,14 @@ def get_blob_service_client(config: dict):
     Returns:
         class: an instance of BlobServiceClient
     """
-    print("Initializing Blob Service Client...")
+    #print("Initializing Blob Service Client...")
     sp_credential = get_sp_credential(config)
     try:
         blob_service_client = BlobServiceClient(
             account_url=config["Storage"]["storage_account_url"],
             credential=sp_credential,
         )
-        print("Blob Service Client successfully created.")
+        #print("Blob Service Client successfully created.")
         return blob_service_client
     except KeyError as e:
         print(
@@ -215,20 +215,19 @@ def get_batch_mgmt_client(config: dict):
     Returns:
         class: an instance of the Batch Management Client
     """
-    print("Initializing Batch Management Client...")
+    #print("Initializing Batch Management Client...")
     sp_credential = get_sp_credential(config)
     try:
         batch_mgmt_client = BatchManagementClient(
             credential=sp_credential,
             subscription_id=config["Authentication"]["subscription_id"],
         )
-        print("Batch Management Client successfully created.")
+        #print("Batch Management Client successfully created.")
         return batch_mgmt_client
     except KeyError as e:
         print(
             f"Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section.",
         )
-
 
 def create_blob_containers(
     blob_service_client: BlobServiceClient,
@@ -242,7 +241,7 @@ def create_blob_containers(
         input_container_name (str): user specified name for input container
         output_container_name (str): user specified name for output container
     """
-    print("Preparing to create blob containers...")
+    #print("Preparing to create blob containers...")
     if input_container_name:
         print(
             f"Attempting to create input container: '{input_container_name}'..."
@@ -551,7 +550,7 @@ def get_batch_service_client(config: dict):
     Returns:
         object: Batch Service Client object
     """
-    print("Initializing Batch Service Client...")
+    #print("Initializing Batch Service Client...")
     sp_secret = get_sp_secret(config)
     batch_client = BatchServiceClient(
         credentials=ServicePrincipalCredentials(
@@ -562,7 +561,7 @@ def get_batch_service_client(config: dict):
         ),
         batch_url=config["Batch"]["batch_service_url"],
     )
-    print("Batch Service Client initialized successfully.")
+    #print("Batch Service Client initialized successfully.")
     return batch_client
 
 
@@ -614,6 +613,9 @@ def add_task_to_job(
         input_files (list[str]): a  list of input files
         batch_client (object): batch client object
         config (dict): a config file
+
+    Returns:
+        list: list of task IDs created
     """
     print(f"Adding tasks to job '{job_id}'...")
     # convert docker command to string if in list format
@@ -638,15 +640,17 @@ def add_task_to_job(
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
 
     if input_files:
+        tasks = []
         for input_file in input_files:
             config_stem = "_".join(input_file.split(".")[:-1])
             id = task_id_base + "-" + config_stem
             # shorten the id name to fit the 64 char limit of task ids
             if len(id) > 63:
                 id = id[:63]
+            tasks.append(id)
             task = batchmodels.TaskAddParameter(
                 id=id,
-                command_line=d_cmd_str + input_mount_dir + input_file,
+                command_line=d_cmd_str+ " "+ input_mount_dir +" "+ input_file,
                 container_settings=batchmodels.TaskContainerSettings(
                     image_name=config["Container"]["container_image_name"][8:],
                     container_run_options=f"--name={job_id} --rm "
@@ -662,6 +666,7 @@ def add_task_to_job(
             )
             batch_client.task.add(job_id=job_id, task=task)
             print(f"Task '{id}' added to job '{job_id}'.")
+        return tasks
     else:
         print(
             "No input files provided, adding a generic task with provided docker command."
@@ -677,6 +682,7 @@ def add_task_to_job(
         print(
             f"Generic task '{task_id}' added to job '{job_id}' without specific input files."
         )
+        return list(task_id)
 
 
 def monitor_tasks(job_id: str, timeout: int, batch_client: object):
@@ -1232,7 +1238,7 @@ def get_job_state(job_id: str, batch_client: object):
 
 
 def package_and_upload_dockerfile(
-    registry_name: str, repo_name: str, tag: str
+    registry_name: str, repo_name: str, tag: str, path_to_dockerfile: str = "./Dockerfile"
 ):
     """
     Packages Dockerfile in root of repo and uploads to the specified registry and repo with designated tag in Azure.
@@ -1241,9 +1247,9 @@ def package_and_upload_dockerfile(
         registry_name (str): name of Azure Container Registry
         repo_name (str): name of repo
         tag (str): tag for the Docker container
+        path_to_dockerfile (str): path to Dockerfile. Default is ./Dockerfile.
     """
     # check if Dockerfile exists
-    path = "./Dockerfile"
     try:
         d = docker.from_env(timeout=10).ping()
     except DockerException:
@@ -1252,11 +1258,11 @@ def package_and_upload_dockerfile(
         print("Try again when Docker is running.")
         return None
 
-    if os.path.exists(path) and d:
+    if os.path.exists(path_to_dockerfile) and d:
         full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
         print(f"full container name: {full_container_name}")
         # Build container
-        sp.run(f"docker image build -t {full_container_name} .", shell=True)
+        sp.run(f"docker image build -f {path_to_dockerfile} -t {full_container_name} .", shell=True)
         # Upload container to registry
         sp.run("az login", shell=True)
         sp.run(f"az acr login --name {registry_name}", shell=True)

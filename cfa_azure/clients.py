@@ -18,6 +18,8 @@ class AzureClient:
         self.registry_url = None
         self.container_image_name = None
         self.full_container_name = None
+        self.input_mount_dir = None
+        self.output_mount_dir = None
 
         # load config
         self.config = helpers.read_config(config_path)
@@ -138,7 +140,7 @@ class AzureClient:
             self.pool_parameters = helpers.get_pool_parameters(
                 mode,
                 self.container_image_name,
-                self.container_registry_url,
+                self.registry_url,
                 self.container_registry_server,
                 self.config,
                 self.mount_config,
@@ -370,6 +372,9 @@ class AzureClient:
             job_id (str): job id
             docker_cmd (list[str]): docker command
             input_files (list[str], optional): list of files to be used with the docker command. Defaults to [].
+
+        Returns:
+            list: list of task IDs created
         """
         if input_files:
             in_files = input_files
@@ -379,7 +384,7 @@ class AzureClient:
             in_files = []
 
         # run tasks for input files
-        helpers.add_task_to_job(
+        task_ids = helpers.add_task_to_job(
             job_id=job_id,
             task_id=job_id,
             docker_command=docker_cmd,
@@ -391,6 +396,7 @@ class AzureClient:
             config=self.config,
             task_id_max=self.task_id_max,
         )
+        return task_ids
 
     def monitor_job(self, job_id: str) -> None:
         """monitor the tasks running in a job
@@ -446,7 +452,7 @@ class AzureClient:
         print(f"Job {job_id} deleted.")
 
     def package_and_upload_dockerfile(
-        self, registry_name: str, repo_name: str, tag: str
+        self, registry_name: str, repo_name: str, tag: str, path_to_dockerfile: str = "./Dockerfile"
     ) -> str:
         """package a docker container based on Dockerfile in repo and upload to specified location in Azure Container Registry
 
@@ -454,12 +460,13 @@ class AzureClient:
             registry_name (str): name of registry in Azure CR
             repo_name (str): name of repo within ACR
             tag (str): tag for the uploaded docker container; ex: 'latest'
+            path_to_dockerfile (str): path to Dockerfile. Default is path to Dockerfile in root of repo.
 
         Returns:
             str: full container name that was uploaded
         """
         self.full_container_name = helpers.package_and_upload_dockerfile(
-            registry_name, repo_name, tag
+            registry_name, repo_name, tag, path_to_dockerfile
         )
         self.container_registry_server = f"{registry_name}.azurecr.io"
         self.registry_url = f"https://{self.container_registry_server}"

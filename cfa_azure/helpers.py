@@ -676,6 +676,10 @@ def add_task_to_job(
         task = batchmodels.TaskAddParameter(
             id=task_id,
             command_line=command_line,
+            container_settings=batchmodels.TaskContainerSettings(
+                    image_name=full_container_name,
+                    container_run_options=f"--name={job_id}"
+                ),
             user_identity=user_identity,
         )
         batch_client.task.add(job_id=job_id, task=task)

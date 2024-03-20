@@ -1238,7 +1238,7 @@ def get_job_state(job_id: str, batch_client: object):
 
 
 def package_and_upload_dockerfile(
-    registry_name: str, repo_name: str, tag: str
+    registry_name: str, repo_name: str, tag: str, path_to_dockerfile: str = "./Dockerfile"
 ):
     """
     Packages Dockerfile in root of repo and uploads to the specified registry and repo with designated tag in Azure.
@@ -1247,9 +1247,9 @@ def package_and_upload_dockerfile(
         registry_name (str): name of Azure Container Registry
         repo_name (str): name of repo
         tag (str): tag for the Docker container
+        path_to_dockerfile (str): path to Dockerfile. Default is ./Dockerfile.
     """
     # check if Dockerfile exists
-    path = "./Dockerfile"
     try:
         d = docker.from_env(timeout=10).ping()
     except DockerException:
@@ -1258,11 +1258,11 @@ def package_and_upload_dockerfile(
         print("Try again when Docker is running.")
         return None
 
-    if os.path.exists(path) and d:
+    if os.path.exists(path_to_dockerfile) and d:
         full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
         print(f"full container name: {full_container_name}")
         # Build container
-        sp.run(f"docker image build -t {full_container_name} .", shell=True)
+        sp.run(f"docker image build -f {path_to_dockerfile} -t {full_container_name} .", shell=True)
         # Upload container to registry
         sp.run("az login", shell=True)
         sp.run(f"az acr login --name {registry_name}", shell=True)

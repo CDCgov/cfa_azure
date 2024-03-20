@@ -452,7 +452,7 @@ class AzureClient:
         print(f"Job {job_id} deleted.")
 
     def package_and_upload_dockerfile(
-        self, registry_name: str, repo_name: str, tag: str
+        self, registry_name: str, repo_name: str, tag: str, path_to_dockerfile: str = "./Dockerfile"
     ) -> str:
         """package a docker container based on Dockerfile in repo and upload to specified location in Azure Container Registry
 
@@ -460,12 +460,13 @@ class AzureClient:
             registry_name (str): name of registry in Azure CR
             repo_name (str): name of repo within ACR
             tag (str): tag for the uploaded docker container; ex: 'latest'
+            path_to_dockerfile (str): path to Dockerfile. Default is path to Dockerfile in root of repo.
 
         Returns:
             str: full container name that was uploaded
         """
         self.full_container_name = helpers.package_and_upload_dockerfile(
-            registry_name, repo_name, tag
+            registry_name, repo_name, tag, path_to_dockerfile
         )
         self.container_registry_server = f"{registry_name}.azurecr.io"
         self.registry_url = f"https://{self.container_registry_server}"

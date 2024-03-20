@@ -393,7 +393,7 @@ class AzureClient:
             output_mount_dir=self.output_mount_dir,
             depends_on=depends_on,
             batch_client=self.batch_client,
-            config=self.config,
+            config=self.full_container_name,
             task_id_max=self.task_id_max,
         )
         return task_ids

@@ -601,7 +601,7 @@ def add_task_to_job(
     output_mount_dir=None,
     depends_on: str | list[str] | None = None,
     batch_client: object = None,
-    config: dict = None,
+    full_container_name: str = None,
     task_id_max=0,
 ):
     """add a defined task(s) to a job in the pool
@@ -652,7 +652,7 @@ def add_task_to_job(
                 id=id,
                 command_line=d_cmd_str+ " "+ input_mount_dir + input_file,
                 container_settings=batchmodels.TaskContainerSettings(
-                    image_name=config["Container"]["container_image_name"][8:],
+                    image_name=full_container_name,
                     container_run_options=f"--name={job_id} --rm "
                     + "--mount type=bind,source="
                     + az_mount_dir

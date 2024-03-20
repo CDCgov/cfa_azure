@@ -641,16 +641,16 @@ def add_task_to_job(
 
     if input_files:
         tasks = []
-        for input_file in input_files:
-            config_stem = "_".join(input_file.split(".")[:-1])
+        for i, input_file in enumerate(input_files):
+            config_stem = "_".join(input_file.split(".")[:-1]).split("/")[-1]
             id = task_id_base + "-" + config_stem
             # shorten the id name to fit the 64 char limit of task ids
-            if len(id) > 63:
-                id = id[:63]
+            if len(id) > 64:
+                id = id[:60]+"_"+str(i)
             tasks.append(id)
             task = batchmodels.TaskAddParameter(
                 id=id,
-                command_line=d_cmd_str+ " "+ input_mount_dir +" "+ input_file,
+                command_line=d_cmd_str+ " "+ input_mount_dir + input_file,
                 container_settings=batchmodels.TaskContainerSettings(
                     image_name=config["Container"]["container_image_name"][8:],
                     container_run_options=f"--name={job_id} --rm "

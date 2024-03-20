@@ -307,52 +307,22 @@ class AzureClient:
         return _files
 
     def add_job(
-        self, job_id: str, input_files: list[str] = [], no_input=False
+        self, job_id: str
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
         Args:
             job_id (str): name of job
-            input_files (list[str], optional): _description_. Defaults to [].
-            no_input (bool, optional): _description_. Defaults to False.
         """
         # make sure the job_id does not have spaces
         job_id_r = job_id.replace(" ", "")
         print(f"job_id: {job_id_r}")
-        # check input_files
-        # if input_files contains files, check that files exist in the container
-        # else input_files empty list, then all files in input container used
-        if input_files:
-            missing_files = []
-            container_files = helpers.list_files_in_container(
-                self.input_container_name, self.sp_credential, self.config
-            )
-            # check files exist in the container
-            for f in input_files:
-                if f not in container_files:
-                    missing_files.append(f)  # gather list of missing files
-            if missing_files:
-                print(
-                    "The following input files are missing from the container:"
-                )
-                for m in missing_files:
-                    print("    ", m)
-                print("Not all input files exist in container. Closing job.")
-                ###  here we could ask if user would like to proceed
-                print("*" * 25)
-                return None
-        # check that self.files contains files
-        elif self.files == [] and not no_input:
-            print("No input files uploaded to client.")
-            print(
-                "Please upload files to the input container and try again, or set `no_input=True` when running the job."
-            )
-            print("No job created.")
-            return None
 
         # add the job to the pool
         helpers.add_job(
-            job_id_r, self.pool_name, self.batch_client, self.config
+            job_id = job_id_r, 
+            pool_id = self.pool_name, 
+            batch_client = self.batch_client
         )
         self.jobs.add(job_id_r)
 

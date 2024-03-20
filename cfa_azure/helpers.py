@@ -565,7 +565,7 @@ def get_batch_service_client(config: dict):
     return batch_client
 
 
-def add_job(job_id: str, pool_id: str, batch_client: object, config: dict):
+def add_job(job_id: str, pool_id: str, batch_client: object):
     """takes in a job ID and config to create a job in the pool
 
     Args:

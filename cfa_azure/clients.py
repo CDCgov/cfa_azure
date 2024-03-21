@@ -356,7 +356,7 @@ class AzureClient:
         # run tasks for input files
         task_ids = helpers.add_task_to_job(
             job_id=job_id,
-            task_id=job_id,
+            task_id_base=job_id,
             docker_command=docker_cmd,
             input_files=in_files,
             input_mount_dir=self.input_mount_dir,

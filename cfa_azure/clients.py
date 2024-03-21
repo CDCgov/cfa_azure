@@ -366,6 +366,7 @@ class AzureClient:
             full_container_name=self.full_container_name,
             task_id_max=self.task_id_max,
         )
+        self.task_id_max+=1
         return task_ids
 
     def monitor_job(self, job_id: str) -> None:
@@ -387,7 +388,7 @@ class AzureClient:
             self.batch_client.job.delete(job_id)
         elif self.debug is True:
             print("Job complete. Time to debug. Job not deleted.")
-            print("Remember to close out the job when debugging.")
+            print("**Remember to close out the job when debugging.**")
 
     def check_job_status(self, job_id: str) -> None:
         """checks various components of a job

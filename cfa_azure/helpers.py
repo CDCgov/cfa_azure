@@ -671,7 +671,7 @@ def add_task_to_job(
         print(
             "No input files provided, adding a generic task with provided docker command."
         )
-        task_id = f"{task_id_base}-generic-{str(task_id_max + 1)}"
+        task_id = f"{task_id_base}-{str(task_id_max + 1)}"
         command_line = d_cmd_str
         task = batchmodels.TaskAddParameter(
             id=task_id,
@@ -686,7 +686,9 @@ def add_task_to_job(
         print(
             f"Generic task '{task_id}' added to job '{job_id}' without specific input files."
         )
-        return list(task_id)
+        t = []
+        t.append(task_id)
+        return t
 
 
 def monitor_tasks(job_id: str, timeout: int, batch_client: object):
@@ -722,8 +724,6 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
 
     total_tasks = len([task for task in tasks])
     print(f"Total tasks to monitor: {total_tasks}")
-
-    print("Total Tasks:", total_tasks)
 
     completed = False
     while datetime.datetime.now() < timeout_expiration:

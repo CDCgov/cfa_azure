@@ -441,6 +441,7 @@ class AzureClient:
         self.container_registry_server = f"{registry_name}.azurecr.io"
         self.registry_url = f"https://{self.container_registry_server}"
         self.container_image_name = f"https://{self.full_container_name}"
+        print(f"Successfully uploaded/pushed container [{self.full_container_name}]")
 
         return self.full_container_name
 

@@ -565,7 +565,7 @@ def get_batch_service_client(config: dict):
     return batch_client
 
 
-def add_job(job_id: str, pool_id: str, batch_client: object, config: dict):
+def add_job(job_id: str, pool_id: str, batch_client: object):
     """takes in a job ID and config to create a job in the pool
 
     Args:
@@ -601,7 +601,7 @@ def add_task_to_job(
     output_mount_dir=None,
     depends_on: str | list[str] | None = None,
     batch_client: object = None,
-    config: dict = None,
+    full_container_name: str = None,
     task_id_max=0,
 ):
     """add a defined task(s) to a job in the pool
@@ -641,18 +641,18 @@ def add_task_to_job(
 
     if input_files:
         tasks = []
-        for input_file in input_files:
-            config_stem = "_".join(input_file.split(".")[:-1])
+        for i, input_file in enumerate(input_files):
+            config_stem = "_".join(input_file.split(".")[:-1]).split("/")[-1]
             id = task_id_base + "-" + config_stem
             # shorten the id name to fit the 64 char limit of task ids
-            if len(id) > 63:
-                id = id[:63]
+            if len(id) > 64:
+                id = id[:60]+"_"+str(i)
             tasks.append(id)
             task = batchmodels.TaskAddParameter(
                 id=id,
-                command_line=d_cmd_str+ " "+ input_mount_dir +" "+ input_file,
+                command_line=d_cmd_str+ " "+ input_mount_dir + input_file,
                 container_settings=batchmodels.TaskContainerSettings(
-                    image_name=config["Container"]["container_image_name"][8:],
+                    image_name=full_container_name,
                     container_run_options=f"--name={job_id} --rm "
                     + "--mount type=bind,source="
                     + az_mount_dir
@@ -671,18 +671,24 @@ def add_task_to_job(
         print(
             "No input files provided, adding a generic task with provided docker command."
         )
-        task_id = f"{task_id_base}-generic-{str(task_id_max + 1)}"
+        task_id = f"{task_id_base}-{str(task_id_max + 1)}"
         command_line = d_cmd_str
         task = batchmodels.TaskAddParameter(
             id=task_id,
             command_line=command_line,
+            container_settings=batchmodels.TaskContainerSettings(
+                    image_name=full_container_name,
+                    container_run_options=f"--name={job_id}"
+                ),
             user_identity=user_identity,
         )
         batch_client.task.add(job_id=job_id, task=task)
         print(
             f"Generic task '{task_id}' added to job '{job_id}' without specific input files."
         )
-        return list(task_id)
+        t = []
+        t.append(task_id)
+        return t
 
 
 def monitor_tasks(job_id: str, timeout: int, batch_client: object):
@@ -718,8 +724,6 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
 
     total_tasks = len([task for task in tasks])
     print(f"Total tasks to monitor: {total_tasks}")
-
-    print("Total Tasks:", total_tasks)
 
     completed = False
     while datetime.datetime.now() < timeout_expiration:

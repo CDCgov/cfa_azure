@@ -668,9 +668,6 @@ def add_task_to_job(
             print(f"Task '{id}' added to job '{job_id}'.")
         return tasks
     else:
-        print(
-            "No input files provided, adding a generic task with provided docker command."
-        )
         task_id = f"{task_id_base}-{str(task_id_max + 1)}"
         command_line = d_cmd_str
         task = batchmodels.TaskAddParameter(

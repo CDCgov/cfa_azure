@@ -75,7 +75,7 @@ and [Code of Conduct](code-of-conduct.md).
 For more information about CDC's privacy policy, please visit [http://www.cdc.gov/other/privacy.html](https://www.cdc.gov/other/privacy.html).
 
 ## Contributing Standard Notice
-Anyone is encouraged to contribute to the repository by [forking](https://help.github.com/articles/fork-a-repo)
+Anyone is encouraged to contribute to the repository by [forking](https://help.github.com/articles/fork-a-repo) or creating a new branch
 and submitting a pull request. (If you are new to GitHub, you might start with a
 [basic tutorial](https://help.github.com/articles/set-up-git).) By contributing
 to this project, you grant a world-wide, royalty-free, perpetual, irrevocable,
@@ -85,6 +85,8 @@ later.
 
 All comments, messages, pull requests, and other submissions received through
 CDC including this GitHub page may be subject to applicable federal law, including but not limited to the Federal Records Act, and may be archived. Learn more at [http://www.cdc.gov/other/privacy.html](http://www.cdc.gov/other/privacy.html).
+
+Help make this package/repo more robust and stable by creating issues as you see fit. Please use the following issues template as an outline for your issue: [issue template](.github/ISSUE_TEMPLATE/cfa_azure_issue_template.md)
 
 ## Records Management Standard Notice
 This repository is not a source of government records, but is a copy to increase

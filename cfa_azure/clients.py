@@ -330,7 +330,7 @@ class AzureClient:
         self,
         job_id: str,
         docker_cmd: list[str],
-        input_files: list[str] = [],
+        use_uploaded_files: bool = False,
         depends_on=None,
     ) -> None:
         """adds task to existing job.
@@ -341,17 +341,16 @@ class AzureClient:
         Args:
             job_id (str): job id
             docker_cmd (list[str]): docker command
-            input_files (list[str], optional): list of files to be used with the docker command. Defaults to [].
+            
 
         Returns:
             list: list of task IDs created
         """
-        if input_files:
-            in_files = input_files
-        elif self.files:
+        if use_uploaded_files:
             in_files = self.files
         else:
-            in_files = []
+            in_files = None    
+            
 
         # run tasks for input files
         task_ids = helpers.add_task_to_job(

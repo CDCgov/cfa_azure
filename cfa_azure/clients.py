@@ -435,6 +435,7 @@ class AzureClient:
         Returns:
             str: full container name that was uploaded
         """
+        print("beginning build and upload...")
         self.full_container_name = helpers.package_and_upload_dockerfile(
             registry_name, repo_name, tag, path_to_dockerfile
         )

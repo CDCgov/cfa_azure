@@ -1257,16 +1257,17 @@ def package_and_upload_dockerfile(
         print("Could not ping Docker. Make sure Docker is running.")
         print("Container not packaged/uploaded.")
         print("Try again when Docker is running.")
-        return None
+        raise
 
     if os.path.exists(path_to_dockerfile) and d:
         full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
-        print(f"full container name: {full_container_name}")
+        print(f"Attempting to build and upload full container name: {full_container_name}")
         # Build container
         sp.run(f"docker image build -f {path_to_dockerfile} -t {full_container_name} .", shell=True)
         # Upload container to registry
         sp.run("az login", shell=True)
         sp.run(f"az acr login --name {registry_name}", shell=True)
+        print("pushing to registry...")
         sp.run(f"docker push {full_container_name}", shell=True)
         return full_container_name
     else:

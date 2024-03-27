@@ -461,7 +461,7 @@ class AzureClient:
             print(tag_list)
             if tag_name in tag_list:
                 print(f"setting {registry_name}/{repo_name}:{tag_name}")
-                self.full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
+                self.full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag_name}"
                 self.container_registry_server = f"{registry_name}.azurecr.io"
                 self.registry_url = f"https://{self.container_registry_server}"
                 self.container_image_name = f"https://{self.full_container_name}"

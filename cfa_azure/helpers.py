@@ -1273,7 +1273,6 @@ def package_and_upload_dockerfile(
     else:
         print("Dockerfile does not exist in the root of the directory.")
 
-
 def check_pool_exists(
     resource_group_name: str,
     account_name: str,

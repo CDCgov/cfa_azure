@@ -351,7 +351,7 @@ class AzureClient:
         else:
             in_files = None    
             
-
+         
         # run tasks for input files
         task_ids = helpers.add_task_to_job(
             job_id=job_id,

@@ -330,6 +330,7 @@ class AzureClient:
         self,
         job_id: str,
         docker_cmd: list[str],
+        use_uploaded_files: bool = False,
         input_files: list[str] = [],
         depends_on=None,
     ) -> None:
@@ -346,10 +347,15 @@ class AzureClient:
         Returns:
             list: list of task IDs created
         """
-        if input_files:
-            in_files = input_files
-        elif self.files:
-            in_files = self.files
+        if input_files or self.files:
+            use_uploaded_files = True
+        if use_uploaded_files:
+            if input_files:
+                in_files = input_files
+            elif self.files:
+                in_files = self.files
+            else:
+                print("use_uploaded_files set to True but no input files found.")
         else:
             in_files = []
 

@@ -683,8 +683,7 @@ def add_task_to_job(
             command_line=command_line,
             container_settings=batchmodels.TaskContainerSettings(
                     image_name=full_container_name,
-                    container_run_options=f"--name={job_id}" \
-                        + mount_str
+                    container_run_options=f"--name={job_id} --rm "+ mount_str
                 ),
             user_identity=user_identity,
             depends_on = task_deps

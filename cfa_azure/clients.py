@@ -347,8 +347,6 @@ class AzureClient:
         Returns:
             list: list of task IDs created
         """
-        if input_files or self.files:
-            use_uploaded_files = True
         if use_uploaded_files:
             if input_files:
                 in_files = input_files

@@ -639,15 +639,17 @@ def add_task_to_job(
             depends_on = [depends_on]
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
 
-    mount_str = ""
+    mount_str= ""
+    #src = env variable to fsmounts/rel_path
+    #target = the directory(path) you reference in your code
     if input_mount_dir:
-        mountstr += "--mount type=bind,source=" \
+        mount_str += "--mount type=bind,source=" \
                 + az_mount_dir \
-                + f"/{input_mount_dir},target=/input "  # /input,target=/input
+                + f"/{input_mount_dir},target=/{input_mount_dir} "
     if output_mount_dir:
         mount_str += "--mount type=bind,source=" \
                     + az_mount_dir \
-                    + f"/{output_mount_dir},target=/output "
+                    + f"/{output_mount_dir},target=/{output_mount_dir} "
     
 
     if input_files:

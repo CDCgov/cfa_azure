@@ -639,6 +639,19 @@ def add_task_to_job(
             depends_on = [depends_on]
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
 
+    mount_str= ""
+    #src = env variable to fsmounts/rel_path
+    #target = the directory(path) you reference in your code
+    if input_mount_dir:
+        mount_str += "--mount type=bind,source=" \
+                + az_mount_dir \
+                + f"/{input_mount_dir},target=/{input_mount_dir} "
+    if output_mount_dir:
+        mount_str += "--mount type=bind,source=" \
+                    + az_mount_dir \
+                    + f"/{output_mount_dir},target=/{output_mount_dir} "
+    
+
     if input_files:
         tasks = []
         for i, input_file in enumerate(input_files):
@@ -653,13 +666,8 @@ def add_task_to_job(
                 command_line=d_cmd_str+ " "+ input_mount_dir + input_file,
                 container_settings=batchmodels.TaskContainerSettings(
                     image_name=full_container_name,
-                    container_run_options=f"--name={job_id} --rm "
-                    + "--mount type=bind,source="
-                    + az_mount_dir
-                    + f"/{input_mount_dir},target=/input "  # /input,target=/input
-                    + "--mount type=bind,source="
-                    + az_mount_dir
-                    + f"/{output_mount_dir},target=/output ",  # /output,target=/output
+                    container_run_options=f"--name={job_id} --rm " \
+                    + mount_str
                 ),
                 user_identity=user_identity,
                 depends_on=task_deps,
@@ -675,9 +683,10 @@ def add_task_to_job(
             command_line=command_line,
             container_settings=batchmodels.TaskContainerSettings(
                     image_name=full_container_name,
-                    container_run_options=f"--name={job_id}_{str(task_id_max+1)} --rm"
+                    container_run_options=f"--name={job_id}_{str(task_id_max+1)} --rm "+ mount_str
                 ),
             user_identity=user_identity,
+            depends_on = task_deps
         )
         batch_client.task.add(job_id=job_id, task=task)
         print(

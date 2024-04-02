@@ -331,6 +331,7 @@ class AzureClient:
         job_id: str,
         docker_cmd: list[str],
         use_uploaded_files: bool = False,
+        input_files: list[str] = [],
         depends_on=None,
     ) -> None:
         """adds task to existing job.
@@ -347,7 +348,12 @@ class AzureClient:
             list: list of task IDs created
         """
         if use_uploaded_files:
-            in_files = self.files
+            if input_files:
+                in_files = input_files
+            elif self.files:
+                in_files = self.files
+            else:
+                print("use_uploaded_files set to True but no input files found.")
         else:
             in_files = None    
             

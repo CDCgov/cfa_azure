@@ -342,7 +342,7 @@ class AzureClient:
         Args:
             job_id (str): job id
             docker_cmd (list[str]): docker command
-            input_files (list[str], optional): list of files to be used with the docker command. Defaults to [].
+            
 
         Returns:
             list: list of task IDs created
@@ -355,7 +355,8 @@ class AzureClient:
             else:
                 print("use_uploaded_files set to True but no input files found.")
         else:
-            in_files = []
+            in_files = None    
+            
 
         # run tasks for input files
         task_ids = helpers.add_task_to_job(

@@ -2,6 +2,7 @@ import datetime
 import yaml
 from azure.core.exceptions import HttpResponseError
 from azure.containerregistry import ContainerRegistryClient
+from azure.identity import DefaultAzureCredential
 
 from cfa_azure import batch, helpers
 

@@ -1,6 +1,7 @@
 import datetime
 import yaml
 from azure.core.exceptions import HttpResponseError
+from azure.containerregistry import ContainerRegistryClient
 
 from cfa_azure import batch, helpers
 
@@ -460,23 +461,27 @@ class AzureClient:
         audience = "https://management.azure.com"
         endpoint = f"https://{registry_name}.azurecr.io"
         try:
-            client = ContainerRegistryClient(endpoint, DefaultAzureCredential(), audience=audience)
-            tag_list = []
-            for tag in client.list_tag_properties(repo_name):
-                tag_properties = client.get_tag_properties(repo_name,tag.name)
-                tag_list.append(tag_properties.name)
-            print(tag_list)
-            if tag_name in tag_list:
-                print(f"setting {registry_name}/{repo_name}:{tag_name}")
-                self.full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag_name}"
-                self.container_registry_server = f"{registry_name}.azurecr.io"
-                self.registry_url = f"https://{self.container_registry_server}"
-                self.container_image_name = f"https://{self.full_container_name}"
-                return self.full_container_name
-            else:
-                print(f"{registry_name}/{repo_name}:{tag_name} does not exist")
+            #check full_container_name exists in ACR
+            cr_client = ContainerRegistryClient(endpoint, DefaultAzureCredential(), audience=audience)
         except Exception as e:
-            print(f"Repo [{repo_name}] does not exist")
+            print(f"Registry [{registry_name}] or repo [{repo_name}] does not exist")
+            print(e)
+            raise
+        tag_list = []
+        for tag in cr_client.list_tag_properties(repo_name):
+            tag_properties = cr_client.get_tag_properties(repo_name,tag.name)
+            tag_list.append(tag_properties.name)
+        print("Available tags in repo:", tag_list)
+        if tag_name in tag_list:
+            print(f"setting {registry_name}/{repo_name}:{tag_name}")
+            self.full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag_name}"
+            self.container_registry_server = f"{registry_name}.azurecr.io"
+            self.registry_url = f"https://{self.container_registry_server}"
+            self.container_image_name = f"https://{self.full_container_name}"
+            return self.full_container_name
+        else:
+            print(f"{registry_name}/{repo_name}:{tag_name} does not exist")
+
         
 
     def download_file(

@@ -428,7 +428,8 @@ class AzureClient:
         print(f"Job {job_id} deleted.")
 
     def package_and_upload_dockerfile(
-        self, registry_name: str, repo_name: str, tag: str, path_to_dockerfile: str = "./Dockerfile"
+        self, registry_name: str, repo_name: str, tag: str, path_to_dockerfile: str = "./Dockerfile",
+        use_device_code: bool = False
     ) -> str:
         """package a docker container based on Dockerfile in repo and upload to specified location in Azure Container Registry
 
@@ -442,7 +443,7 @@ class AzureClient:
             str: full container name that was uploaded
         """
         self.full_container_name = helpers.package_and_upload_dockerfile(
-            registry_name, repo_name, tag, path_to_dockerfile
+            registry_name, repo_name, tag, path_to_dockerfile, use_device_code
         )
         self.container_registry_server = f"{registry_name}.azurecr.io"
         self.registry_url = f"https://{self.container_registry_server}"
@@ -450,6 +451,33 @@ class AzureClient:
         print(f"Successfully uploaded/pushed container [{self.full_container_name}]")
 
         return self.full_container_name
+
+    def set_azure_container(self,
+                            registry_name:str,
+                            repo_name:str, 
+                            tag_name:str) -> str:
+        #check full_container_name exists in ACR
+        audience = "https://management.azure.com"
+        endpoint = f"https://{registry_name}.azurecr.io"
+        try:
+            client = ContainerRegistryClient(endpoint, DefaultAzureCredential(), audience=audience)
+            tag_list = []
+            for tag in client.list_tag_properties(repo_name):
+                tag_properties = client.get_tag_properties(repo_name,tag.name)
+                tag_list.append(tag_properties.name)
+            print(tag_list)
+            if tag_name in tag_list:
+                print(f"setting {registry_name}/{repo_name}:{tag_name}")
+                self.full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag_name}"
+                self.container_registry_server = f"{registry_name}.azurecr.io"
+                self.registry_url = f"https://{self.container_registry_server}"
+                self.container_image_name = f"https://{self.full_container_name}"
+                return self.full_container_name
+            else:
+                print(f"{registry_name}/{repo_name}:{tag_name} does not exist")
+        except Exception as e:
+            print(f"Repo [{repo_name}] does not exist")
+        
 
     def download_file(
         self,

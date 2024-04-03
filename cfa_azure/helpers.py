@@ -1248,7 +1248,8 @@ def get_job_state(job_id: str, batch_client: object):
 
 
 def package_and_upload_dockerfile(
-    registry_name: str, repo_name: str, tag: str, path_to_dockerfile: str = "./Dockerfile"
+    registry_name: str, repo_name: str, tag: str, path_to_dockerfile: str = "./Dockerfile",
+    use_device_code:str = False
 ):
     """
     Packages Dockerfile in root of repo and uploads to the specified registry and repo with designated tag in Azure.
@@ -1274,7 +1275,11 @@ def package_and_upload_dockerfile(
         # Build container
         sp.run(f"docker image build -f {path_to_dockerfile} -t {full_container_name} .", shell=True)
         # Upload container to registry
-        sp.run("az login", shell=True)
+        #upload with device login if desired
+        if use_device_code:
+            sp.run("az login --use-device-code", shell=True)
+        else:
+            sp.run("az login", shell=True)
         sp.run(f"az acr login --name {registry_name}", shell=True)
         sp.run(f"docker push {full_container_name}", shell=True)
         return full_container_name

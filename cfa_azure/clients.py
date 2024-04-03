@@ -429,7 +429,7 @@ class AzureClient:
 
     def package_and_upload_dockerfile(
         self, registry_name: str, repo_name: str, tag: str, path_to_dockerfile: str = "./Dockerfile",
-        use_device_code = False
+        use_device_code: bool = False
     ) -> str:
         """package a docker container based on Dockerfile in repo and upload to specified location in Azure Container Registry
 

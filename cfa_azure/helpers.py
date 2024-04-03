@@ -1249,7 +1249,7 @@ def get_job_state(job_id: str, batch_client: object):
 
 def package_and_upload_dockerfile(
     registry_name: str, repo_name: str, tag: str, path_to_dockerfile: str = "./Dockerfile",
-    use_device_code:bool = False
+    use_device_code: bool = False
 ):
     """
     Packages Dockerfile in root of repo and uploads to the specified registry and repo with designated tag in Azure.

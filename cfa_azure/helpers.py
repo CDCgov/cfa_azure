@@ -472,7 +472,7 @@ def list_containers(blob_service_client: object):
     Returns:
         list[str]: list of containers in Blob Storage account
     """
-    print("Listing all containers in the Blob service account...")
+    #print("Listing all containers in the Blob service account...")
     container_list = []
 
     for container in blob_service_client.list_containers():

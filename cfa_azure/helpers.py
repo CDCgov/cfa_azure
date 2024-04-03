@@ -477,8 +477,8 @@ def list_containers(blob_service_client: object):
 
     for container in blob_service_client.list_containers():
         container_list.append(container.name)
-        print(f"Found container: {container.name}")
-    print("Completed listing containers.")
+        #print(f"Found container: {container.name}")
+    #print("Completed listing containers.")
     return container_list
 
 

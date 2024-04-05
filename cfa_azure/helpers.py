@@ -646,6 +646,42 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
         dict: dictionary with keys completed (whether the job completed) and runtime (total elapsed time)
     """
     print(f"Starting to monitor tasks for job '{job_id}' with a timeout of {timeout} minutes.")
+    
+    # Fetching tasks
+    tasks = batch_client.task.list(job_id)
+    task_statuses = {task.id: 
+                     {"started": False, 
+                      "completed": False} 
+                      for task in tasks}
+
+    # Looping until tasks are complete or timeout
+    while not all(status["completed"] for status in task_statuses.values()):
+        for task in batch_client.task.list(job_id):
+            if task_statuses[task.id]["completed"]:
+                # Skip completed tasks
+                continue 
+
+            if task.state == task.state.completed:
+                # Marking tests as completed
+                task_statuses[task.id]["completed"] = True
+                print(f"Task {task.id} completed.")
+                continue
+ 
+            if not task_statuses[task.id]["started"] and task.execution_info and task.execution_info.start_time:
+                # marking tasks as started and calculating the timeout
+                task_statuses[task.id]["started"] = True
+                task_statuses[task.id]["timeout"] = task.execution_info.start_time + datetime.timedelta(minutes=timeout)
+                print(f"Task {task.id} started at {task.execution_info.start_time} with timeout at {task_statuses[task.id]['timeout']}")
+
+            if task_statuses[task.id]["started"] and datetime.datetime.now() > task_statuses[task.id]["timeout"]:
+                # Check for timeout
+                raise RuntimeError(f"Task {task.id} did not complete within {timeout} minutes since start time.")
+    
+    # Sleep before the next check to avoid excessive querying
+            time.sleep(5)
+
+        print("All tasks have completed.")
+    
     start_time = datetime.datetime.now().replace(microsecond=0)
     _timeout = datetime.timedelta(minutes=timeout)
     timeout_expiration = start_time + _timeout
@@ -657,7 +693,6 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     # as tasks complete, print which complete
     # print remaining number of tasks
     tasks = list(batch_client.task.list(job_id))
-
     total_tasks = len(tasks)
     print(f"Total tasks to monitor: {total_tasks}")
 

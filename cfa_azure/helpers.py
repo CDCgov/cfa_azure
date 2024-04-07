@@ -59,6 +59,7 @@ def create_container(container_name: str, blob_service_client: object):
     Args:
         container_name (str): user specified name for Blob container
         blob_service_client (object): BlobServiceClient object
+        
     Returns:
        object: ContainerClient object
     """
@@ -81,8 +82,8 @@ def get_autoscale_formula(filepath: str = None, text_input: str = None):
     If neither are found, it will look for a file named autoscale_formula.txt and return its string output.
 
     Args:
-        filepath (str): a path to an autoscale formula file
-        text_input (str): a string input of the autoscale formula
+        filepath (str): a path to an autoscale formula file. Default is None.
+        text_input (str): a string input of the autoscale formula. Default is None.
     Returns:
         str: autoscale formula
     """
@@ -123,7 +124,7 @@ def get_sp_secret(config: dict):
         config (dict): contains configuration info
 
     Returns:
-        str: secret
+        str: service principal secret
 
     Example:
         sp_secret = get_sp_secret(config)
@@ -238,8 +239,8 @@ def create_blob_containers(
 
     Args:
         blob_service_client (object): an instance of the Batch Management Client
-        input_container_name (str): user specified name for input container
-        output_container_name (str): user specified name for output container
+        input_container_name (str): user specified name for input container. Default is None.
+        output_container_name (str): user specified name for output container. Default is None.
     """
     #print("Preparing to create blob containers...")
     if input_container_name:
@@ -459,6 +460,12 @@ def create_batch_pool(batch_mgmt_client: object, batch_json: dict):
 
 
 def delete_pool(pool_name: str, batch_mgmt_client: object) -> None:
+    """deletes the specified pool from Azure Batch.
+
+    Args:
+        pool_name (str): name of pool to delete
+        batch_mgmt_client (object): instance of BatchManagementClient
+    """
     batch_mgmt_client.pool.delete(pool_id=pool_name)
     print(f"Pool {pool_name} deleted.")
 
@@ -544,7 +551,6 @@ def get_batch_service_client(config: dict):
     """creates and returns a Batch Service Client object
 
     Args:
-        sp_secret (str): service principal secret
         config (dict): config dictionary
 
     Returns:
@@ -597,12 +603,12 @@ def add_task_to_job(
     task_id_base: str,
     docker_command: str,
     input_files: list[str] = [],
-    input_mount_dir=None,
-    output_mount_dir=None,
+    input_mount_dir: str = None,
+    output_mount_dir: str = None,
     depends_on: str | list[str] | None = None,
     batch_client: object = None,
     full_container_name: str = None,
-    task_id_max=0,
+    task_id_max: int = 0,
 ):
     """add a defined task(s) to a job in the pool
 
@@ -611,8 +617,12 @@ def add_task_to_job(
         task_id_base (str): the name given to the task_id as a base
         docker_command (str): the docker command to execute for the task
         input_files (list[str]): a  list of input files
+        input_mount_dir (str): name input mount directory
+        output_mount_dir (str): name of output mount directory
+        depends_on (str | list[str]): list of tasks this task depends on
         batch_client (object): batch client object
-        config (dict): a config file
+        full_container_name (str): name ACR container to run task on
+        task_id_max (int): current max task id in use by Batch
 
     Returns:
         list: list of task IDs created
@@ -916,6 +926,9 @@ def get_deployment_config(
     """gets the deployment config based on the config information
 
     Args:
+        container_image_name (str): container image name
+        container_registry_url (str): container registry URL
+        container_registry_server (str): container registry server
         config (str): config dict
 
     Returns:
@@ -1013,6 +1026,9 @@ def get_pool_parameters(
 
     Args:
         mode (str): either 'fixed' or 'autoscale'
+        container_image_name (str): container image name
+        container_registry_url (str): container registry URL
+        container_registry_server (str): container registry server
         config (dict): config dict
         mount_config (list): output from get_mount_config() regarding mounting of blob storage
         autoscale_formula_path (str, optional): path to autoscale formula file if mode is 'autoscale'. Defaults to None.
@@ -1021,7 +1037,7 @@ def get_pool_parameters(
         low_priority_nodes (int, optional): number of low priority nodes. Defaults to 0.
 
     Returns:
-        _type_: _description_
+        dict: dict of pool parameters for pool creation
     """
     print(
         f"Setting up pool parameters in '{mode}' mode with timeout={timeout} minutes..."
@@ -1220,7 +1236,7 @@ def get_completed_tasks(job_id: str, batch_client: object):
 
 
 # check whether job is completed and open
-def check_job_complete(job_id: str, batch_client: object):
+def check_job_complete(job_id: str, batch_client: object) -> bool:
     """Checks if the job is complete.
 
     Args:
@@ -1259,6 +1275,9 @@ def package_and_upload_dockerfile(
         repo_name (str): name of repo
         tag (str): tag for the Docker container
         path_to_dockerfile (str): path to Dockerfile. Default is ./Dockerfile.
+
+    Returns:
+        str: full container name
     """
     # check if Dockerfile exists
     try:
@@ -1293,6 +1312,17 @@ def check_pool_exists(
     pool_name: str,
     batch_mgmt_client: object,
 ):
+    """Check if a pool exists in Azure Batch
+
+    Args:
+        resource_group_name (str):
+        account_name (str):
+        pool_name (str):
+        batch_mgmt_client (object):
+
+    Returns:
+        bool: whether the pool exists
+    """
     try:
         batch_mgmt_client.pool.get(
             resource_group_name, account_name, pool_name
@@ -1306,8 +1336,8 @@ def get_pool_info(
     resource_group_name: str,
     account_name: str,
     pool_name: str,
-    batch_mgmt_client: object,
-):
+    batch_mgmt_client: object
+) -> dict:
     """Get the basic information for a specified pool.
 
     Args:
@@ -1337,7 +1367,7 @@ def get_pool_full_info(
     account_name: str,
     pool_name: str,
     batch_mgmt_client: object,
-):
+) -> dict:
     """Get the full information of a specified pool.
 
     Args:

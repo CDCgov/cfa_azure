@@ -22,7 +22,7 @@ This template should be used as an outline. It may not be necessary to fill out 
 - [ ] All functions should follow R package conventions with blah, blah, blah
 - [ ] The workflow should run in the VAP from `directory`
 - [ ] All functions should have associated unit tests
-- [ ] etc. etc. 
+- [ ] etc. etc.
 
 ## Out of scope
 

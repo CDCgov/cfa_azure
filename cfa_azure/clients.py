@@ -1,7 +1,8 @@
 import datetime
+
 import yaml
-from azure.core.exceptions import HttpResponseError
 from azure.containerregistry import ContainerRegistryClient
+from azure.core.exceptions import HttpResponseError
 from azure.identity import DefaultAzureCredential
 
 from cfa_azure import batch, helpers
@@ -61,7 +62,6 @@ class AzureClient:
         # create batch service client
         self.batch_client = helpers.get_batch_service_client(self.config)
         print("Client initialized! Happy coding!")
-
 
     def set_debugging(self, debug: bool) -> None:
         """required method that determines whether debugging is on or off. Debug = True for 'on', debug = False for 'off'.
@@ -314,9 +314,7 @@ class AzureClient:
         self.files += _files
         return _files
 
-    def add_job(
-        self, job_id: str
-    ) -> None:
+    def add_job(self, job_id: str) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
         Args:
@@ -328,9 +326,9 @@ class AzureClient:
 
         # add the job to the pool
         helpers.add_job(
-            job_id = job_id_r, 
-            pool_id = self.pool_name, 
-            batch_client = self.batch_client
+            job_id=job_id_r,
+            pool_id=self.pool_name,
+            batch_client=self.batch_client,
         )
         self.jobs.add(job_id_r)
 
@@ -340,7 +338,7 @@ class AzureClient:
         docker_cmd: list[str],
         use_uploaded_files: bool = False,
         input_files: list[str] = [],
-        depends_on: list[str]=None,
+        depends_on: list[str] = None,
     ) -> list(str):
         """adds task to existing job.
         If files have been uploaded, the docker command will be applied to each file.
@@ -354,7 +352,7 @@ class AzureClient:
                 and create a task for each input file uploaded or specified in input_files. Default is False.
             input_files (list[str]): a list of file names. Each file will be assigned its own task and executed against the docker command provided. Default is [].
             depends_on (list[str]): a list of tasks this task depends on. Default is None.
-            
+
 
         Returns:
             list: list of task IDs created
@@ -365,10 +363,11 @@ class AzureClient:
             elif self.files:
                 in_files = self.files
             else:
-                print("use_uploaded_files set to True but no input files found.")
+                print(
+                    "use_uploaded_files set to True but no input files found."
+                )
         else:
-            in_files = None    
-            
+            in_files = None
 
         # run tasks for input files
         task_ids = helpers.add_task_to_job(
@@ -383,7 +382,7 @@ class AzureClient:
             full_container_name=self.full_container_name,
             task_id_max=self.task_id_max,
         )
-        self.task_id_max+=1
+        self.task_id_max += 1
         return task_ids
 
     def monitor_job(self, job_id: str) -> None:
@@ -440,8 +439,12 @@ class AzureClient:
         print(f"Job {job_id} deleted.")
 
     def package_and_upload_dockerfile(
-        self, registry_name: str, repo_name: str, tag: str, path_to_dockerfile: str = "./Dockerfile",
-        use_device_code: bool = False
+        self,
+        registry_name: str,
+        repo_name: str,
+        tag: str,
+        path_to_dockerfile: str = "./Dockerfile",
+        use_device_code: bool = False,
     ) -> str:
         """package a docker container based on Dockerfile in repo and upload to specified location in Azure Container Registry
 
@@ -461,14 +464,15 @@ class AzureClient:
         self.container_registry_server = f"{registry_name}.azurecr.io"
         self.registry_url = f"https://{self.container_registry_server}"
         self.container_image_name = f"https://{self.full_container_name}"
-        print(f"Successfully uploaded/pushed container [{self.full_container_name}]")
+        print(
+            f"Successfully uploaded/pushed container [{self.full_container_name}]"
+        )
 
         return self.full_container_name
 
-    def set_azure_container(self,
-                            registry_name:str,
-                            repo_name:str, 
-                            tag_name:str) -> str:
+    def set_azure_container(
+        self, registry_name: str, repo_name: str, tag_name: str
+    ) -> str:
         """specify the container in ACR to use without packaging and uploading the docker container from local.
 
         Args:
@@ -479,30 +483,36 @@ class AzureClient:
         Returns:
             str: full name of container
         """
-        #check full_container_name exists in ACR
+        # check full_container_name exists in ACR
         audience = "https://management.azure.com"
         endpoint = f"https://{registry_name}.azurecr.io"
         try:
-            #check full_container_name exists in ACR
-            cr_client = ContainerRegistryClient(endpoint, DefaultAzureCredential(), audience=audience)
+            # check full_container_name exists in ACR
+            cr_client = ContainerRegistryClient(
+                endpoint, DefaultAzureCredential(), audience=audience
+            )
         except Exception as e:
-            print(f"Registry [{registry_name}] or repo [{repo_name}] does not exist")
+            print(
+                f"Registry [{registry_name}] or repo [{repo_name}] does not exist"
+            )
             print(e)
             raise
         tag_list = []
         for tag in cr_client.list_tag_properties(repo_name):
-            tag_properties = cr_client.get_tag_properties(repo_name,tag.name)
+            tag_properties = cr_client.get_tag_properties(repo_name, tag.name)
             tag_list.append(tag_properties.name)
         print("Available tags in repo:", tag_list)
         if tag_name in tag_list:
             print(f"setting {registry_name}/{repo_name}:{tag_name}")
-            self.full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag_name}"
+            self.full_container_name = (
+                f"{registry_name}.azurecr.io/{repo_name}:{tag_name}"
+            )
             self.container_registry_server = f"{registry_name}.azurecr.io"
             self.registry_url = f"https://{self.container_registry_server}"
             self.container_image_name = f"https://{self.full_container_name}"
             return self.full_container_name
         else:
-            print(f"{registry_name}/{repo_name}:{tag_name} does not exist")        
+            print(f"{registry_name}/{repo_name}:{tag_name} does not exist")
 
     def download_file(
         self,
@@ -522,7 +532,7 @@ class AzureClient:
                 Name of the storage container containing the file to be downloaded
             do_check (bool):
                 Whether or not to do an existence check
-            container_client (ContainerClient, optional): 
+            container_client (ContainerClient, optional):
                 Instance of ContainerClient provided with the storage account. Defaults to None.
         """
         # use the output container client by default for downloading files
@@ -588,7 +598,7 @@ class AzureClient:
         return pool_info
 
     def get_pool_full_info(self) -> dict:
-        """Retrieve full information about pool used by client. 
+        """Retrieve full information about pool used by client.
 
         Returns:
         - dict: instance of batch_mgmt_client.pool.get()

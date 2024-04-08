@@ -379,7 +379,7 @@ class AzureClient:
             tag = repo_tag.split(":")[-1]
             container_name = helpers.check_azure_container_exists(registry, repo, tag)
             if container_name is None:
-                raise ValueError(f"{contaienr} does not exist.")
+                raise ValueError(f"{container} does not exist.")
         else:
             container_name = self.full_container_name
 

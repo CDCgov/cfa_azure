@@ -339,6 +339,7 @@ class AzureClient:
         use_uploaded_files: bool = False,
         input_files: list[str] = [],
         depends_on: list[str] = None,
+        container: str = None
     ) -> list(str):
         """adds task to existing job.
         If files have been uploaded, the docker command will be applied to each file.
@@ -352,6 +353,7 @@ class AzureClient:
                 and create a task for each input file uploaded or specified in input_files. Default is False.
             input_files (list[str]): a list of file names. Each file will be assigned its own task and executed against the docker command provided. Default is [].
             depends_on (list[str]): a list of tasks this task depends on. Default is None.
+            container (str): name of ACR container in form "registry_name/repo_name:tag_name". Default is None to use container attached to client.
 
 
         Returns:
@@ -369,6 +371,18 @@ class AzureClient:
         else:
             in_files = None
 
+        if container is not None:
+            #check container exists
+            registry = container.split("/")[0]
+            repo_tag = container.split("/")[-1]
+            repo  = repo_tag.split(":")[0]
+            tag = repo_tag.split(":")[-1]
+            container_name = helpers.check_azure_container_exists(registry, repo, tag)
+            if container_name is None:
+                raise ValueError(f"{contaienr} does not exist.")
+        else:
+            container_name = self.full_container_name
+
         # run tasks for input files
         task_ids = helpers.add_task_to_job(
             job_id=job_id,
@@ -379,7 +393,7 @@ class AzureClient:
             output_mount_dir=self.output_mount_dir,
             depends_on=depends_on,
             batch_client=self.batch_client,
-            full_container_name=self.full_container_name,
+            full_container_name=container_name,
             task_id_max=self.task_id_max,
         )
         self.task_id_max += 1
@@ -484,35 +498,15 @@ class AzureClient:
             str: full name of container
         """
         # check full_container_name exists in ACR
-        audience = "https://management.azure.com"
-        endpoint = f"https://{registry_name}.azurecr.io"
-        try:
-            # check full_container_name exists in ACR
-            cr_client = ContainerRegistryClient(
-                endpoint, DefaultAzureCredential(), audience=audience
-            )
-        except Exception as e:
-            print(
-                f"Registry [{registry_name}] or repo [{repo_name}] does not exist"
-            )
-            print(e)
-            raise
-        tag_list = []
-        for tag in cr_client.list_tag_properties(repo_name):
-            tag_properties = cr_client.get_tag_properties(repo_name, tag.name)
-            tag_list.append(tag_properties.name)
-        print("Available tags in repo:", tag_list)
-        if tag_name in tag_list:
-            print(f"setting {registry_name}/{repo_name}:{tag_name}")
-            self.full_container_name = (
-                f"{registry_name}.azurecr.io/{repo_name}:{tag_name}"
-            )
+        container_name = helpers.check_azure_container_exists(registry_name, repo_name, tag_name)
+        if container_name is not None:
             self.container_registry_server = f"{registry_name}.azurecr.io"
             self.registry_url = f"https://{self.container_registry_server}"
-            self.container_image_name = f"https://{self.full_container_name}"
+            self.container_image_name = f"https://{self.container_name}"
+            self.full_container_name = container_name
             return self.full_container_name
         else:
-            print(f"{registry_name}/{repo_name}:{tag_name} does not exist")
+            return None
 
     def download_file(
         self,

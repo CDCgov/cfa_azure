@@ -339,7 +339,7 @@ class AzureClient:
         use_uploaded_files: bool = False,
         input_files: list[str] = [],
         depends_on: list[str] = None,
-    ) -> list(str):
+    ) -> list[str]:
         """adds task to existing job.
         If files have been uploaded, the docker command will be applied to each file.
         If input files are specified, the docker command will be applied to only those files.

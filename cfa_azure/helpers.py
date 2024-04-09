@@ -1468,7 +1468,7 @@ def check_azure_container_exists(
             f"Registry [{registry_name}] or repo [{repo_name}] does not exist"
         )
         print(e)
-        raise
+        raise Exception
     tag_list = []
     for tag in cr_client.list_tag_properties(repo_name):
         tag_properties = cr_client.get_tag_properties(repo_name, tag.name)
@@ -1476,7 +1476,7 @@ def check_azure_container_exists(
     print("Available tags in repo:", tag_list)
     if tag_name in tag_list:
         print(f"setting {registry_name}/{repo_name}:{tag_name}")
-        self.full_container_name = (
+        full_container_name = (
             f"{registry_name}.azurecr.io/{repo_name}:{tag_name}"
         )
         return full_container_name

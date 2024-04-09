@@ -853,7 +853,7 @@ def yaml_to_df(yaml_file: dict):
     return df
 
 
-def edit_yaml_r0(file: str, r0_start=1, r0_end=4, step=0.1):
+def edit_yaml_r0(file_path: str, r0_start=1, r0_end=4, step=0.1):
     """takes in a yaml file and produces replicate yaml files with the r0 changed based on the start, stop, and step provided. Output yamls go to yaml/ folder.
 
     Args:
@@ -865,9 +865,8 @@ def edit_yaml_r0(file: str, r0_start=1, r0_end=4, step=0.1):
     print(
         f"Starting to edit YAML file '{file}' with r0 range from {r0_start} to {r0_end} by steps of {step}."
     )
-    _path = os.path.join("yaml", file)
 
-    with open(_path, "r") as file:
+    with open(file_path, "r") as file:
         y = yaml.safe_load(file)
 
     r0_list = np.arange(r0_start, r0_end + step, step, dtype=float).tolist()
@@ -876,7 +875,7 @@ def edit_yaml_r0(file: str, r0_start=1, r0_end=4, step=0.1):
         y["baseScenario"]["r0"] = r0
         y["outputDirectory"] = os.path.join(y["outputDirectory"], str(r0))
         outfile = (
-            f"{_path.replace('.yaml', '')}_{str(r0).replace('.', '-')}.yaml"
+            f"yaml/{file_path.replace('.yaml', '')}_{str(r0).replace('.', '-')}.yaml"
         )
         with open(outfile, "w") as f:
             yaml.dump(y, f, default_flow_style=False)

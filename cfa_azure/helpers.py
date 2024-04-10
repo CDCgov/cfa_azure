@@ -875,7 +875,7 @@ def edit_yaml_r0(file_path: str, r0_start=1, r0_end=4, step=0.1):
         y["baseScenario"]["r0"] = r0
         y["outputDirectory"] = os.path.join(y["outputDirectory"], str(r0))
         outfile = (
-            f"yaml/{file_path.replace('.yaml', '')}_{str(r0).replace('.', '-')}.yaml"
+            f"{file_path.replace('.yaml', '')}_{str(r0).replace('.', '-')}.yaml"
         )
         with open(outfile, "w") as f:
             yaml.dump(y, f, default_flow_style=False)

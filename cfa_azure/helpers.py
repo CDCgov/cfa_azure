@@ -15,12 +15,12 @@ import toml
 import yaml
 from azure.batch import BatchServiceClient
 from azure.common.credentials import ServicePrincipalCredentials
+from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
 from azure.identity import ClientSecretCredential, DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
 from azure.storage.blob import BlobServiceClient, ContainerClient
-from azure.containerregistry import ContainerRegistryClient
 from docker.errors import DockerException
 from yaml import SafeLoader, dump, load
 
@@ -604,7 +604,7 @@ def add_task_to_job(
     job_id: str,
     task_id_base: str,
     docker_command: str,
-    input_files: list[str] = [],
+    input_files: list[str] | None = None,
     input_mount_dir: str = None,
     output_mount_dir: str = None,
     depends_on: str | list[str] | None = None,
@@ -874,9 +874,7 @@ def edit_yaml_r0(file_path: str, r0_start=1, r0_end=4, step=0.1):
         r0 = round(r0, len(str(step).split(".")[1]))
         y["baseScenario"]["r0"] = r0
         y["outputDirectory"] = os.path.join(y["outputDirectory"], str(r0))
-        outfile = (
-            f"{file_path.replace('.yaml', '')}_{str(r0).replace('.', '-')}.yaml"
-        )
+        outfile = f"{file_path.replace('.yaml', '')}_{str(r0).replace('.', '-')}.yaml"
         with open(outfile, "w") as f:
             yaml.dump(y, f, default_flow_style=False)
         print(f"Generated modified YAML file with r0={r0} at '{outfile}'.")
@@ -1442,8 +1440,10 @@ def check_config_req(config: str):
         )
         return False
 
+
 def check_azure_container_exists(
-    registry_name: str, repo_name: str, tag_name: str) -> str:
+    registry_name: str, repo_name: str, tag_name: str
+) -> str:
     """specify the container in ACR to use without packaging and uploading the docker container from local.
 
     Args:

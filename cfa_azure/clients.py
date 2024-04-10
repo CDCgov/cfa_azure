@@ -1,9 +1,6 @@
 import datetime
 
-import yaml
-from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
-from azure.identity import DefaultAzureCredential
 
 from cfa_azure import batch, helpers
 
@@ -337,9 +334,9 @@ class AzureClient:
         job_id: str,
         docker_cmd: list[str],
         use_uploaded_files: bool = False,
-        input_files: list[str] = [],
-        depends_on: list[str] = None,
-        container: str = None
+        input_files: list[str] | None = None,
+        depends_on: list[str] | None = None,
+        container: str = None,
     ) -> list[str]:
         """adds task to existing job.
         If files have been uploaded, the docker command will be applied to each file.
@@ -372,12 +369,14 @@ class AzureClient:
             in_files = None
 
         if container is not None:
-            #check container exists
+            # check container exists
             registry = container.split("/")[0]
             repo_tag = container.split("/")[-1]
-            repo  = repo_tag.split(":")[0]
+            repo = repo_tag.split(":")[0]
             tag = repo_tag.split(":")[-1]
-            container_name = helpers.check_azure_container_exists(registry, repo, tag)
+            container_name = helpers.check_azure_container_exists(
+                registry, repo, tag
+            )
             if container_name is None:
                 raise ValueError(f"{container} does not exist.")
         else:
@@ -494,7 +493,9 @@ class AzureClient:
             str: full name of container
         """
         # check full_container_name exists in ACR
-        container_name = helpers.check_azure_container_exists(registry_name, repo_name, tag_name)
+        container_name = helpers.check_azure_container_exists(
+            registry_name, repo_name, tag_name
+        )
         if container_name is not None:
             self.container_registry_server = f"{registry_name}.azurecr.io"
             self.registry_url = f"https://{self.container_registry_server}"

@@ -2,7 +2,6 @@ import datetime
 import subprocess as sp
 
 import toml
-import yaml
 
 from cfa_azure import helpers
 
@@ -148,7 +147,7 @@ def run_job(
     docker_cmd: str,
     input_container_name: str,
     output_container_name: str,
-    input_files: list[str] = [],
+    input_files: list[str] | None = None,
     timeout: int = 90,
     config_path: str = "./configuration.toml",
     debug: bool = True,

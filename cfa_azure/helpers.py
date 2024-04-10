@@ -857,7 +857,7 @@ def edit_yaml_r0(file_path: str, r0_start=1, r0_end=4, step=0.1):
     """takes in a yaml file and produces replicate yaml files with the r0 changed based on the start, stop, and step provided. Output yamls go to yaml/ folder.
 
     Args:
-        file (str): name of file inside yaml/ folder
+        file_path (str): path to file
         r0_start (int, optional): The lower end of the r0 range. Defaults to 1.
         r0_end (int, optional): The upped end of the r0 range (inclusive). Defaults to 4.
         step (float, optional): The step size of each r0 increase. Defaults to 0.1.

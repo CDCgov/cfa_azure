@@ -499,7 +499,7 @@ class AzureClient:
         if container_name is not None:
             self.container_registry_server = f"{registry_name}.azurecr.io"
             self.registry_url = f"https://{self.container_registry_server}"
-            self.container_image_name = f"https://{self.container_name}"
+            self.container_image_name = f"https://{container_name}"
             self.full_container_name = container_name
             return self.full_container_name
         else:

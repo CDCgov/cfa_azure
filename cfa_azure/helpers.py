@@ -863,7 +863,7 @@ def edit_yaml_r0(file_path: str, r0_start=1, r0_end=4, step=0.1):
         step (float, optional): The step size of each r0 increase. Defaults to 0.1.
     """
     print(
-        f"Starting to edit YAML file '{file}' with r0 range from {r0_start} to {r0_end} by steps of {step}."
+        f"Starting to edit YAML file '{file_path}' with r0 range from {r0_start} to {r0_end} by steps of {step}."
     )
 
     with open(file_path, "r") as file:

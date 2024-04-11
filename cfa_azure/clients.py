@@ -81,7 +81,7 @@ class AzureClient:
         elif debug is False:
             self.debug = debug
 
-    def set_scaling(
+    def set_pool_info(
         self,
         mode: str,
         autoscale_formula_path: str = None,
@@ -92,6 +92,7 @@ class AzureClient:
         """Sets the scaling mode of the client, either "fixed" or "autoscale".
         If "fixed" is selected, debug must be turned off.
         If "autoscale" is selected, an autoscale formula path must be provided.
+        Other options include timeout, number of dedicated nodes and number of low-priority nodes.
 
         Args:
             mode (str): scaling mode for Batch. Either "fixed" or "autoscale".

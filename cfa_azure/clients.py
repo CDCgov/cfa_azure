@@ -84,6 +84,7 @@ class AzureClient:
     def set_pool_info(
         self,
         mode: str,
+        max_autoscale_nodes: int = 3,
         autoscale_formula_path: str = None,
         timeout=60,
         dedicated_nodes=1,
@@ -96,6 +97,7 @@ class AzureClient:
 
         Args:
             mode (str): scaling mode for Batch. Either "fixed" or "autoscale".
+            max_autoscale_nodes (int, optional): maximum number of nodes to scale up to for autoscaling pools. Used for default autoscale formula creation when no autoscale formula path provided. 
             autoscale_formula_path (str, optional): path to autoscale formula file if mode is autoscale. Defaults to None.
             timeout (int, optional): length of time for tasks to run in pool. Defaults to 60.
             dedicated_nodes (int, optional): number of dedicated nodes for the pool. Defaults to 1.
@@ -110,9 +112,7 @@ class AzureClient:
             )
             return None
         if mode == "autoscale" and autoscale_formula_path is None:
-            print(
-                "Please enter the autoscale formula path when setting the autoscale scaling mode."
-            )
+            use_default_autoscale_formula = True
             self.debug = False
 
         if self.input_container_name:
@@ -154,6 +154,8 @@ class AzureClient:
                 timeout,
                 dedicated_nodes,
                 low_priority_nodes,
+                use_default_autoscale_formula,
+                max_autoscale_nodes
             )
         else:
             print("Please enter 'fixed' or 'autoscale' as the mode.")
@@ -232,11 +234,12 @@ class AzureClient:
             self.output_mount_dir = output_mount_dir
             self.out_cont_client = container_client
 
-    def create_pool(self, pool_name: str) -> dict:
+    def create_pool(self, pool_name: str, max_nodes: int = 3) -> dict:
         """Creates the pool for Azure Batch jobs
 
         Args:
             pool_name (str): name of pool to create
+            max_nodes (int): maximum number of nodes in autoscaling formula if autoscale formula not provided.
 
         Raises:
             error: error raised if pool already exists by this name.
@@ -247,6 +250,13 @@ class AzureClient:
         start_time = datetime.datetime.now()
         self.pool_name = pool_name
 
+        if self.scaling is None:
+            #set scaling
+            self.scaling = "autoscale"
+            #set autoscale formula from default
+            
+            #get pool parameters
+        
         try:
             self.batch_mgmt_client.pool.create(
                 resource_group_name=self.resource_group_name,

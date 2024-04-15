@@ -90,20 +90,12 @@ def get_autoscale_formula(filepath: str = None, text_input: str = None):
     """
     # print("Retrieving autoscale formula...")
     if filepath is None and text_input is None:
+        #get default autoscale formula:
+        autoscale_text = generate_autoscale_formula()
         print(
-            "No filepath or text input provided. Attempting to find autoscale_formula.txt..."
+            "Default autoscale formula used. Please provide a path to autoscale formula to sepcify your own formula."
         )
-        for l1, _, files in os.walk(os.path.join(sys.path[0], "")):
-            if "autoscale_formula.txt" in files:
-                autoscale_file = os.path.join(l1, "autoscale_formula.txt")
-                print(
-                    f"Autoscale formula found and read from {autoscale_file}."
-                )
-                with open(autoscale_file, "r") as autoscale_text:
-                    return autoscale_text.read()
-        print(
-            "Autoscale formula file not found. Please provide a filepath or text input."
-        )
+        return autoscale_test
     elif filepath is not None:
         try:
             with open(filepath, "r") as autoscale_text:
@@ -1023,6 +1015,8 @@ def get_pool_parameters(
     timeout: int = 60,
     dedicated_nodes: int = 1,
     low_priority_nodes: int = 0,
+    use_default_autoscale_formula: bool = False,
+    max_autoscale_nodes: int = 3
 ):
     """creates a pool parameter dictionary to be used with pool creation.
 
@@ -1037,6 +1031,7 @@ def get_pool_parameters(
         timeout (int, optional): length in minutes of timeout for tasks that run in this pool. Defaults to 60.
         dedicated_nodes (int, optional): number of dedicated nodes. Defaults to 1.
         low_priority_nodes (int, optional): number of low priority nodes. Defaults to 0.
+        use_default_autoscale_formula (bool, optional)
 
     Returns:
         dict: dict of pool parameters for pool creation
@@ -1052,12 +1047,21 @@ def get_pool_parameters(
                 "resizeTimeout": f"PT{timeout}M",
             }
         }
-    elif mode == "autoscale":
+    elif mode == "autoscale" and use_default_autoscale_formula is False:
         scale_settings = {
             "autoScale": {
                 "evaluationInterval": "PT5M",
                 "formula": get_autoscale_formula(
                     filepath=autoscale_formula_path
+                ),
+            }
+        }
+    elif mode == "autoscale" and use_default_autoscale_formula is True:
+        scale_settings = {
+            "autoScale": {
+                "evaluationInterval": "PT5M",
+                "formula": generate_autoscale_formula(
+                    max_nodes= max_autoscale_nodes
                 ),
             }
         }
@@ -1482,3 +1486,30 @@ def check_azure_container_exists(
     else:
         print(f"{registry_name}/{repo_name}:{tag_name} does not exist")
         return None
+
+def generate_autoscale_formula(max_nodes: int = 8) -> str:
+    """
+    Generate a generic autoscale formula for use based on maximum number of nodes to scale up to.
+
+    Args:
+        max_nodes (int): maximum number of nodes to cap the pool at
+
+    Returns:
+        str: the text of an autoscale formula
+
+    """
+    formula  = f"""
+    // Get pending tasks for the past 10 minutes.
+    $samples = $ActiveTasks.GetSamplePercent(TimeInterval_Minute * 10);
+    // If we have fewer than 70 percent data points, we use the last sample point, otherwise we use the maximum of last sample point and the history average.
+    $tasks = $samples < 70 ? max(0, $ActiveTasks.GetSample(1)) :
+    max( $ActiveTasks.GetSample(1), avg($ActiveTasks.GetSample(TimeInterval_Minute * 10)));
+    // If number of pending tasks is not 0, set targetVM to pending tasks, otherwise half of current dedicated.
+    $targetVMs = $tasks > 0 ? $tasks : max(0, $TargetDedicatedNodes / 2);
+    // The pool size is capped to max_nodes input
+    cappedPoolSize = {max_nodes};
+    $TargetDedicatedNodes = max(0, min($targetVMs, cappedPoolSize));
+    // Set node deallocation mode - keep nodes active only until tasks finish
+    $NodeDeallocationOption = taskcompletion;
+    """
+    return formula

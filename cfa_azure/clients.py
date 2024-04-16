@@ -571,9 +571,20 @@ class AzureClient:
             self.batch_mgmt_client,
         ):
             self.pool_name = pool_name
+            # Prompt for timeout or use a default 
+            self.set_timeout_for_existing_pool()
+            print(f"Using existing pool {pool_name} with configured timeout of {self.timeout} minutes.")
         else:
             print(f"Pool {pool_name} does not exist.")
             print("Choose an existing pool or create a new pool.")
+
+    def set_timeout_for_existing_pool(self):
+        """Allows user to specify a timeout when using an existing pool or uses a default value."""
+        try:
+            self.timeout = int(input("Enter the timeout (in minutes as an integer) for monitoring tasks or press enter to use default (60 mins): ") or 60)
+        except ValueError:
+            self.timeout = 60
+        print(f"Timeout set to {self.timeout} minutes for task monitoring.")
 
     def get_pool_info(self) -> dict:
         """Retrieve information about pool used by client.

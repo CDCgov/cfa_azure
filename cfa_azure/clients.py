@@ -114,6 +114,8 @@ class AzureClient:
         if mode == "autoscale" and autoscale_formula_path is None:
             use_default_autoscale_formula = True
             self.debug = False
+        else:
+            use_default_autoscale_formula = False
 
         if self.input_container_name:
             in_blob = helpers.get_blob_config(

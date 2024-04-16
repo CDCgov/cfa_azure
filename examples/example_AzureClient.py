@@ -17,7 +17,7 @@ client.create_input_container("example-input", "input")
 client.create_output_container("example-output", "output")
 
 # set the scaling of the pool:autoscale
-client.set_scaling(
+client.set_pool_info(
     mode="autoscale", autoscale_formula_path="./autoscale_formula.txt"
 )
 # if fixed mode is desired, do the following:

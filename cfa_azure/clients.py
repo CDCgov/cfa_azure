@@ -616,10 +616,10 @@ class AzureClient:
         )
         return pool_info
 
-    def delete_pool(pool_name: str) -> None:
+    def delete_pool(self, pool_name: str) -> None:
         """Delete the specified pool from Azure Batch.
 
         Args:
-        - pool_name (str): name of Batch Pool to delete
+            pool_name (str): name of Batch Pool to delete
         """
-        helpers.delete_pool(pool_name)
+        helpers.delete_pool(pool_name, self.batch_mgmt_client)

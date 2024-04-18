@@ -453,14 +453,23 @@ def create_batch_pool(batch_mgmt_client: object, batch_json: dict):
     return pool_id
 
 
-def delete_pool(pool_name: str, batch_mgmt_client: object) -> None:
+def delete_pool(resource_group_name: str,
+                account_name: str,
+                pool_name: str, 
+                batch_mgmt_client: object) -> None:
     """deletes the specified pool from Azure Batch.
 
     Args:
+        resource_group_name (str): resource group name
+        account_name (str): account name
         pool_name (str): name of pool to delete
         batch_mgmt_client (object): instance of BatchManagementClient
     """
-    batch_mgmt_client.pool.delete(pool_id=pool_name)
+    print(f"Attempting to delete {pool_name}...")
+    batch_mgmt_client.pool.begin_delete(
+        resource_group_name=resource_group_name,
+        account_name=account_name,
+        pool_name=pool_name)
     print(f"Pool {pool_name} deleted.")
 
 

@@ -622,4 +622,8 @@ class AzureClient:
         Args:
             pool_name (str): name of Batch Pool to delete
         """
-        helpers.delete_pool(pool_name, self.batch_mgmt_client)
+        helpers.delete_pool(
+            resource_group_name=self.resource_group_name,
+            account_name=self.account_name,
+            pool_name=pool_name, 
+            batch_mgmt_client = self.batch_mgmt_client)

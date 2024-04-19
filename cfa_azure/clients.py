@@ -172,7 +172,7 @@ class AzureClient:
             input_mount_dir (str, optional): the path of the input mount directory. Defaults to "input".
         """
         self.input_container_name = name
-        self.input_mount_dir = input_mount_dir
+        self.input_mount_dir = helpers.format_rel_path(input_mount_dir)
         # create container and save the container client
         self.in_cont_client = helpers.create_container(
             self.input_container_name, self.blob_service_client
@@ -188,7 +188,7 @@ class AzureClient:
             output_mount_dir (str, optional): the path of the output mount directory. Defaults to "output".
         """
         self.output_container_name = name
-        self.output_mount_dir = output_mount_dir
+        self.output_mount_dir = helpers.format_rel_path(output_mount_dir)
         # create_container and save the container client
         self.out_cont_client = helpers.create_container(
             self.output_container_name, self.blob_service_client
@@ -206,6 +206,7 @@ class AzureClient:
         container_client = self.blob_service_client.get_container_client(
             container=name
         )
+        input_mount_dir = helpers.format_rel_path(input_mount_dir)
         if not container_client.exists():
             print(
                 f"Container [{name}] does not exist. Please create it if desired."
@@ -224,6 +225,7 @@ class AzureClient:
             name (str): name of output container
             output_mount_dir (str, optional): output mount directory. Defaults to "output".
         """
+        output_mount_dir = helpers.format_rel_path(output_mount_dir)
         container_client = self.blob_service_client.get_container_client(
             container=name
         )

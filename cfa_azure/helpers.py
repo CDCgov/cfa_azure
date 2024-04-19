@@ -1522,3 +1522,8 @@ def generate_autoscale_formula(max_nodes: int = 8) -> str:
     $NodeDeallocationOption = taskcompletion;
     """
     return formula
+
+def format_rel_path(rel_path: str) -> str:
+    if rel_path.startswith("/"):
+        rel_path = rel_path[1:]
+    return rel_path

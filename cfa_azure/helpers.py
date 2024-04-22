@@ -630,7 +630,6 @@ def add_task_to_job(
     Returns:
         list: list of task IDs created
     """
-    print(f"Adding tasks to job '{job_id}'...")
     # convert docker command to string if in list format
     if isinstance(docker_command, list):
         d_cmd_str = " ".join(docker_command)
@@ -706,7 +705,7 @@ def add_task_to_job(
         )
         batch_client.task.add(job_id=job_id, task=task)
         print(
-            f"Generic task '{task_id}' added to job '{job_id}' without specific input files."
+            f"Task '{task_id}' added to job '{job_id}'."
         )
         t = []
         t.append(task_id)

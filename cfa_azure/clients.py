@@ -584,7 +584,7 @@ class AzureClient:
             self.batch_mgmt_client,
         ):
             self.pool_name = pool_name
-            _info=get_pool_info(
+            _info=helpers.get_pool_info(
                 self.resource_group_name,
                 self.account_name,
                 pool_name,

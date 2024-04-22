@@ -706,7 +706,7 @@ def add_task_to_job(
         )
         batch_client.task.add(job_id=job_id, task=task)
         print(
-            f"Generic task '{task_id}' added to job '{job_id}' without specific input files."
+            f"Task '{task_id}' added to job '{job_id}'.."
         )
         t = []
         t.append(task_id)

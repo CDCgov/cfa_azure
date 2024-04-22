@@ -258,9 +258,8 @@ class AzureClient:
             #set scaling
             self.scaling = "autoscale"
             #set autoscale formula from default
-            
-            #get pool parameters
-        
+        print(f"Attempting to create a pool with {(self.config)['Batch']['pool_vm_size']} VMs.")
+        print("Verify the size of the VM is appropriate for the use case.")
         try:
             self.batch_mgmt_client.pool.create(
                 resource_group_name=self.resource_group_name,
@@ -585,6 +584,14 @@ class AzureClient:
             self.batch_mgmt_client,
         ):
             self.pool_name = pool_name
+            _info=get_pool_info(
+                self.resource_group_name,
+                self.account_name,
+                pool_name,
+                self.batch_mgmt_client
+                )
+            print(f"Pool {pool_name} uses {json.loads(_info)['vm_size']} VMs.")
+            print("Make sure the VM size matches the use case.\n")
         else:
             print(f"Pool {pool_name} does not exist.")
             print("Choose an existing pool or create a new pool.")

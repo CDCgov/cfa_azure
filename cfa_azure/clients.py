@@ -590,7 +590,8 @@ class AzureClient:
                 pool_name,
                 self.batch_mgmt_client
                 )
-            print(f"Pool {pool_name} uses {json.loads(_info)['vm_size']} VMs.")
+            vm_size = str(json.loads(_info)['vm_size'])
+            print(f"Pool {pool_name} uses {vm_size} VMs.")
             print("Make sure the VM size matches the use case.\n")
         else:
             print(f"Pool {pool_name} does not exist.")

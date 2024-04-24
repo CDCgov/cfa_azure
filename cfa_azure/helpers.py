@@ -972,6 +972,7 @@ def get_blob_config(container_name: str, rel_mount_path: str, cache_blobfuse: bo
     Args:
         container_name (str): name of Blob Storage Container
         rel_mount_path (str): relative mount path
+        cache_blobfuse (bool): True to use blobfuse caching, False to download data from blobfuse every time
         config (dict): config dict
 
     Returns:

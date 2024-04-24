@@ -103,6 +103,7 @@ class AzureClient:
             timeout (int, optional): length of time for tasks to run in pool. Defaults to 60.
             dedicated_nodes (int, optional): number of dedicated nodes for the pool. Defaults to 1.
             low_priority_nodes (int, optional): number of low priority nodes for the pool. Defaults to 0.
+            cache_blobfuse (bool): True to use blobfuse caching, False to download data from blobfuse every time. Defaults to True.
         """
         # check if debug and scaling mode match, otherwise alert the user
         if self.debug is True and mode == "autoscale":

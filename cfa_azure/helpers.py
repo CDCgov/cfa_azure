@@ -1002,7 +1002,7 @@ def get_blob_config(container_name: str, rel_mount_path: str, cache_blobfuse: bo
     return blob_config
 
 
-def get_mount_config(*blob_configs):
+def get_mount_config(blob_config: list[str]):
     """takes blob configurations as input and combines them to create a mount configuration.
 
     Args:
@@ -1011,12 +1011,10 @@ def get_mount_config(*blob_configs):
     Returns:
         list: mount configuration to used with get_pool_parameters.
     """
-    mount_config = []
+    _mount_config = []
     for blob in blob_configs:
-        if blob != {}:
-            mount_config.append(blob)
-    return mount_config
-
+            _mount_config.append(blob)
+    return _mount_config
 
 def get_pool_parameters(
     mode: str,

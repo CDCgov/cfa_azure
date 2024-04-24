@@ -16,6 +16,9 @@ client.package_and_upload_dockerfile(
 client.create_input_container("example-input", "input")
 client.create_output_container("example-output", "output")
 
+client.create_blob_container("containername", "/path")
+client.set_blob_container("containername", "/path")
+
 # set the scaling of the pool:autoscale
 client.set_pool_info(
     mode="autoscale", autoscale_formula_path="./autoscale_formula.txt"

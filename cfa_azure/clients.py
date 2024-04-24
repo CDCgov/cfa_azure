@@ -25,6 +25,8 @@ class AzureClient:
         self.full_container_name = None
         self.input_mount_dir = None
         self.output_mount_dir = None
+        self.mounts = []
+        self.mount_container_clients = []
 
         # load config
         self.config = helpers.read_config(config_path)
@@ -119,33 +121,17 @@ class AzureClient:
         else:
             use_default_autoscale_formula = False
 
-        if self.input_container_name:
-            in_blob = helpers.get_blob_config(
-                self.input_container_name,
-                self.input_mount_dir,
-                cache_blobfuse,
-                self.config
-            )
-        else:
-            print("*" * 30)
-            print("No input container specified for the client.")
-            print("*" * 30)
-            in_blob = {}
+        blob_config =[]
+        if self.mounts:
+            for mount in mounts:
+                blob_config.append(helpers.get_blob_config(
+                    mount[0],
+                    mount[1],
+                    cache_blobfuse,
+                    self.config
+                ))
 
-        if self.output_container_name:
-            out_blob = helpers.get_blob_config(
-                self.output_container_name, 
-                self.output_mount_dir, 
-                cache_blobfuse,
-                self.config
-            )
-        else:
-            print("*" * 30)
-            print("No output container specified for the client.")
-            print("*" * 30)
-            out_blob = {}
-
-        self.mount_config = helpers.get_mount_config(in_blob, out_blob)
+        self.mount_config = helpers.get_mount_config(blob_config)
         if mode == "fixed" or mode == "autoscale":
             self.scaling = mode
             self.autoscale_formula_path = autoscale_formula_path
@@ -181,6 +167,8 @@ class AzureClient:
         """
         self.input_container_name = name
         self.input_mount_dir = helpers.format_rel_path(input_mount_dir)
+        #add to self.mounts
+        self.mounts.append((name, self.input_mount_dir))
         # create container and save the container client
         self.in_cont_client = helpers.create_container(
             self.input_container_name, self.blob_service_client
@@ -197,10 +185,30 @@ class AzureClient:
         """
         self.output_container_name = name
         self.output_mount_dir = helpers.format_rel_path(output_mount_dir)
+        #add to self.mounts
+        self.mounts.append((name, self.output_mount_dir))
         # create_container and save the container client
         self.out_cont_client = helpers.create_container(
             self.output_container_name, self.blob_service_client
         )
+
+    def create_blob_container(
+        self, name: str, rel_mount_dir: str
+    ) -> None:
+        """Creates an output container in Blob Storage.
+
+        Args:
+            name (str): desired name of output container.
+            output_mount_dir (str, optional): the path of the output mount directory. Defaults to "output".
+        """
+        rel_mount_dir = helpers.format_rel_path(rel_mount_dir)
+        #add to self.mounts
+        self.mounts.append((name, rel_mount_dir))
+        # create_container and save the container client
+        mount_container_client = helpers.create_container(
+            name, self.blob_service_client
+        )
+        self.mount_container_clients.append((name, mount_container_client))
 
     def set_input_container(
         self, name: str, input_mount_dir: str = "input"
@@ -223,6 +231,7 @@ class AzureClient:
             self.input_container_name = name
             self.input_mount_dir = input_mount_dir
             self.in_cont_client = container_client
+            self.mounts.append((name, input_mount_dir))
 
     def set_output_container(
         self, name: str, output_mount_dir: str = "output"
@@ -245,6 +254,28 @@ class AzureClient:
             self.output_container_name = name
             self.output_mount_dir = output_mount_dir
             self.out_cont_client = container_client
+            self.mounts.append((name, output_mount_dir))
+
+    def set_blob_container(
+        self, name: str, rel_mount_dir: str
+    ) -> None:
+        """Sets the output container to be used with the client.
+
+        Args:
+            name (str): name of output container
+            rel_mount_dir (str, optional): relative mount directory. 
+        """
+        rel_mount_dir = helpers.format_rel_path(relt_mount_dir)
+        container_client = self.blob_service_client.get_container_client(
+            container=name
+        )
+        if not container_client.exists():
+            print(
+                f"Container [{name}] does not exist. Please create it if desired."
+            )
+        else:
+            self.mounts.append((name, rel_mount_dir))
+            
 
     def create_pool(self, pool_name: str, max_nodes: int = 3) -> dict:
         """Creates the pool for Azure Batch jobs

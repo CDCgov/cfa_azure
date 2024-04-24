@@ -89,6 +89,7 @@ class AzureClient:
         timeout=60,
         dedicated_nodes=1,
         low_priority_nodes=0,
+        cache_blobfuse: bool = True
     ) -> None:
         """Sets the scaling mode of the client, either "fixed" or "autoscale".
         If "fixed" is selected, debug must be turned off.
@@ -102,6 +103,7 @@ class AzureClient:
             timeout (int, optional): length of time for tasks to run in pool. Defaults to 60.
             dedicated_nodes (int, optional): number of dedicated nodes for the pool. Defaults to 1.
             low_priority_nodes (int, optional): number of low priority nodes for the pool. Defaults to 0.
+            cache_blobfuse (bool): True to use blobfuse caching, False to download data from blobfuse every time. Defaults to True.
         """
         # check if debug and scaling mode match, otherwise alert the user
         if self.debug is True and mode == "autoscale":
@@ -119,7 +121,10 @@ class AzureClient:
 
         if self.input_container_name:
             in_blob = helpers.get_blob_config(
-                self.input_container_name, self.input_mount_dir, self.config
+                self.input_container_name,
+                self.input_mount_dir,
+                cache_blobfuse,
+                self.config
             )
         else:
             print("*" * 30)
@@ -129,7 +134,10 @@ class AzureClient:
 
         if self.output_container_name:
             out_blob = helpers.get_blob_config(
-                self.output_container_name, self.output_mount_dir, self.config
+                self.output_container_name, 
+                self.output_mount_dir, 
+                cache_blobfuse,
+                self.config
             )
         else:
             print("*" * 30)

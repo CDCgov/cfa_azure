@@ -966,12 +966,13 @@ def get_deployment_config(
     return deployment_config
 
 
-def get_blob_config(container_name: str, rel_mount_path: str, config: dict):
+def get_blob_config(container_name: str, rel_mount_path: str, cache_blobfuse: bool, config: dict):
     """gets the blob storage configuration based on the config information
 
     Args:
         container_name (str): name of Blob Storage Container
         rel_mount_path (str): relative mount path
+        cache_blobfuse (bool): True to use blobfuse caching, False to download data from blobfuse every time
         config (dict): config dict
 
     Returns:
@@ -980,6 +981,11 @@ def get_blob_config(container_name: str, rel_mount_path: str, config: dict):
     print(
         f"Generating blob configuration for container '{container_name}' with mount path '{rel_mount_path}'..."
     )
+    if cache_blobfuse:
+        blob_str = ""
+    else:
+        blob_str = "-o direct_io"
+    
     blob_config = {
         "azureBlobFileSystemConfiguration": {
             "accountName": config["Storage"]["storage_account_name"],
@@ -989,7 +995,7 @@ def get_blob_config(container_name: str, rel_mount_path: str, config: dict):
                 ]
             },
             "containerName": container_name,
-            "blobfuseOptions": "",
+            "blobfuseOptions": blob_str,
             "relativeMountPath": rel_mount_path,
         }
     }

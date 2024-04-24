@@ -265,7 +265,7 @@ class AzureClient:
             name (str): name of output container
             rel_mount_dir (str, optional): relative mount directory. 
         """
-        rel_mount_dir = helpers.format_rel_path(relt_mount_dir)
+        rel_mount_dir = helpers.format_rel_path(rel_mount_dir)
         container_client = self.blob_service_client.get_container_client(
             container=name
         )

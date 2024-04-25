@@ -606,11 +606,10 @@ def add_task_to_job(
     task_id_base: str,
     docker_command: str,
     input_files: list[str] | None = None,
-    input_mount_dir: str = None,
-    output_mount_dir: str = None,
+    mounts: list | None = None,
     depends_on: str | list[str] | None = None,
-    batch_client: object = None,
-    full_container_name: str = None,
+    batch_client: object  | None = None,
+    full_container_name: str | None = None,
     task_id_max: int = 0,
 ):
     """add a defined task(s) to a job in the pool
@@ -620,8 +619,7 @@ def add_task_to_job(
         task_id_base (str): the name given to the task_id as a base
         docker_command (str): the docker command to execute for the task
         input_files (list[str]): a  list of input files
-        input_mount_dir (str): name input mount directory
-        output_mount_dir (str): name of output mount directory
+        mounts (list[tuple]): a list of tuples in the form (container_name, relative_mount_directory)
         depends_on (str | list[str]): list of tasks this task depends on
         batch_client (object): batch client object
         full_container_name (str): name ACR container to run task on
@@ -654,18 +652,11 @@ def add_task_to_job(
     mount_str = ""
     # src = env variable to fsmounts/rel_path
     # target = the directory(path) you reference in your code
-    if input_mount_dir:
-        mount_str += (
-            "--mount type=bind,source="
-            + az_mount_dir
-            + f"/{input_mount_dir},target=/{input_mount_dir} "
-        )
-    if output_mount_dir:
-        mount_str += (
-            "--mount type=bind,source="
-            + az_mount_dir
-            + f"/{output_mount_dir},target=/{output_mount_dir} "
-        )
+    if mounts is not None:
+        mount_str = ""
+        for mount in mounts:
+            mount_str = mount_str +  "--mount type=bind,source=" + az_mount_dir + f"/{mount[1]},target=/{mount[1]} "
+
 
     if input_files:
         tasks = []
@@ -1002,7 +993,7 @@ def get_blob_config(container_name: str, rel_mount_path: str, cache_blobfuse: bo
     return blob_config
 
 
-def get_mount_config(*blob_configs):
+def get_mount_config(blob_config: list[str]):
     """takes blob configurations as input and combines them to create a mount configuration.
 
     Args:
@@ -1011,12 +1002,10 @@ def get_mount_config(*blob_configs):
     Returns:
         list: mount configuration to used with get_pool_parameters.
     """
-    mount_config = []
-    for blob in blob_configs:
-        if blob != {}:
-            mount_config.append(blob)
-    return mount_config
-
+    _mount_config = []
+    for blob in blob_config:
+            _mount_config.append(blob)
+    return _mount_config
 
 def get_pool_parameters(
     mode: str,

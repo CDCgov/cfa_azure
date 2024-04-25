@@ -1012,7 +1012,7 @@ def get_mount_config(blob_config: list[str]):
         list: mount configuration to used with get_pool_parameters.
     """
     _mount_config = []
-    for blob in blob_configs:
+    for blob in blob_config:
             _mount_config.append(blob)
     return _mount_config
 

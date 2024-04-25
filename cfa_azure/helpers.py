@@ -655,7 +655,7 @@ def add_task_to_job(
     if mounts is not None:
         mount_str = ""
         for mount in mounts:
-            mount_str = mnt_str +  "--mount type=bind,source=" + az_mount_dir + f"/{mount[1]},target=/{mount[1]} "
+            mount_str = mount_str +  "--mount type=bind,source=" + az_mount_dir + f"/{mount[1]},target=/{mount[1]} "
 
 
     if input_files:

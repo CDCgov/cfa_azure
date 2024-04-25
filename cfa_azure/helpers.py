@@ -605,10 +605,11 @@ def add_task_to_job(
     job_id: str,
     task_id_base: str,
     docker_command: str,
-    mounts: list = None,
+    input_files: list[str] | None = None,
+    mounts: list | None = None,
     depends_on: str | list[str] | None = None,
-    batch_client: object = None,
-    full_container_name: str = None,
+    batch_client: object  | None = None,
+    full_container_name: str | None = None,
     task_id_max: int = 0,
 ):
     """add a defined task(s) to a job in the pool

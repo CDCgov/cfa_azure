@@ -741,11 +741,6 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
 
     #pool setup and status
 
-    
-    #initialize the counts
-    failures = 0
-    successes = 0
-
     completed = False
     while datetime.datetime.now() < timeout_expiration:
         time.sleep(5)  # Polling interval
@@ -762,6 +757,10 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
             if task.state == batchmodels.TaskState.completed
         ]
         completions = len(completed_tasks)
+
+        #initialize the counts
+        failures = 0
+        successes = 0
 
         for task in completed_tasks:
             if task.as_dict()["execution_info"]["result"] == "failure":

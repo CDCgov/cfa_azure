@@ -717,6 +717,7 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     Returns:
         dict: dictionary with keys completed (whether the job completed) and runtime (total elapsed time)
     """
+    #start monitoring
     print(
         f"Starting to monitor tasks for job '{job_id}' with a timeout of {timeout} minutes."
     )
@@ -734,8 +735,11 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     # print remaining number of tasks
     tasks = list(batch_client.task.list(job_id))
 
+    #get total tasks
     total_tasks = len([task for task in tasks])
     print(f"Total tasks to monitor: {total_tasks}")
+
+    #pool setup and status
 
     completed = False
     while datetime.datetime.now() < timeout_expiration:
@@ -746,16 +750,25 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
             for task in tasks
             if task.state != batchmodels.TaskState.completed
         ]
+        incompletions = len(incomplete_tasks)
         completed_tasks = [
             task
             for task in tasks
             if task.state == batchmodels.TaskState.completed
         ]
+        completions = len(completed_tasks)
 
-        print(
-            f"{len(completed_tasks)} out of {total_tasks} tasks completed.",
-            end="\r",
-        )
+        #initialize the counts
+        failures = 0
+        successes = 0
+
+        for task in completed_tasks:
+            if task.as_dict()["execution_info"]["result"] == "failure":
+                failures += 1
+            elif task.as_dict()["execution_info"]["result"] == "success":
+                successes += 1
+
+        print(completions, "completed;", incompletions, "remaining;", successes, "successes;", failures, "failures", end = "\r")
 
         if not incomplete_tasks:
             print("\nAll tasks completed.")
@@ -766,6 +779,7 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
         print(
             "All tasks have reached 'Completed' state within the timeout period."
         )
+        print(successes, "task(s) succeeded,", failures, "failed.")
     else:
         raise RuntimeError(
             f"ERROR: Tasks did not reach 'Completed' state within timeout period of {timeout} minutes."
@@ -775,6 +789,7 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     runtime = end_time - start_time
     print(f"Monitoring ended: {end_time}. Total elapsed time: {runtime}.")
     return {"completed": completed, "elapsed time": runtime}
+
 
 
 def list_files_in_container(

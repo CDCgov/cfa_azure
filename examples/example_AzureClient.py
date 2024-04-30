@@ -16,6 +16,7 @@ client.package_and_upload_dockerfile(
 client.create_input_container("example-input", "input")
 client.create_output_container("example-output", "output")
 
+#or create/set additional blob containers
 client.create_blob_container("containername", "/path")
 client.set_blob_container("containername", "/path")
 

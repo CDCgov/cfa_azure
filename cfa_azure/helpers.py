@@ -740,6 +740,8 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     print(f"Total tasks to monitor: {total_tasks}")
 
     #pool setup and status
+
+    
     #initialize the counts
     failures = 0
     successes = 0
@@ -767,10 +769,7 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
             elif task.as_dict()["execution_info"]["result"] == "success":
                 successes += 1
 
-        print("completed:", completions)
-        print("remaining:", incompletions)
-        print("successes:", successes)
-        print("failures:", failures)
+        print(completions, "completed;", incompletions, "remaining;", successes, "successes;", failures, "failures", end = "\r")
 
         if not incomplete_tasks:
             print("\nAll tasks completed.")
@@ -781,6 +780,7 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
         print(
             "All tasks have reached 'Completed' state within the timeout period."
         )
+        print(successes, "task(s) succeeded,", failures, "failed.")
     else:
         raise RuntimeError(
             f"ERROR: Tasks did not reach 'Completed' state within timeout period of {timeout} minutes."

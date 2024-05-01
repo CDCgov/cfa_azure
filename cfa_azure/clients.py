@@ -291,8 +291,7 @@ class AzureClient:
             dict: dictionary with pool name and creation time.
         """
         if self.pool_parameters is None:
-            print("No pool information given. Please use `set_pool_info()` before running `create_pool()`.")
-            return None 
+            raise Exception("No pool information given. Please use `set_pool_info()` before running `create_pool()`.")
         
         start_time = datetime.datetime.now()
         self.pool_name = pool_name

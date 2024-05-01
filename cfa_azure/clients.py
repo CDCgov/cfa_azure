@@ -27,6 +27,7 @@ class AzureClient:
         self.output_mount_dir = None
         self.mounts = []
         self.mount_container_clients = []
+        self.pool_parameters = None
 
         # load config
         self.config = helpers.read_config(config_path)
@@ -277,12 +278,11 @@ class AzureClient:
             self.mounts.append((name, rel_mount_dir))
             
 
-    def create_pool(self, pool_name: str, max_nodes: int = 3) -> dict:
+    def create_pool(self, pool_name: str) -> dict:
         """Creates the pool for Azure Batch jobs
 
         Args:
             pool_name (str): name of pool to create
-            max_nodes (int): maximum number of nodes in autoscaling formula if autoscale formula not provided.
 
         Raises:
             error: error raised if pool already exists by this name.
@@ -290,6 +290,10 @@ class AzureClient:
         Returns:
             dict: dictionary with pool name and creation time.
         """
+        if self.pool_parameters is None:
+            print("No pool information given. Please use `set_pool_info()` before running `create_pool()`.")
+            return None 
+        
         start_time = datetime.datetime.now()
         self.pool_name = pool_name
 

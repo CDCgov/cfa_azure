@@ -611,7 +611,7 @@ class AzureClient:
         else:
             helpers.download_directory(container_client, src_path, dest_path)
 
-    def use_pool(self, pool_name: str) -> None:
+    def set_pool(self, pool_name: str) -> None:
         """checks if pool exists and if it does, it gets assigned to the client
 
         Args:

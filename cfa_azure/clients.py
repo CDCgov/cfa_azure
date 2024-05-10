@@ -436,7 +436,17 @@ class AzureClient:
             if container_name is None:
                 raise ValueError(f"{container} does not exist.")
         else:
-            container_name = self.full_container_name
+            if self.full_container_name is None:
+                pool_info = helpers.get_pool_full_info(
+                    self.resource_group_name,
+                    self.account_name,
+                    self.pool_name,
+                    self.batch_mgmt_client)
+                vm_config = pool_info.deployment_configuration.virtual_machine_configuration
+                pool_container = vm_config.container_configuration.container_image_names
+                container_name=pool_container[0].split("://")[-1]
+            else:
+                container_name = self.full_container_name
 
         # run tasks for input files
         task_ids = helpers.add_task_to_job(

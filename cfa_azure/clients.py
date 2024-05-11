@@ -28,6 +28,7 @@ class AzureClient:
         self.mounts = []
         self.mount_container_clients = []
         self.pool_parameters = None
+        self.timeout = None
 
         # load config
         self.config = helpers.read_config(config_path)

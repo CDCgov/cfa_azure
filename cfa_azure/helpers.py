@@ -703,7 +703,8 @@ def add_task_to_job(
         return t
 
 
-def monitor_tasks(job_id: str, timeout: int, batch_client: object):
+def monitor_tasks(job_id: str, timeout: int, batch_client: object,
+                  resource_group, account_name, pool_name, batch_mgmt_client):
     """monitors tasks running in the job based on job ID
 
     Args:
@@ -725,10 +726,10 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     start_time = datetime.datetime.now().replace(microsecond=0)
     if timeout is None:
         pool_info = get_pool_full_info(
-            self.resource_group,
-            self.account_name,
-            self.pool_name,
-            self.batch_mgmt_client).as_dict()
+            resource_group,
+            account_name,
+            pool_name,
+            batch_mgmt_client).as_dict()
         pool_timeout = pool_info['resize_operation_status']['resize_timeout']
         timeout = get_timeout(pool_timeout)
     

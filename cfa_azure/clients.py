@@ -328,6 +328,7 @@ class AzureClient:
 
         Args:
             files (list): list of paths to files to upload
+            blob_container (str): name of Blob container for file upload. Defaults to None.
         """
         if blob_container is None:
             blob_c_name = self.input_container_name
@@ -342,7 +343,7 @@ class AzureClient:
             with open(file_name, "rb") as data:
                 blob_client.upload_blob(data, overwrite=True)
             print(
-                f"Uploaded {file_name!r} to input container {self.input_container_name}."
+                f"Uploaded {file_name!r} to input container {blob_c_name}."
             )
             self.files.append(shortname)
 
@@ -357,6 +358,7 @@ class AzureClient:
 
         Args:
             folder_names (list[str]): list of paths to folders
+            blob_container (str): name of Blob container for file upload. Defaults to None.
             verbose (bool): whether to print the name of files uploaded. Default False.
             force_upload (bool): whether to force the upload despite the file count in folder. Default False.
 

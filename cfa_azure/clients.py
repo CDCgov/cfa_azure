@@ -323,7 +323,7 @@ class AzureClient:
             "creation_time": round((end_time - start_time).total_seconds(), 2),
         }
 
-    def upload_files(self, files: list, blob_container: str) -> None:
+    def upload_files(self, files: list, blob_container: str = None) -> None:
         """Uploads the files in the list to the input Blob storage container as stored in the client.
 
         Args:

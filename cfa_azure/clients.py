@@ -343,7 +343,7 @@ class AzureClient:
             with open(file_name, "rb") as data:
                 blob_client.upload_blob(data, overwrite=True)
             print(
-                f"Uploaded {file_name!r} to input container {blob_c_name}."
+                f"Uploaded {file_name!r} to container {blob_c_name}."
             )
             self.files.append(shortname)
 

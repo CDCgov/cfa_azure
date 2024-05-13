@@ -28,6 +28,7 @@ class AzureClient:
         self.mounts = []
         self.mount_container_clients = []
         self.pool_parameters = None
+        self.timeout = None
 
         # load config
         self.config = helpers.read_config(config_path)
@@ -436,7 +437,17 @@ class AzureClient:
             if container_name is None:
                 raise ValueError(f"{container} does not exist.")
         else:
-            container_name = self.full_container_name
+            if self.full_container_name is None:
+                pool_info = helpers.get_pool_full_info(
+                    self.resource_group_name,
+                    self.account_name,
+                    self.pool_name,
+                    self.batch_mgmt_client)
+                vm_config = pool_info.deployment_configuration.virtual_machine_configuration
+                pool_container = vm_config.container_configuration.container_image_names
+                container_name=pool_container[0].split("://")[-1]
+            else:
+                container_name = self.full_container_name
 
         # run tasks for input files
         task_ids = helpers.add_task_to_job(
@@ -461,7 +472,11 @@ class AzureClient:
         """
         # monitor the tasks
         monitor = helpers.monitor_tasks(
-            job_id, self.timeout, self.batch_client
+            job_id, self.timeout, self.batch_client,
+            self.resource_group_name,
+            self.account_name,
+            self.pool_name,
+            self.batch_mgmt_client
         )
         print(monitor)
 
@@ -611,7 +626,7 @@ class AzureClient:
         else:
             helpers.download_directory(container_client, src_path, dest_path)
 
-    def use_pool(self, pool_name: str) -> None:
+    def set_pool(self, pool_name: str) -> None:
         """checks if pool exists and if it does, it gets assigned to the client
 
         Args:

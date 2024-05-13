@@ -29,8 +29,8 @@ client.set_pool_info(
 
 # create the pool
 client.create_pool(pool_name="test")
-# or use a certain pool
-client.use_pool(pool_name="test")
+# or set a certain pool
+client.set_pool(pool_name="test")
 
 # upload files
 client.upload_files_in_folder(["yaml", "input"])

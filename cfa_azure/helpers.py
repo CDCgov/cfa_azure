@@ -703,7 +703,8 @@ def add_task_to_job(
         return t
 
 
-def monitor_tasks(job_id: str, timeout: int, batch_client: object):
+def monitor_tasks(job_id: str, timeout: int, batch_client: object,
+                  resource_group, account_name, pool_name, batch_mgmt_client):
     """monitors tasks running in the job based on job ID
 
     Args:
@@ -721,7 +722,17 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     print(
         f"Starting to monitor tasks for job '{job_id}' with a timeout of {timeout} minutes."
     )
+    
     start_time = datetime.datetime.now().replace(microsecond=0)
+    if timeout is None:
+        pool_info = get_pool_full_info(
+            resource_group,
+            account_name,
+            pool_name,
+            batch_mgmt_client).as_dict()
+        pool_timeout = pool_info['resize_operation_status']['resize_timeout']
+        timeout = get_timeout(pool_timeout)
+    
     _timeout = datetime.timedelta(minutes=timeout)
     timeout_expiration = start_time + _timeout
 
@@ -1536,3 +1547,17 @@ def format_rel_path(rel_path: str) -> str:
     if rel_path.startswith("/"):
         rel_path = rel_path[1:]
     return rel_path
+
+def get_timeout(_time: str) -> int:
+    t = _time.split("PT")[-1]
+    if "H" in t:
+        if "M" in t:
+            h = int(t.split("H")[0])
+            m = int(t.split("H")[1].split("M")[0])
+            return 60*h+m
+        else:
+            m = int(t.split("H")[0])
+            return m*60
+    else:
+        m =int(t.split("M")[0])
+        return m

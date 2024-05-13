@@ -323,27 +323,34 @@ class AzureClient:
             "creation_time": round((end_time - start_time).total_seconds(), 2),
         }
 
-    def upload_files(self, files: list) -> None:
+    def upload_files(self, files: list, blob_container: str = None) -> None:
         """Uploads the files in the list to the input Blob storage container as stored in the client.
 
         Args:
             files (list): list of paths to files to upload
+            blob_container (str): name of Blob container for file upload. Defaults to None.
         """
+        if blob_container is None:
+            blob_c_name = self.input_container_name
+        else:
+            blob_c_name = blob_container
+            
         for file_name in files:
             shortname = file_name.split("/")[-1]
             blob_client = self.blob_service_client.get_blob_client(
-                container=self.input_container_name, blob=shortname
+                container=blob_c_name, blob=shortname
             )
             with open(file_name, "rb") as data:
                 blob_client.upload_blob(data, overwrite=True)
             print(
-                f"Uploaded {file_name!r} to input container {self.input_container_name}."
+                f"Uploaded {file_name!r} to container {blob_c_name}."
             )
             self.files.append(shortname)
 
     def upload_files_in_folder(
         self,
         folder_names: list[str],
+        blob_container: str = None,
         verbose: bool = False,
         force_upload: bool = False,
     ) -> list[str]:
@@ -351,15 +358,21 @@ class AzureClient:
 
         Args:
             folder_names (list[str]): list of paths to folders
+            blob_container (str): name of Blob container for file upload. Defaults to None.
             verbose (bool): whether to print the name of files uploaded. Default False.
             force_upload (bool): whether to force the upload despite the file count in folder. Default False.
 
         Returns:
             list: list of all files uploaded
         """
+        if blob_container is None:
+            blob_c_name = self.input_container_name
+        else:
+            blob_c_name = blob_container
+            
         _files = batch.upload_files_to_container(
             folder_names,
-            self.input_container_name,
+            blob_c_name,
             self.blob_service_client,
             verbose,
             force_upload,

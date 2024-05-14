@@ -39,7 +39,7 @@ client.upload_files_in_folder(["yaml", "input"])
 client.list_blob_files()
 
 # commad to run the job
-client.add_job(job_id="run_test")
+client.add_job(job_id="run_test", end_job_on_task_failure=True)
 docker_cmd = "java -jar /app.jar"
 client.add_task(job_id="run_test", docker_cmd=docker_cmd)
 client.monitor_job(job_id="run_test")

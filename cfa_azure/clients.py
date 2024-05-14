@@ -708,7 +708,7 @@ class AzureClient:
             batch_mgmt_client = self.batch_mgmt_client)
 
 def list_blob_files(self, blob_container: str = None):
-    if !self.mounts and blob_container is None:
+    if not self.mounts and blob_container is None:
         print("Please specify a blob container or have mounts associated with the client.")
         return None
     if blob_container:

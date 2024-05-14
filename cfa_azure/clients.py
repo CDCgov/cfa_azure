@@ -706,3 +706,16 @@ class AzureClient:
             account_name=self.account_name,
             pool_name=pool_name, 
             batch_mgmt_client = self.batch_mgmt_client)
+
+    def list_blob_files(self, blob_container: str = None):
+        if not self.mounts and blob_container is None:
+            print("Please specify a blob container or have mounts associated with the client.")
+            return None
+        if blob_container:
+            filenames = helpers.list_blobs_flat(container_name = blob_container, blob_service_client = self.blob_service_client, verbose = False)
+        elif self.mounts:
+            filenames = []
+            for mount in self.mounts:
+                _files = helpers.list_blobs_flat(container_name = mount[0], blob_service_client = self.blob_service_client, verbose = False)
+                filenames += _files
+        return filenames

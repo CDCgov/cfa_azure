@@ -35,6 +35,9 @@ client.set_pool(pool_name="test")
 # upload files
 client.upload_files_in_folder(["yaml", "input"])
 
+#get names of files that exist in blob storage
+client.list_blob_files()
+
 # commad to run the job
 client.add_job(job_id="run_test")
 docker_cmd = "java -jar /app.jar"
@@ -42,5 +45,4 @@ client.add_task(job_id="run_test", docker_cmd=docker_cmd)
 client.monitor_job(job_id="run_test")
 
 # close down the jobs, required when using debug is True
-# look into https://learn.microsoft.com/en-us/python/api/azure-batch/azure.batch.operations.joboperations?view=azure-python#azure-batch-operations-joboperations terminate
 client.delete_job(job_id="run_test")

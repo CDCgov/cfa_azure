@@ -29,11 +29,11 @@ repos:
     - id: ruff
 #####
 # R
--   repo: https://github.com/lorenzwalthert/precommit
-    rev: v0.3.2.9023
-    hooks:
-    -   id: style-files
-    -   id: lintr
+#-   repo: https://github.com/lorenzwalthert/precommit
+#    rev: v0.3.2.9023
+#    hooks:
+#    -   id: style-files
+#    -   id: lintr
 #####
 # Java
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks

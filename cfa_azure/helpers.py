@@ -1566,9 +1566,10 @@ def list_blobs_flat(container_name: str, blob_service_client: BlobServiceClient,
     container_client = blob_service_client.get_container_client(container=container_name)
 
     blob_list = container_client.list_blobs()
+    blob_names = [blob.name for blob in blob_list]
     if verbose:
         for blob in blob_list:
             print(f"Name: {blob.name}")
 
-    return blob_list
+    return blob_names
 

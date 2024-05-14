@@ -574,13 +574,13 @@ def get_batch_service_client(config: dict):
     return batch_client
 
 
-def add_job(job_id: str, pool_id: str, end_job_on_task_failure: bool = False, batch_client: object):
+def add_job(job_id: str, pool_id: str, end_job_on_task_failure: bool, batch_client: object):
     """takes in a job ID and config to create a job in the pool
 
     Args:
         job_id (str): name of the job to run
+        end_job_on_task_failure (bool): whether to end a running job if a task fails
         batch_client (object): batch client object
-        config (dict): config dictionary
     """
     print(f"Attempting to create job '{job_id}'...")
     if end_job_on_task_failure:

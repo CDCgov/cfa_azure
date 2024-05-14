@@ -574,7 +574,7 @@ def get_batch_service_client(config: dict):
     return batch_client
 
 
-def add_job(job_id: str, pool_id: str, batch_client: object):
+def add_job(job_id: str, pool_id: str, end_job_on_task_failure: bool = False, batch_client: object):
     """takes in a job ID and config to create a job in the pool
 
     Args:
@@ -583,11 +583,16 @@ def add_job(job_id: str, pool_id: str, batch_client: object):
         config (dict): config dictionary
     """
     print(f"Attempting to create job '{job_id}'...")
-
+    if end_job_on_task_failure:
+        end_job_str = "performExitOptionsJobAction"
+    else:
+        end_job_str = "noAction"
+        
     job = batchmodels.JobAddParameter(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
         uses_task_dependencies=True,
+        on_task_failure = end_job_str
     )
     try:
         batch_client.job.add(job)

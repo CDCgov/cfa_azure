@@ -1,5 +1,6 @@
 import datetime
 import json
+
 from azure.core.exceptions import HttpResponseError
 
 from cfa_azure import batch, helpers
@@ -93,7 +94,7 @@ class AzureClient:
         timeout=60,
         dedicated_nodes=1,
         low_priority_nodes=0,
-        cache_blobfuse: bool = True
+        cache_blobfuse: bool = True,
     ) -> None:
         """Sets the scaling mode of the client, either "fixed" or "autoscale".
         If "fixed" is selected, debug must be turned off.
@@ -102,7 +103,7 @@ class AzureClient:
 
         Args:
             mode (str): scaling mode for Batch. Either "fixed" or "autoscale".
-            max_autoscale_nodes (int, optional): maximum number of nodes to scale up to for autoscaling pools. Used for default autoscale formula creation when no autoscale formula path provided. 
+            max_autoscale_nodes (int, optional): maximum number of nodes to scale up to for autoscaling pools. Used for default autoscale formula creation when no autoscale formula path provided.
             autoscale_formula_path (str, optional): path to autoscale formula file if mode is autoscale. Defaults to None.
             timeout (int, optional): length of time for tasks to run in pool. Defaults to 60.
             dedicated_nodes (int, optional): number of dedicated nodes for the pool. Defaults to 1.
@@ -123,15 +124,14 @@ class AzureClient:
         else:
             use_default_autoscale_formula = False
 
-        blob_config =[]
+        blob_config = []
         if self.mounts:
             for mount in self.mounts:
-                blob_config.append(helpers.get_blob_config(
-                    mount[0],
-                    mount[1],
-                    cache_blobfuse,
-                    self.config
-                ))
+                blob_config.append(
+                    helpers.get_blob_config(
+                        mount[0], mount[1], cache_blobfuse, self.config
+                    )
+                )
 
         self.mount_config = helpers.get_mount_config(blob_config)
         if mode == "fixed" or mode == "autoscale":
@@ -153,7 +153,7 @@ class AzureClient:
                 dedicated_nodes,
                 low_priority_nodes,
                 use_default_autoscale_formula,
-                max_autoscale_nodes
+                max_autoscale_nodes,
             )
         else:
             print("Please enter 'fixed' or 'autoscale' as the mode.")
@@ -169,7 +169,7 @@ class AzureClient:
         """
         self.input_container_name = name
         self.input_mount_dir = helpers.format_rel_path(input_mount_dir)
-        #add to self.mounts
+        # add to self.mounts
         self.mounts.append((name, self.input_mount_dir))
         # create container and save the container client
         self.in_cont_client = helpers.create_container(
@@ -187,16 +187,14 @@ class AzureClient:
         """
         self.output_container_name = name
         self.output_mount_dir = helpers.format_rel_path(output_mount_dir)
-        #add to self.mounts
+        # add to self.mounts
         self.mounts.append((name, self.output_mount_dir))
         # create_container and save the container client
         self.out_cont_client = helpers.create_container(
             self.output_container_name, self.blob_service_client
         )
 
-    def create_blob_container(
-        self, name: str, rel_mount_dir: str
-    ) -> None:
+    def create_blob_container(self, name: str, rel_mount_dir: str) -> None:
         """Creates an output container in Blob Storage.
 
         Args:
@@ -204,7 +202,7 @@ class AzureClient:
             output_mount_dir (str, optional): the path of the output mount directory. Defaults to "output".
         """
         rel_mount_dir = helpers.format_rel_path(rel_mount_dir)
-        #add to self.mounts
+        # add to self.mounts
         self.mounts.append((name, rel_mount_dir))
         # create_container and save the container client
         mount_container_client = helpers.create_container(
@@ -258,14 +256,12 @@ class AzureClient:
             self.out_cont_client = container_client
             self.mounts.append((name, output_mount_dir))
 
-    def set_blob_container(
-        self, name: str, rel_mount_dir: str
-    ) -> None:
+    def set_blob_container(self, name: str, rel_mount_dir: str) -> None:
         """Sets the output container to be used with the client.
 
         Args:
             name (str): name of output container
-            rel_mount_dir (str, optional): relative mount directory. 
+            rel_mount_dir (str, optional): relative mount directory.
         """
         rel_mount_dir = helpers.format_rel_path(rel_mount_dir)
         container_client = self.blob_service_client.get_container_client(
@@ -277,7 +273,6 @@ class AzureClient:
             )
         else:
             self.mounts.append((name, rel_mount_dir))
-            
 
     def create_pool(self, pool_name: str) -> dict:
         """Creates the pool for Azure Batch jobs
@@ -292,16 +287,20 @@ class AzureClient:
             dict: dictionary with pool name and creation time.
         """
         if self.pool_parameters is None:
-            raise Exception("No pool information given. Please use `set_pool_info()` before running `create_pool()`.")
-        
+            raise Exception(
+                "No pool information given. Please use `set_pool_info()` before running `create_pool()`."
+            )
+
         start_time = datetime.datetime.now()
         self.pool_name = pool_name
 
         if self.scaling is None:
-            #set scaling
+            # set scaling
             self.scaling = "autoscale"
-            #set autoscale formula from default
-        print(f"Attempting to create a pool with {(self.config)['Batch']['pool_vm_size']} VMs.")
+            # set autoscale formula from default
+        print(
+            f"Attempting to create a pool with {(self.config)['Batch']['pool_vm_size']} VMs."
+        )
         print("Verify the size of the VM is appropriate for the use case.")
         try:
             self.batch_mgmt_client.pool.create(
@@ -334,7 +333,7 @@ class AzureClient:
             blob_c_name = self.input_container_name
         else:
             blob_c_name = blob_container
-            
+
         for file_name in files:
             shortname = file_name.split("/")[-1]
             blob_client = self.blob_service_client.get_blob_client(
@@ -342,9 +341,7 @@ class AzureClient:
             )
             with open(file_name, "rb") as data:
                 blob_client.upload_blob(data, overwrite=True)
-            print(
-                f"Uploaded {file_name!r} to container {blob_c_name}."
-            )
+            print(f"Uploaded {file_name!r} to container {blob_c_name}.")
             self.files.append(shortname)
 
     def upload_files_in_folder(
@@ -369,7 +366,7 @@ class AzureClient:
             blob_c_name = self.input_container_name
         else:
             blob_c_name = blob_container
-            
+
         _files = batch.upload_files_to_container(
             folder_names,
             blob_c_name,
@@ -381,7 +378,9 @@ class AzureClient:
         self.files += _files
         return _files
 
-    def add_job(self, job_id: str, end_job_on_task_failure: bool = False) -> None:
+    def add_job(
+        self, job_id: str, end_job_on_task_failure: bool = False
+    ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
         Args:
@@ -457,10 +456,15 @@ class AzureClient:
                     self.resource_group_name,
                     self.account_name,
                     self.pool_name,
-                    self.batch_mgmt_client)
-                vm_config = pool_info.deployment_configuration.virtual_machine_configuration
-                pool_container = vm_config.container_configuration.container_image_names
-                container_name=pool_container[0].split("://")[-1]
+                    self.batch_mgmt_client,
+                )
+                vm_config = (
+                    pool_info.deployment_configuration.virtual_machine_configuration
+                )
+                pool_container = (
+                    vm_config.container_configuration.container_image_names
+                )
+                container_name = pool_container[0].split("://")[-1]
             else:
                 container_name = self.full_container_name
 
@@ -470,7 +474,7 @@ class AzureClient:
             task_id_base=job_id,
             docker_command=docker_cmd,
             input_files=in_files,
-            mounts = self.mounts,
+            mounts=self.mounts,
             depends_on=depends_on,
             batch_client=self.batch_client,
             full_container_name=container_name,
@@ -487,11 +491,13 @@ class AzureClient:
         """
         # monitor the tasks
         monitor = helpers.monitor_tasks(
-            job_id, self.timeout, self.batch_client,
+            job_id,
+            self.timeout,
+            self.batch_client,
             self.resource_group_name,
             self.account_name,
             self.pool_name,
-            self.batch_mgmt_client
+            self.batch_mgmt_client,
         )
         print(monitor)
 
@@ -655,13 +661,13 @@ class AzureClient:
             self.batch_mgmt_client,
         ):
             self.pool_name = pool_name
-            _info=helpers.get_pool_info(
+            _info = helpers.get_pool_info(
                 self.resource_group_name,
                 self.account_name,
                 pool_name,
-                self.batch_mgmt_client
-                )
-            vm_size = str(json.loads(_info)['vm_size'])
+                self.batch_mgmt_client,
+            )
+            vm_size = str(json.loads(_info)["vm_size"])
             print(f"Pool {pool_name} uses {vm_size} VMs.")
             print("Make sure the VM size matches the use case.\n")
         else:
@@ -706,18 +712,29 @@ class AzureClient:
         helpers.delete_pool(
             resource_group_name=self.resource_group_name,
             account_name=self.account_name,
-            pool_name=pool_name, 
-            batch_mgmt_client = self.batch_mgmt_client)
+            pool_name=pool_name,
+            batch_mgmt_client=self.batch_mgmt_client,
+        )
 
     def list_blob_files(self, blob_container: str = None):
         if not self.mounts and blob_container is None:
-            print("Please specify a blob container or have mounts associated with the client.")
+            print(
+                "Please specify a blob container or have mounts associated with the client."
+            )
             return None
         if blob_container:
-            filenames = helpers.list_blobs_flat(container_name = blob_container, blob_service_client = self.blob_service_client, verbose = False)
+            filenames = helpers.list_blobs_flat(
+                container_name=blob_container,
+                blob_service_client=self.blob_service_client,
+                verbose=False,
+            )
         elif self.mounts:
             filenames = []
             for mount in self.mounts:
-                _files = helpers.list_blobs_flat(container_name = mount[0], blob_service_client = self.blob_service_client, verbose = False)
+                _files = helpers.list_blobs_flat(
+                    container_name=mount[0],
+                    blob_service_client=self.blob_service_client,
+                    verbose=False,
+                )
                 filenames += _files
         return filenames

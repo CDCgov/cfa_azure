@@ -16,7 +16,7 @@ client.package_and_upload_dockerfile(
 client.create_input_container("example-input", "input")
 client.create_output_container("example-output", "output")
 
-#or create/set additional blob containers
+# or create/set additional blob containers
 client.create_blob_container("containername", "/path")
 client.set_blob_container("containername", "/path")
 
@@ -35,7 +35,7 @@ client.set_pool(pool_name="test")
 # upload files
 client.upload_files_in_folder(["yaml", "input"])
 
-#get names of files that exist in blob storage
+# get names of files that exist in blob storage
 client.list_blob_files()
 
 # commad to run the job

@@ -3,7 +3,6 @@ import datetime
 import json
 import os
 import subprocess as sp
-import sys
 import time
 from pathlib import Path
 
@@ -90,12 +89,12 @@ def get_autoscale_formula(filepath: str = None, text_input: str = None):
     """
     # print("Retrieving autoscale formula...")
     if filepath is None and text_input is None:
-        #get default autoscale formula:
+        # get default autoscale formula:
         autoscale_text = generate_autoscale_formula()
         print(
             "Default autoscale formula used. Please provide a path to autoscale formula to sepcify your own formula."
         )
-        return autoscale_test
+        return autoscale_text
     elif filepath is not None:
         try:
             with open(filepath, "r") as autoscale_text:
@@ -453,10 +452,12 @@ def create_batch_pool(batch_mgmt_client: object, batch_json: dict):
     return pool_id
 
 
-def delete_pool(resource_group_name: str,
-                account_name: str,
-                pool_name: str, 
-                batch_mgmt_client: object) -> None:
+def delete_pool(
+    resource_group_name: str,
+    account_name: str,
+    pool_name: str,
+    batch_mgmt_client: object,
+) -> None:
     """deletes the specified pool from Azure Batch.
 
     Args:
@@ -469,7 +470,8 @@ def delete_pool(resource_group_name: str,
     batch_mgmt_client.pool.begin_delete(
         resource_group_name=resource_group_name,
         account_name=account_name,
-        pool_name=pool_name)
+        pool_name=pool_name,
+    )
     print(f"Pool {pool_name} deleted.")
 
 
@@ -574,7 +576,12 @@ def get_batch_service_client(config: dict):
     return batch_client
 
 
-def add_job(job_id: str, pool_id: str, end_job_on_task_failure: bool, batch_client: object):
+def add_job(
+    job_id: str,
+    pool_id: str,
+    end_job_on_task_failure: bool,
+    batch_client: object,
+):
     """takes in a job ID and config to create a job in the pool
 
     Args:
@@ -587,12 +594,12 @@ def add_job(job_id: str, pool_id: str, end_job_on_task_failure: bool, batch_clie
         end_job_str = "performExitOptionsJobAction"
     else:
         end_job_str = "noAction"
-        
+
     job = batchmodels.JobAddParameter(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
         uses_task_dependencies=True,
-        on_task_failure = end_job_str
+        on_task_failure=end_job_str,
     )
     try:
         batch_client.job.add(job)
@@ -613,7 +620,7 @@ def add_task_to_job(
     input_files: list[str] | None = None,
     mounts: list | None = None,
     depends_on: str | list[str] | None = None,
-    batch_client: object  | None = None,
+    batch_client: object | None = None,
     full_container_name: str | None = None,
     task_id_max: int = 0,
 ):
@@ -660,8 +667,12 @@ def add_task_to_job(
     if mounts is not None:
         mount_str = ""
         for mount in mounts:
-            mount_str = mount_str +  "--mount type=bind,source=" + az_mount_dir + f"/{mount[1]},target=/{mount[1]} "
-
+            mount_str = (
+                mount_str
+                + "--mount type=bind,source="
+                + az_mount_dir
+                + f"/{mount[1]},target=/{mount[1]} "
+            )
 
     if input_files:
         tasks = []
@@ -700,16 +711,21 @@ def add_task_to_job(
             depends_on=task_deps,
         )
         batch_client.task.add(job_id=job_id, task=task)
-        print(
-            f"Task '{task_id}' added to job '{job_id}'."
-        )
+        print(f"Task '{task_id}' added to job '{job_id}'.")
         t = []
         t.append(task_id)
         return t
 
 
-def monitor_tasks(job_id: str, timeout: int, batch_client: object,
-                  resource_group, account_name, pool_name, batch_mgmt_client):
+def monitor_tasks(
+    job_id: str,
+    timeout: int,
+    batch_client: object,
+    resource_group,
+    account_name,
+    pool_name,
+    batch_mgmt_client,
+):
     """monitors tasks running in the job based on job ID
 
     Args:
@@ -723,21 +739,19 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object,
     Returns:
         dict: dictionary with keys completed (whether the job completed) and runtime (total elapsed time)
     """
-    #start monitoring
+    # start monitoring
     print(
         f"Starting to monitor tasks for job '{job_id}' with a timeout of {timeout} minutes."
     )
-    
+
     start_time = datetime.datetime.now().replace(microsecond=0)
     if timeout is None:
         pool_info = get_pool_full_info(
-            resource_group,
-            account_name,
-            pool_name,
-            batch_mgmt_client).as_dict()
-        pool_timeout = pool_info['resize_operation_status']['resize_timeout']
+            resource_group, account_name, pool_name, batch_mgmt_client
+        ).as_dict()
+        pool_timeout = pool_info["resize_operation_status"]["resize_timeout"]
         timeout = get_timeout(pool_timeout)
-    
+
     _timeout = datetime.timedelta(minutes=timeout)
     timeout_expiration = start_time + _timeout
 
@@ -751,11 +765,11 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object,
     # print remaining number of tasks
     tasks = list(batch_client.task.list(job_id))
 
-    #get total tasks
+    # get total tasks
     total_tasks = len([task for task in tasks])
     print(f"Total tasks to monitor: {total_tasks}")
 
-    #pool setup and status
+    # pool setup and status
 
     completed = False
     while datetime.datetime.now() < timeout_expiration:
@@ -774,7 +788,7 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object,
         ]
         completions = len(completed_tasks)
 
-        #initialize the counts
+        # initialize the counts
         failures = 0
         successes = 0
 
@@ -784,7 +798,17 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object,
             elif task.as_dict()["execution_info"]["result"] == "success":
                 successes += 1
 
-        print(completions, "completed;", incompletions, "remaining;", successes, "successes;", failures, "failures", end = "\r")
+        print(
+            completions,
+            "completed;",
+            incompletions,
+            "remaining;",
+            successes,
+            "successes;",
+            failures,
+            "failures",
+            end="\r",
+        )
 
         if not incomplete_tasks:
             print("\nAll tasks completed.")
@@ -805,7 +829,6 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object,
     runtime = end_time - start_time
     print(f"Monitoring ended: {end_time}. Total elapsed time: {runtime}.")
     return {"completed": completed, "elapsed time": runtime}
-
 
 
 def list_files_in_container(
@@ -988,7 +1011,12 @@ def get_deployment_config(
     return deployment_config
 
 
-def get_blob_config(container_name: str, rel_mount_path: str, cache_blobfuse: bool, config: dict):
+def get_blob_config(
+    container_name: str,
+    rel_mount_path: str,
+    cache_blobfuse: bool,
+    config: dict,
+):
     """gets the blob storage configuration based on the config information
 
     Args:
@@ -1007,7 +1035,7 @@ def get_blob_config(container_name: str, rel_mount_path: str, cache_blobfuse: bo
         blob_str = ""
     else:
         blob_str = "-o direct_io"
-    
+
     blob_config = {
         "azureBlobFileSystemConfiguration": {
             "accountName": config["Storage"]["storage_account_name"],
@@ -1035,8 +1063,9 @@ def get_mount_config(blob_config: list[str]):
     """
     _mount_config = []
     for blob in blob_config:
-            _mount_config.append(blob)
+        _mount_config.append(blob)
     return _mount_config
+
 
 def get_pool_parameters(
     mode: str,
@@ -1050,7 +1079,7 @@ def get_pool_parameters(
     dedicated_nodes: int = 1,
     low_priority_nodes: int = 0,
     use_default_autoscale_formula: bool = False,
-    max_autoscale_nodes: int = 3
+    max_autoscale_nodes: int = 3,
 ):
     """creates a pool parameter dictionary to be used with pool creation.
 
@@ -1095,7 +1124,7 @@ def get_pool_parameters(
             "autoScale": {
                 "evaluationInterval": "PT5M",
                 "formula": generate_autoscale_formula(
-                    max_nodes= max_autoscale_nodes
+                    max_nodes=max_autoscale_nodes
                 ),
             }
         }
@@ -1521,6 +1550,7 @@ def check_azure_container_exists(
         print(f"{registry_name}/{repo_name}:{tag_name} does not exist")
         return None
 
+
 def generate_autoscale_formula(max_nodes: int = 8) -> str:
     """
     Generate a generic autoscale formula for use based on maximum number of nodes to scale up to.
@@ -1532,7 +1562,7 @@ def generate_autoscale_formula(max_nodes: int = 8) -> str:
         str: the text of an autoscale formula
 
     """
-    formula  = f"""
+    formula = f"""
     // Get pending tasks for the past 10 minutes.
     $samples = $ActiveTasks.GetSamplePercent(TimeInterval_Minute * 10);
     // If we have fewer than 70 percent data points, we use the last sample point, otherwise we use the maximum of last sample point and the history average.
@@ -1548,10 +1578,12 @@ def generate_autoscale_formula(max_nodes: int = 8) -> str:
     """
     return formula
 
+
 def format_rel_path(rel_path: str) -> str:
     if rel_path.startswith("/"):
         rel_path = rel_path[1:]
     return rel_path
+
 
 def get_timeout(_time: str) -> int:
     t = _time.split("PT")[-1]
@@ -1559,16 +1591,21 @@ def get_timeout(_time: str) -> int:
         if "M" in t:
             h = int(t.split("H")[0])
             m = int(t.split("H")[1].split("M")[0])
-            return 60*h+m
+            return 60 * h + m
         else:
             m = int(t.split("H")[0])
-            return m*60
+            return m * 60
     else:
-        m =int(t.split("M")[0])
+        m = int(t.split("M")[0])
         return m
 
-def list_blobs_flat(container_name: str, blob_service_client: BlobServiceClient, verbose = True):
-    container_client = blob_service_client.get_container_client(container=container_name)
+
+def list_blobs_flat(
+    container_name: str, blob_service_client: BlobServiceClient, verbose=True
+):
+    container_client = blob_service_client.get_container_client(
+        container=container_name
+    )
 
     blob_list = container_client.list_blobs()
     blob_names = [blob.name for blob in blob_list]
@@ -1577,4 +1614,3 @@ def list_blobs_flat(container_name: str, blob_service_client: BlobServiceClient,
             print(f"Name: {blob.name}")
 
     return blob_names
-

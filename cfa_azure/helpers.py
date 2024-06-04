@@ -548,7 +548,7 @@ def upload_files_in_folder(
                 container=input_container_name, blob=fname
             )
             with open(os.path.join(folder, file_name), "rb") as data:
-                blob_client.upload_blob(name = fname, data = data, overwrite=True)
+                blob_client.upload_blob(data = data, overwrite=True)
             if verbose:
                 print(f"Uploaded {fname!r} to {input_container_name}")
     return input_files

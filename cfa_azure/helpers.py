@@ -541,14 +541,16 @@ def upload_files_in_folder(
     input_files = []
     for folder, _, file in os.walk(os.path.realpath(f"./{folder_name}")):
         for file_name in file:
-            input_files.append(file_name)
+            file_path = os.path.join(folder,file_name).split(folder_name)[-1]
+            fname = folder_name+file_path
+            input_files.append(fname)
             blob_client = blob_service_client.get_blob_client(
-                container=input_container_name, blob=file_name
+                container=input_container_name, blob=fname
             )
             with open(os.path.join(folder, file_name), "rb") as data:
-                blob_client.upload_blob(data, overwrite=True)
+                blob_client.upload_blob(name = fname, data = data, overwrite=True)
             if verbose:
-                print(f"Uploaded {file_name!r} to {input_container_name}")
+                print(f"Uploaded {fname!r} to {input_container_name}")
     return input_files
 
 

@@ -1,4 +1,4 @@
-# cfa_azure module - not ready for production use
+# cfa_azure module
 ## created by Ryan Raasch (Peraton)
 ##
 

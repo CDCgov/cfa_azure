@@ -356,7 +356,7 @@ class AzureClient:
         location: str = "", 
         keep_folder_structure: bool = True, 
         verbose: bool = True,
-        force_upload: bool = True)
+        force_upload: bool = True
         ) -> list[str]:
         """Uploads all the files in folders provided
 

@@ -322,57 +322,68 @@ class AzureClient:
             "creation_time": round((end_time - start_time).total_seconds(), 2),
         }
 
-    def upload_files(self, files: list, blob_container: str = None) -> None:
+    def upload_files(self, files: list,
+                     container_name: str,
+                     location: str = "", 
+                     file_only: bool = False,
+                     verbose: bool = False) -> None:
         """Uploads the files in the list to the input Blob storage container as stored in the client.
 
         Args:
             files (list): list of paths to files to upload
-            blob_container (str): name of Blob container for file upload. Defaults to None.
+            location (str): the location (folder) inside the Blob container. Uploaded to root if "". Default is "".
+            container_client: a ContainerClient object to interact with Blob container.
+            file_only (bool): extracts only the file name from the full filename path if True, otherwise full path in filename is used in Blob container. Default False.
+            verbose (bool): whether to be verbose in uploaded files. Defaults to False
         """
-        if blob_container is None:
-            blob_c_name = self.input_container_name
-        else:
-            blob_c_name = blob_container
-
+        container_client = self.blob_service_client.get_container_client(
+            container=container_name)
+        if not container_client.exists():
+            print(f"Blob container {container_name} does not exist. Please try again with an existing Blob container.")
+            return None
+    
         for file_name in files:
             blob_client = self.blob_service_client.get_blob_client(
                 container=blob_c_name, blob=file_name
             )
-            with open(file_name, "rb") as data:
-                blob_client.upload_blob(data=data, overwrite=True)
-            print(f"Uploaded {file_name!r} to container {blob_c_name}.")
-            self.files.append(shortname)
+            helpers.upload_blob_file(file_name, location, container_client, file_only, verbose)
+
 
     def upload_files_in_folder(
         self,
         folder_names: list[str],
-        blob_container: str = None,
-        verbose: bool = False,
-        force_upload: bool = False,
-    ) -> list[str]:
+        container_name: str, 
+        location: str = "", 
+        keep_folder_structure: bool = True, 
+        verbose: bool = True,
+        force_upload: bool = True)
+        ) -> list[str]:
         """Uploads all the files in folders provided
 
         Args:
             folder_names (list[str]): list of paths to folders
-            blob_container (str): name of Blob container for file upload. Defaults to None.
-            verbose (bool): whether to print the name of files uploaded. Default False.
+            container_name (str): the name of the Blob container
+            location (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
+            blob_service_client (object): instance of Blob Service Client
+            keep_folder_structure (bool): whether to maintain the folder structure (if True) or extract just the filename (if False). Default is True.
+            verbose (bool): whether to print the name of files uploaded. Default True.
             force_upload (bool): whether to force the upload despite the file count in folder. Default False.
 
         Returns:
             list: list of all files uploaded
         """
-        if blob_container is None:
-            blob_c_name = self.input_container_name
-        else:
-            blob_c_name = blob_container
-
-        _files = batch.upload_files_to_container(
-            folder_names,
-            blob_c_name,
-            self.blob_service_client,
-            verbose,
-            force_upload,
-        )
+        _files = []
+        for _folder in folder_names:
+            _uploaded_files = helpers.upload_files_in_folders(
+                _folder, 
+                container_name, 
+                location, 
+                self.blob_service_client, 
+                keep_folder_structure, 
+                verbose,
+                force_upload)
+                )
+            _files += _uploaded_files
         print(f"uploaded {_files}")
         self.files += _files
         return _files

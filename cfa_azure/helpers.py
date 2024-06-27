@@ -493,38 +493,68 @@ def list_containers(blob_service_client: object):
     # print("Completed listing containers.")
     return container_list
 
+def upload_blob_file(
+    filename: str, 
+    location: str = "", 
+    container_client: object = None, 
+    file_only = False, 
+    verbose: bool = False):
+    """Uploads a specified file to Blob storage.
+    Args:
+        filename (str): the path to the file.
+        location (str): the location (folder) inside the Blob container. Uploaded to root if "". Default is "".
+        container_client: a ContainerClient object to interact with Blob container.
+        file_only (bool): extracts only the file name from the full filename path if True, otherwise full path in filename is used in Blob container. Default False.
+        verbose (bool): whether to be verbose in uploaded files. Defaults to False
+
+    Example:
+        upload_blob_file("sample_file.txt", container_client = cc, verbose = False)
+        - uploads the "sample_file.txt" file to the root of the blob container
+
+        upload_blob_file("sample_file.txt", "job_1/input", cc, False)
+        - uploads the "sample_file.txt" file to the job_1/input folder of the blob container.
+        - note that job_1/input will be created if it does not exist.
+    """
+    with open(file=filename, mode="rb") as data:
+        if file_only:
+            _, filename = path.split(filename)
+        container_client.upload_blob(name=path.join(location, filename), data=data, overwrite=True)
+    if verbose:
+        print(f"Uploaded {filename} to {container_client.container_name}.")
+
 
 def upload_files_in_folder(
-    folder_name: str,
-    input_container_name: str,
-    blob_service_client: object,
+    folder: str, 
+    container_name: str, 
+    location: str = "", 
+    blob_service_client = None, 
+    keep_folder_structure: bool = True, 
     verbose: bool = True,
-    force_upload: bool = False,
-):
+    force_upload: bool = True):
     """uploads all files in specified folder to the input container.
     If there are more than 50 files in the folder, the user is asked to confirm
     the upload. This can be bypassed if force_upload = True.
 
     Args:
         folder_name (str): folder name containing files to be uploaded
-        input_container_name (str): the name of the input Blob container
+        container_name (str): the name of the Blob container
+        location (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
         blob_service_client (object): instance of Blob Service Client
+        keep_folder_structure (bool): whether to maintain the folder structure (if True) or extract just the filename (if False). Default is True.
         verbose (bool): whether to print the name of files uploaded. Default True.
         force_upload (bool): whether to force the upload despite the file count in folder. Default False.
-    """
-    print(f"Checking existence of the container '{input_container_name}'...")
-    # check the input container exists
-    check = input_container_name in list_containers(blob_service_client)
-    if not check:
-        print(
-            f"Container '{input_container_name}' does not exist in the Blob Storage. Upload aborted."
-        )
-        return None
 
-    print(
-        f"Uploading files from folder '{folder_name}' to container '{input_container_name}'..."
+    Returns:
+        list: list of files uploaded
+    """
+    # check container exists
+    container_client = blob_service_client.get_container_client(
+        container=container_name
     )
-    # Upload the input files
+    if not container_client.exists():
+        print(f"Blob container {container_name} does not exist. Please try again with an existing Blob container.")
+        return None
+    #check number of files if force_upload False
     if not force_upload:
         fnum = []
         for _, _, file in os.walk(os.path.realpath(f"./{folder_name}")):
@@ -538,20 +568,18 @@ def upload_files_in_folder(
             else:
                 print("Upload aborted.")
                 return None
-    input_files = []
-    for folder, _, file in os.walk(os.path.realpath(f"./{folder_name}")):
-        for file_name in file:
-            file_path = os.path.join(folder,file_name).split(folder_name)[-1]
-            fname = folder_name+file_path
-            input_files.append(fname)
-            blob_client = blob_service_client.get_blob_client(
-                container=input_container_name, blob=fname
-            )
-            with open(os.path.join(folder, file_name), "rb") as data:
-                blob_client.upload_blob(data = data, overwrite=True)
-            if verbose:
-                print(f"Uploaded {fname!r} to {input_container_name}")
-    return input_files
+    # get all files in folder
+    file_list = []
+    if not path.isdir(folder):
+        print(f"{folder} is not a folder/directory. Make sure to sepcify a valid folder.")
+        return None
+    for dirname, _, fname in walk(folder):
+        for f in fname:
+            file_list.append(path.join(dirname, f))
+    # iteratively call the upload_blob_file function to upload individual files
+    for file in file_list:
+        upload_blob_file(file, location, container_client, not keep_folder_structure, verbose)
+    return file_list
 
 
 def get_batch_service_client(config: dict):

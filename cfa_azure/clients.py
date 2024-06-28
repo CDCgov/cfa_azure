@@ -382,7 +382,6 @@ class AzureClient:
                 keep_folder_structure, 
                 verbose,
                 force_upload)
-                )
             _files += _uploaded_files
         print(f"uploaded {_files}")
         self.files += _files

@@ -21,7 +21,7 @@ from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
 from azure.storage.blob import BlobServiceClient, ContainerClient
 from docker.errors import DockerException
-from os import path
+from os import path, walk
 from yaml import SafeLoader, dump, load
 
 

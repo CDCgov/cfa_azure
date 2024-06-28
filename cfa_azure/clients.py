@@ -374,7 +374,7 @@ class AzureClient:
         """
         _files = []
         for _folder in folder_names:
-            _uploaded_files = helpers.upload_files_in_folders(
+            _uploaded_files = helpers.upload_files_in_folder(
                 _folder, 
                 container_name, 
                 location, 

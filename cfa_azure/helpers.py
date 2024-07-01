@@ -499,7 +499,8 @@ def upload_blob_file(
     location: str = "", 
     container_client: object = None, 
     file_only = False, 
-    verbose: bool = False):
+    verbose: bool = False,
+    drop_folder_prefix: str | None = None):
     """Uploads a specified file to Blob storage.
     Args:
         filename (str): the path to the file.
@@ -507,6 +508,7 @@ def upload_blob_file(
         container_client: a ContainerClient object to interact with Blob container.
         file_only (bool): extracts only the file name from the full filename path if True, otherwise full path in filename is used in Blob container. Default False.
         verbose (bool): whether to be verbose in uploaded files. Defaults to False
+        drop_folder_prefix (str): the folder prefix to drop from the filename when uploading
 
     Example:
         upload_blob_file("sample_file.txt", container_client = cc, verbose = False)
@@ -518,8 +520,10 @@ def upload_blob_file(
     """
     with open(file=filename, mode="rb") as data:
         if file_only:
-            _, filename = path.split(filename)
-        container_client.upload_blob(name=path.join(location, filename), data=data, overwrite=True)
+            _, file = path.split(filename)
+        if drop_folder_prefix is not None:
+            file = filename.split(drop_folder_prefix)[-1]
+        container_client.upload_blob(name=path.join(location, file), data=data, overwrite=True)
     if verbose:
         print(f"Uploaded {filename} to {container_client.container_name}.")
 
@@ -579,7 +583,12 @@ def upload_files_in_folder(
             file_list.append(path.join(dirname, f))
     # iteratively call the upload_blob_file function to upload individual files
     for file in file_list:
-        upload_blob_file(file, location, container_client, not keep_folder_structure, verbose)
+        upload_blob_file(file,
+                         location,
+                         container_client,
+                         not keep_folder_structure,
+                         verbose,
+                         folder)
     return file_list
 
 

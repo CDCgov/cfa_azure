@@ -521,7 +521,7 @@ def upload_blob_file(
         _name = path.join(location, _file)
         container_client.upload_blob(name=_name, data=data, overwrite=True)
     if verbose:
-        print(f"Uploaded {filepath} to {container_client.container_name}.")
+        print(f"Uploaded {filepath} to {container_client.container_name} as {name}.")
 
 
 def upload_files_in_folder(

@@ -375,13 +375,12 @@ class AzureClient:
         _files = []
         for _folder in folder_names:
             _uploaded_files = helpers.upload_files_in_folder(
-                _folder, 
-                container_name, 
-                location, 
-                self.blob_service_client, 
-                keep_folder_structure, 
-                verbose,
-                force_upload)
+                folder = _folder, 
+                container_name=container_name, 
+                location=location, 
+                blob_service_client = self.blob_service_client,  
+                verbose=verbose,
+                force_upload=force_upload)
             _files += _uploaded_files
         print(f"uploaded {_files}")
         self.files += _files

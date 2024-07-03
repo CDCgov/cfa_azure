@@ -495,20 +495,16 @@ def list_containers(blob_service_client: object):
     return container_list
 
 def upload_blob_file(
-    filename: str, 
+    filepath: str, 
     location: str = "", 
-    container_client: object = None, 
-    file_only = False, 
-    verbose: bool = False,
-    drop_folder_prefix: str | None = None):
+    container_client: object = None,
+    verbose: bool = False):
     """Uploads a specified file to Blob storage.
     Args:
-        filename (str): the path to the file.
+        filepath (str): the path to the file.
         location (str): the location (folder) inside the Blob container. Uploaded to root if "". Default is "".
         container_client: a ContainerClient object to interact with Blob container.
-        file_only (bool): extracts only the file name from the full filename path if True, otherwise full path in filename is used in Blob container. Default False.
         verbose (bool): whether to be verbose in uploaded files. Defaults to False
-        drop_folder_prefix (str): the folder prefix to drop from the filename when uploading
 
     Example:
         upload_blob_file("sample_file.txt", container_client = cc, verbose = False)
@@ -518,12 +514,12 @@ def upload_blob_file(
         - uploads the "sample_file.txt" file to the job_1/input folder of the blob container.
         - note that job_1/input will be created if it does not exist.
     """
-    with open(file=filename, mode="rb") as data:
-        if file_only:
-            _, file = path.split(filename)
-        if drop_folder_prefix is not None:
-            file = filename.split(drop_folder_prefix)[-1]
-        container_client.upload_blob(name=path.join(location, file), data=data, overwrite=True)
+    if location.startswith("/"):
+        location = location[1:]
+    with open(file=filepath, mode="rb") as data:
+        _, _file = path.split(filepath)
+        _name = path.join(location, _file)
+        container_client.upload_blob(name=_name, data=data, overwrite=True)
     if verbose:
         print(f"Uploaded {filename} to {container_client.container_name}.")
 
@@ -532,8 +528,7 @@ def upload_files_in_folder(
     folder: str, 
     container_name: str, 
     location: str = "", 
-    blob_service_client = None, 
-    keep_folder_structure: bool = True, 
+    blob_service_client = None,  
     verbose: bool = True,
     force_upload: bool = True):
     """uploads all files in specified folder to the input container.
@@ -541,11 +536,10 @@ def upload_files_in_folder(
     the upload. This can be bypassed if force_upload = True.
 
     Args:
-        folder_name (str): folder name containing files to be uploaded
+        folder (str): folder name containing files to be uploaded
         container_name (str): the name of the Blob container
         location (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
         blob_service_client (object): instance of Blob Service Client
-        keep_folder_structure (bool): whether to maintain the folder structure (if True) or extract just the filename (if False). Default is True.
         verbose (bool): whether to print the name of files uploaded. Default True.
         force_upload (bool): whether to force the upload despite the file count in folder. Default False.
 
@@ -583,12 +577,11 @@ def upload_files_in_folder(
             file_list.append(path.join(dirname, f))
     # iteratively call the upload_blob_file function to upload individual files
     for file in file_list:
-        upload_blob_file(file,
-                         location,
-                         container_client,
-                         not keep_folder_structure,
-                         verbose,
-                         folder)
+        #get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders
+        drop_folder = path.dirname(file).replace(folder, "", 1)
+        if drop_folder.startswith("/"):
+            drop_folder = drop_folder[1:] #removes the / so path.join doesnt mistake for root
+        upload_blob_file(file, path.join(location, drop_folder), container_client, verbose)
     return file_list
 
 

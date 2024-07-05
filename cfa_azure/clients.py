@@ -379,12 +379,13 @@ class AzureClient:
         return _files
 
     def add_job(
-        self, job_id: str, end_job_on_task_failure: bool = False
+        self, job_id: str, pool_name: str, end_job_on_task_failure: bool = False
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
         Args:
             job_id (str): name of job
+            pool_name (str): name of pool
             end_job_on_task_failure (bool): whether to end the job if a task fails. Default False.
         """
         # make sure the job_id does not have spaces

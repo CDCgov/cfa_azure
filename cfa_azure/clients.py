@@ -322,10 +322,10 @@ class AzureClient:
             "creation_time": round((end_time - start_time).total_seconds(), 2),
         }
 
-    def upload_files(self, files: list,
+    def upload_files(self,
+                     files: list,
                      container_name: str,
                      location: str = "", 
-                     file_only: bool = False,
                      verbose: bool = False) -> None:
         """Uploads the files in the list to the input Blob storage container as stored in the client.
 
@@ -343,10 +343,10 @@ class AzureClient:
             return None
     
         for file_name in files:
-            blob_client = self.blob_service_client.get_blob_client(
-                container=blob_c_name, blob=file_name
-            )
-            helpers.upload_blob_file(file_name, location, container_client, file_only, verbose)
+            helpers.upload_blob_file(filepath = file_name, 
+                                     location=location, 
+                                     container_client=container_client,
+                                     verbose=verbose)
 
 
     def upload_files_in_folder(
@@ -354,7 +354,6 @@ class AzureClient:
         folder_names: list[str],
         container_name: str, 
         location: str = "", 
-        keep_folder_structure: bool = True, 
         verbose: bool = True,
         force_upload: bool = True
         ) -> list[str]:

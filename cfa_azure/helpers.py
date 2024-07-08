@@ -570,11 +570,12 @@ def upload_files_in_folder(
     # get all files in folder
     file_list = []
     if not path.isdir(folder):
-        print(f"{folder} is not a folder/directory. Make sure to sepcify a valid folder.")
+        print(f"{folder} is not a folder/directory. Make sure to specify a valid folder.")
         return None
     for dirname, _, fname in walk(folder):
         for f in fname:
-            file_list.append(path.join(dirname, f))
+            _path = path.join(dirname, f)
+            file_list.append(_path)
     # iteratively call the upload_blob_file function to upload individual files
     for file in file_list:
         #get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders

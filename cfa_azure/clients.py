@@ -384,7 +384,7 @@ class AzureClient:
 
     def add_job(
         self, job_id: str, 
-        pool_name: str | None = None
+        pool_name: str | None = None,
         end_job_on_task_failure: bool = False
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.

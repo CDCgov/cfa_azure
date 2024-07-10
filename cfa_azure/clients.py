@@ -331,9 +331,8 @@ class AzureClient:
 
         Args:
             files (list): list of paths to files to upload
+            container_name (str): name of Blob Storage Container to upload file to
             location (str): the location (folder) inside the Blob container. Uploaded to root if "". Default is "".
-            container_client: a ContainerClient object to interact with Blob container.
-            file_only (bool): extracts only the file name from the full filename path if True, otherwise full path in filename is used in Blob container. Default False.
             verbose (bool): whether to be verbose in uploaded files. Defaults to False
         """
         container_client = self.blob_service_client.get_container_client(
@@ -363,8 +362,6 @@ class AzureClient:
             folder_names (list[str]): list of paths to folders
             container_name (str): the name of the Blob container
             location (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
-            blob_service_client (object): instance of Blob Service Client
-            keep_folder_structure (bool): whether to maintain the folder structure (if True) or extract just the filename (if False). Default is True.
             verbose (bool): whether to print the name of files uploaded. Default True.
             force_upload (bool): whether to force the upload despite the file count in folder. Default False.
 

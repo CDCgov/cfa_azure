@@ -1,6 +1,7 @@
 # import modules for use
 import datetime
 import json
+import logging
 import os
 import subprocess as sp
 import time
@@ -23,6 +24,8 @@ from azure.storage.blob import BlobServiceClient, ContainerClient
 from docker.errors import DockerException
 from os import path, walk
 from yaml import SafeLoader, dump, load
+
+logger = logging.getLogger(__name__)
 
 
 def read_config(config_path: str = "./configuration.toml"):
@@ -1648,3 +1651,39 @@ def list_blobs_flat(
             print(f"Name: {blob.name}")
 
     return blob_names
+
+def get_log_level() -> int:
+    """
+    Gets the LOG_LEVEL from the environment.
+
+    If it could not find one, set it to DEBUG.
+
+    If one was found, but not expected, set it to DEBUG
+    """
+    log_level = os.getenv("LOG_LEVEL")
+
+    if log_level is None:
+        logger.info("Could not find logging level. Using DEBUG")
+        return logging.DEBUG
+
+    match log_level.lower():
+        case "debug":
+            logger.info("Log level set to DEBUG")
+            return logging.DEBUG
+        case "info":
+            logger.info("Log level set to INFO")
+            return logging.INFO
+        case "warning" | "warn":
+            logger.info("Log level set to WARNING")
+            return logging.WARNING
+        case "error":
+            logger.info("Log level set to ERROR")
+            return logging.ERROR
+        case "critical":
+            logger.info("Log level set to CRITICAL")
+            return logging.CRITICAL
+        case ll:
+            logger.warning(
+                f"Did not recognize log level string {ll}. Using DEBUG"
+            )
+            return logging.DEBUG

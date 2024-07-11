@@ -1,10 +1,30 @@
 import datetime
 import json
-
+import logging
+import os
+from os.path import exists, join
 from azure.core.exceptions import HttpResponseError
 
-from cfa_azure import batch, helpers
+from cfa_azure import helpers
 
+logger = logging.getLogger(__name__)
+run_time = datetime.datetime.now()
+now_string = f"{run_time:%Y-%m-%d_%H:%M:%S%z}"
+# Logging
+if not exists("logs"):
+    os.mkdir("logs")
+logfile = join("logs", f"{now_string}.log")
+FORMAT = "[%(levelname)s] %(asctime)s: %(message)s"
+
+logging.basicConfig(
+    level=helpers.get_log_level(),
+    format=FORMAT,
+    datefmt="%Y-%m-%d_%H:%M:%S%z",
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(logfile),
+    ],
+)
 
 class AzureClient:
     def __init__(self, config_path: str):
@@ -31,16 +51,20 @@ class AzureClient:
         self.pool_parameters = None
         self.timeout = None
 
+        logger.debug("Attributes initialized in client.")
+
         # load config
         self.config = helpers.read_config(config_path)
+        logger.debug("config loaded")
 
         helpers.check_config_req(self.config)
         # extract info from config
         try:
             self.account_name = self.config["Batch"]["batch_account_name"]
+            logger.debug("account name read in from config")
         except Exception:
-            print("Batch account name not found in config.")
-            print(
+            logger.warning("Batch account name not found in config.")
+            logger.warning(
                 "Please add the batch_account_name in the Batch section of the config."
             )
 
@@ -48,22 +72,27 @@ class AzureClient:
             self.resource_group_name = self.config["Authentication"][
                 "resource_group"
             ]
+            logger.debug("resource group name read in from config")
         except Exception as e:
-            print(e)
+            logger.warning(e)
 
         # get credentials
         self.sp_secret = helpers.get_sp_secret(self.config)
+        logger.debug("generated SP secret.")
         self.sp_credential = helpers.get_sp_credential(self.config)
+        logger.debug("generated SP credential.")
 
         # create blob service account
         self.blob_service_client = helpers.get_blob_service_client(self.config)
+        logger.debug("generated Blob Service Client.")
 
         # create batch mgmt client
         self.batch_mgmt_client = helpers.get_batch_mgmt_client(self.config)
+        logger.debug("generated Batch Management Client.")
 
         # create batch service client
         self.batch_client = helpers.get_batch_service_client(self.config)
-        print("Client initialized! Happy coding!")
+        logger.info("Client initialized! Happy coding!")
 
     def set_debugging(self, debug: bool) -> None:
         """required method that determines whether debugging is on or off. Debug = True for 'on', debug = False for 'off'.
@@ -72,19 +101,20 @@ class AzureClient:
             debug (bool): True to turn debugging on, False to turn debugging off.
         """
         if debug is not True and debug is not False:
-            print("Please use True or False to set debugging mode.")
+            logger.warning("Please use True or False to set debugging mode.")
         elif debug is True:
             self.debug = debug
-            print("You turned debugging on.")
-            print("This automatically disables autoscaling.")
+            logger.info("You turned debugging on.")
+            logger.info("This automatically disables autoscaling.")
             self.scaling = "fixed"
-            print("*" * 50)
-            print(
+            logger.info("*" * 50)
+            logger.info(
                 "Jobs must be closed manually. Any jobs left running will continue to be billed as resources, which can rack up cloud costs."
             )
-            print("*" * 50)
+            logger.info("*" * 50)
         elif debug is False:
             self.debug = debug
+            logger.debug("Debugging turned off.")
 
     def set_pool_info(
         self,
@@ -112,17 +142,19 @@ class AzureClient:
         """
         # check if debug and scaling mode match, otherwise alert the user
         if self.debug is True and mode == "autoscale":
-            print("Debugging is set to True and autoscale is desired...")
-            print("This is not possible.")
-            print(
+            logger.debug("Debugging is set to True and autoscale is desired...")
+            logger.debug("This is not possible.")
+            logger.info(
                 "Either change debugging to False or set the scaling mode to fixed."
             )
             return None
         if mode == "autoscale" and autoscale_formula_path is None:
             use_default_autoscale_formula = True
             self.debug = False
+            logger.debug("Autoscale will be used with the default autoscale formula.")
         else:
             use_default_autoscale_formula = False
+            logger.debug("Autoscale formula provided by user.")
 
         blob_config = []
         if self.mounts:
@@ -132,8 +164,10 @@ class AzureClient:
                         mount[0], mount[1], cache_blobfuse, self.config
                     )
                 )
+                logger.debug(f"mount {mount} added to blob configuration.")
 
         self.mount_config = helpers.get_mount_config(blob_config)
+        logger.debug("mount config saved to client.")
         if mode == "fixed" or mode == "autoscale":
             self.scaling = mode
             self.autoscale_formula_path = autoscale_formula_path
@@ -155,8 +189,9 @@ class AzureClient:
                 use_default_autoscale_formula,
                 max_autoscale_nodes,
             )
+            logger.debug("pool parameters generated")
         else:
-            print("Please enter 'fixed' or 'autoscale' as the mode.")
+            logger.warning("Please enter 'fixed' or 'autoscale' as the mode.")
 
     def create_input_container(
         self, name: str, input_mount_dir: str = "input"
@@ -171,10 +206,12 @@ class AzureClient:
         self.input_mount_dir = helpers.format_rel_path(input_mount_dir)
         # add to self.mounts
         self.mounts.append((name, self.input_mount_dir))
+        logger.debug(f"Mounted {name} with relative mount dir {self.input_mount_dir}.")
         # create container and save the container client
         self.in_cont_client = helpers.create_container(
             self.input_container_name, self.blob_service_client
         )
+        logger.debug("Created container client for input container.")
 
     def create_output_container(
         self, name: str, output_mount_dir: str = "output"
@@ -189,10 +226,12 @@ class AzureClient:
         self.output_mount_dir = helpers.format_rel_path(output_mount_dir)
         # add to self.mounts
         self.mounts.append((name, self.output_mount_dir))
+        logger.debug(f"Mounted {name} with relative mount dir {self.output_mount_dir}.")
         # create_container and save the container client
         self.out_cont_client = helpers.create_container(
             self.output_container_name, self.blob_service_client
         )
+        logger.debug("Created container client for output container.")
 
     def create_blob_container(self, name: str, rel_mount_dir: str) -> None:
         """Creates an output container in Blob Storage.
@@ -204,11 +243,13 @@ class AzureClient:
         rel_mount_dir = helpers.format_rel_path(rel_mount_dir)
         # add to self.mounts
         self.mounts.append((name, rel_mount_dir))
+        logger.debug(f"Mounted {name} with relative mount dir {rel_mount_dir}.")
         # create_container and save the container client
         mount_container_client = helpers.create_container(
             name, self.blob_service_client
         )
         self.mount_container_clients.append((name, mount_container_client))
+        logger.debug(f"Created container client for container {name}.")
 
     def set_input_container(
         self, name: str, input_mount_dir: str = "input"

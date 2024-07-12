@@ -263,9 +263,11 @@ class AzureClient:
         container_client = self.blob_service_client.get_container_client(
             container=name
         )
+        logger.debug("input container client generated from blob service client.")
         input_mount_dir = helpers.format_rel_path(input_mount_dir)
+        logger.debug("formatted relative mount directory.")
         if not container_client.exists():
-            print(
+            logger.warning((
                 f"Container [{name}] does not exist. Please create it if desired."
             )
         else:
@@ -273,6 +275,7 @@ class AzureClient:
             self.input_mount_dir = input_mount_dir
             self.in_cont_client = container_client
             self.mounts.append((name, input_mount_dir))
+            logger.debug(f"Added input Blob container {name} to AzureClient.")
 
     def set_output_container(
         self, name: str, output_mount_dir: str = "output"
@@ -284,11 +287,13 @@ class AzureClient:
             output_mount_dir (str, optional): output mount directory. Defaults to "output".
         """
         output_mount_dir = helpers.format_rel_path(output_mount_dir)
+        logger.debug("formatted relative mount directory.")
         container_client = self.blob_service_client.get_container_client(
             container=name
         )
+        logger.debug("output container client generated from blob service client.")
         if not container_client.exists():
-            print(
+            logger.warning(
                 f"Container [{name}] does not exist. Please create it if desired."
             )
         else:
@@ -296,6 +301,7 @@ class AzureClient:
             self.output_mount_dir = output_mount_dir
             self.out_cont_client = container_client
             self.mounts.append((name, output_mount_dir))
+            logger.debug(f"Added output Blob container {name} to AzureClient.")
 
     def set_blob_container(self, name: str, rel_mount_dir: str) -> None:
         """Sets the output container to be used with the client.
@@ -305,15 +311,18 @@ class AzureClient:
             rel_mount_dir (str, optional): relative mount directory.
         """
         rel_mount_dir = helpers.format_rel_path(rel_mount_dir)
+        logger.debug("formatted relative mount directory.")
         container_client = self.blob_service_client.get_container_client(
             container=name
         )
+        logger.debug("Blob container client generated from blob service client.")
         if not container_client.exists():
-            print(
+            logger.warning(
                 f"Container [{name}] does not exist. Please create it if desired."
             )
         else:
             self.mounts.append((name, rel_mount_dir))
+            logger.debug(f"Added Blob container {name} to AzureClient.")
 
     def create_pool(self, pool_name: str) -> dict:
         """Creates the pool for Azure Batch jobs
@@ -328,7 +337,7 @@ class AzureClient:
             dict: dictionary with pool name and creation time.
         """
         if self.pool_parameters is None:
-            raise Exception(
+            logger.exception(
                 "No pool information given. Please use `set_pool_info()` before running `create_pool()`."
             )
 
@@ -339,10 +348,10 @@ class AzureClient:
             # set scaling
             self.scaling = "autoscale"
             # set autoscale formula from default
-        print(
+        logger.info(
             f"Attempting to create a pool with {(self.config)['Batch']['pool_vm_size']} VMs."
         )
-        print("Verify the size of the VM is appropriate for the use case.")
+        logger.info("Verify the size of the VM is appropriate for the use case.")
         try:
             self.batch_mgmt_client.pool.create(
                 resource_group_name=self.resource_group_name,
@@ -350,10 +359,10 @@ class AzureClient:
                 pool_name=self.pool_name,
                 parameters=self.pool_parameters,
             )
-            print(f"Pool {pool_name!r} created.")
+            logger.info(f"Pool {pool_name!r} created.")
         except HttpResponseError as error:
             if "PropertyCannotBeUpdated" in error.message:
-                print(f"Pool {pool_name!r} already exists")
+                logger.warning(f"Pool {pool_name!r} already exists")
             else:
                 raise error
 
@@ -378,8 +387,9 @@ class AzureClient:
         """
         container_client = self.blob_service_client.get_container_client(
             container=container_name)
+        logger.debug(f"Container client generated for {container_name}.")
         if not container_client.exists():
-            print(f"Blob container {container_name} does not exist. Please try again with an existing Blob container.")
+            logger.error(f"Blob container {container_name} does not exist. Please try again with an existing Blob container.")
             return None
     
         for file_name in files:
@@ -387,6 +397,8 @@ class AzureClient:
                                      location=location, 
                                      container_client=container_client,
                                      verbose=verbose)
+            logger.debug("Finished running helpers.upload_blob_file().")
+        logger.debug("Uploaded all files in files list.")
 
 
     def upload_files_in_folder(
@@ -411,6 +423,7 @@ class AzureClient:
         """
         _files = []
         for _folder in folder_names:
+            logger.debug(f"trying to upload folder {_folder}.")
             _uploaded_files = helpers.upload_files_in_folder(
                 folder = _folder, 
                 container_name=container_name, 
@@ -419,7 +432,7 @@ class AzureClient:
                 verbose=verbose,
                 force_upload=force_upload)
             _files += _uploaded_files
-        print(f"uploaded {_files}")
+        logger.debug(f"uploaded {_files}")
         self.files += _files
         return _files
 
@@ -437,16 +450,17 @@ class AzureClient:
         """
         # make sure the job_id does not have spaces
         job_id_r = job_id.replace(" ", "")
-        print(f"job_id: {job_id_r}")
+        logger.debug(f"job_id: {job_id_r}")
 
         if pool_name:
             p_name = pool_name
         elif self.pool_name:
             p_name = self.pool_name
         else:
-            print("Please specify a pool for the job and try again.")
+            logger.error("Please specify a pool for the job and try again.")
             return None
         # add the job to the pool
+        logger.debug(f"Attempting to add job {job_id_r}.")
         helpers.add_job(
             job_id=job_id_r,
             pool_id=p_name,
@@ -488,7 +502,7 @@ class AzureClient:
             elif self.files:
                 in_files = self.files
             else:
-                print(
+                logger.warning(
                     "use_uploaded_files set to True but no input files found."
                 )
         else:
@@ -496,6 +510,7 @@ class AzureClient:
 
         if container is not None:
             # check container exists
+            logger.debug("Checking the container exists.")
             registry = container.split("/")[0]
             repo_tag = container.split("/")[-1]
             repo = repo_tag.split(":")[0]
@@ -507,23 +522,29 @@ class AzureClient:
                 raise ValueError(f"{container} does not exist.")
         else:
             if self.full_container_name is None:
+                logger.debug("Gettting full pool info")
                 pool_info = helpers.get_pool_full_info(
                     self.resource_group_name,
                     self.account_name,
                     self.pool_name,
                     self.batch_mgmt_client,
                 )
+                logger.debug("Generated full pool info.")
                 vm_config = (
                     pool_info.deployment_configuration.virtual_machine_configuration
                 )
+                logger.debug("Generated VM config.")
                 pool_container = (
                     vm_config.container_configuration.container_image_names
                 )
                 container_name = pool_container[0].split("://")[-1]
+                logger.debug(f"Container name set to {container_name}.")
             else:
                 container_name = self.full_container_name
+                logger.debug(f"Container name set to {container_name}.")
 
         # run tasks for input files
+        logger.debug("Adding tasks to job.")
         task_ids = helpers.add_task_to_job(
             job_id=job_id,
             task_id_base=job_id,

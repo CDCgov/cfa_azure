@@ -3,6 +3,7 @@ import json
 import logging
 import os
 from os.path import exists, join
+import sys
 from azure.core.exceptions import HttpResponseError
 
 from cfa_azure import helpers
@@ -267,7 +268,7 @@ class AzureClient:
         input_mount_dir = helpers.format_rel_path(input_mount_dir)
         logger.debug("formatted relative mount directory.")
         if not container_client.exists():
-            logger.warning((
+            logger.warning(
                 f"Container [{name}] does not exist. Please create it if desired."
             )
         else:
@@ -566,6 +567,7 @@ class AzureClient:
             job_id (str): job id
         """
         # monitor the tasks
+        logger.debug(f"starting to monitor job {job_id}.")
         monitor = helpers.monitor_tasks(
             job_id,
             self.timeout,
@@ -579,12 +581,12 @@ class AzureClient:
 
         # delete job automatically if debug is false
         if self.debug is False:
-            print("Cleaning up - deleting job")
+            logger.info("Cleaning up - deleting job")
             # Delete job
             self.batch_client.job.delete(job_id)
         elif self.debug is True:
-            print("Job complete. Time to debug. Job not deleted.")
-            print("**Remember to close out the job when debugging.**")
+            logger.info("Job complete. Time to debug. Job not deleted.")
+            logger.info("**Remember to close out the job when debugging.**")
 
     def check_job_status(self, job_id: str) -> None:
         """checks various components of a job
@@ -596,18 +598,19 @@ class AzureClient:
             job_id (str): name of job
         """
         # whether job exists
+        logger.debug("Checking job exists.")
         if helpers.check_job_exists(job_id, self.batch_client):
-            print(f"Job {job_id} exists.")
+            logger.debug(f"Job {job_id} exists.")
             c_tasks = helpers.get_completed_tasks(job_id, self.batch_client)
-            print("Task info:")
-            print(c_tasks)
+            logger.info("Task info:")
+            logger.info(c_tasks)
             if helpers.check_job_complete(job_id, self.batch_client):
-                print("Job completed.")
+                logger.info(f"Job {job_id} completed.")
             else:
                 j_state = helpers.get_job_state(job_id, self.batch_client)
-                print(f"Job in {j_state} state")
+                logger.info(f"Job in {j_state} state")
         else:
-            print(f"Job {job_id} does not exist.")
+            logger.info(f"Job {job_id} does not exist.")
 
     def delete_job(self, job_id: str) -> None:
         """delete a specified job
@@ -615,8 +618,9 @@ class AzureClient:
         Args:
             job_id (str): job id of job to terminate and delete
         """
+        logger.debug(f"Attempting to delete {job_id}.")
         self.batch_client.job.delete(job_id)
-        print(f"Job {job_id} deleted.")
+        logger.info(f"Job {job_id} deleted.")
 
     def package_and_upload_dockerfile(
         self,
@@ -641,6 +645,7 @@ class AzureClient:
         self.full_container_name = helpers.package_and_upload_dockerfile(
             registry_name, repo_name, tag, path_to_dockerfile, use_device_code
         )
+        logger.debug("Completed package_and_upload() function.")
         self.container_registry_server = f"{registry_name}.azurecr.io"
         self.registry_url = f"https://{self.container_registry_server}"
         self.container_image_name = f"https://{self.full_container_name}"
@@ -668,8 +673,10 @@ class AzureClient:
             self.registry_url = f"https://{self.container_registry_server}"
             self.container_image_name = f"https://{container_name}"
             self.full_container_name = container_name
+            logger.debug("ACR container set.")
             return self.full_container_name
         else:
+            logger.warning("ACR container does not exist.")
             return None
 
     def download_file(
@@ -694,6 +701,7 @@ class AzureClient:
                 Instance of ContainerClient provided with the storage account. Defaults to None.
         """
         # use the output container client by default for downloading files
+        logger.debug("Attempting to download file.")
         if container_client is None:
             helpers.download_file(
                 self.output_container_client, src_path, dest_path, do_check
@@ -716,6 +724,7 @@ class AzureClient:
             container_client (ContainerClient, optional):
                 Instance of ContainerClient provided with the storage account. Defaults to None.
         """
+        logger.debug("Attempting to download directory.")
         if container_client is None:
             helpers.download_directory(
                 self.output_container_client, src_path, dest_path
@@ -744,11 +753,11 @@ class AzureClient:
                 self.batch_mgmt_client,
             )
             vm_size = str(json.loads(_info)["vm_size"])
-            print(f"Pool {pool_name} uses {vm_size} VMs.")
-            print("Make sure the VM size matches the use case.\n")
+            logger.info(f"Pool {pool_name} uses {vm_size} VMs.")
+            logger.info("Make sure the VM size matches the use case.\n")
         else:
-            print(f"Pool {pool_name} does not exist.")
-            print("Choose an existing pool or create a new pool.")
+            logger.warning(f"Pool {pool_name} does not exist.")
+            logger.info("Choose an existing pool or create a new pool.")
 
     def get_pool_info(self) -> dict:
         """Retrieve information about pool used by client.
@@ -794,17 +803,19 @@ class AzureClient:
 
     def list_blob_files(self, blob_container: str = None):
         if not self.mounts and blob_container is None:
-            print(
+            logger.warning(
                 "Please specify a blob container or have mounts associated with the client."
             )
             return None
         if blob_container:
+            logger.debug(f"Listing blobs in {blob_container}")
             filenames = helpers.list_blobs_flat(
                 container_name=blob_container,
                 blob_service_client=self.blob_service_client,
                 verbose=False,
             )
         elif self.mounts:
+            logger.debug(f"Looping through mounts.")
             filenames = []
             for mount in self.mounts:
                 _files = helpers.list_blobs_flat(

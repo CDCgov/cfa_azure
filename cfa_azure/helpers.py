@@ -434,26 +434,26 @@ def create_batch_pool(batch_mgmt_client: object, batch_json: dict):
     Returns:
         str: pool ID value of created pool
     """
-    print("Attempting to create the Azure Batch pool...")
+    logger.info("Attempting to create the Azure Batch pool...")
     try:
         resource_group_name = batch_json["resource_group_name"]
         account_name = batch_json["account_name"]
         pool_id = batch_json["pool_id"]
         parameters = batch_json["pool_parameters"]
 
-        print(f"Creating pool: {pool_id} in the account: {account_name}...")
+        logger.info(f"Creating pool: {pool_id} in the account: {account_name}...")
         batch_mgmt_client.pool.create(
             resource_group_name=resource_group_name,
             account_name=account_name,
             pool_name=pool_id,
             parameters=parameters,
         )
-        print(f"Pool {pool_id!r} created successfully.")
+        logger.info(f"Pool {pool_id!r} created successfully.")
     except HttpResponseError as error:
         if "PropertyCannotBeUpdated" in error.message:
-            print(f"Pool {pool_id!r} already exists. No further action taken.")
+            logger.error(f"Pool {pool_id!r} already exists. No further action taken.")
         else:
-            print(f"Error creating pool {pool_id!r}: {error}")
+            logger.error(f"Error creating pool {pool_id!r}: {error}")
             raise
     return pool_id
 
@@ -472,13 +472,13 @@ def delete_pool(
         pool_name (str): name of pool to delete
         batch_mgmt_client (object): instance of BatchManagementClient
     """
-    print(f"Attempting to delete {pool_name}...")
+    logger.debug(f"Attempting to delete {pool_name}...")
     batch_mgmt_client.pool.begin_delete(
         resource_group_name=resource_group_name,
         account_name=account_name,
         pool_name=pool_name,
     )
-    print(f"Pool {pool_name} deleted.")
+    logger.info(f"Pool {pool_name} deleted.")
 
 
 def list_containers(blob_service_client: object):
@@ -495,8 +495,8 @@ def list_containers(blob_service_client: object):
 
     for container in blob_service_client.list_containers():
         container_list.append(container.name)
-        # print(f"Found container: {container.name}")
-    # print("Completed listing containers.")
+        logger.debug(f"Found container: {container.name}")
+    logger.debug("Completed listing containers.")
     return container_list
 
 def upload_blob_file(
@@ -526,7 +526,7 @@ def upload_blob_file(
         _name = path.join(location, _file)
         container_client.upload_blob(name=_name, data=data, overwrite=True)
     if verbose:
-        print(f"Uploaded {filepath} to {container_client.container_name} as {_name}.")
+        logger.info(f"Uploaded {filepath} to {container_client.container_name} as {_name}.")
 
 
 def upload_files_in_folder(
@@ -552,13 +552,15 @@ def upload_files_in_folder(
         list: list of files uploaded
     """
     # check container exists
+    logger.debug(f"Checking Blob container {container_name} exists.")
     container_client = blob_service_client.get_container_client(
         container=container_name
     )
     if not container_client.exists():
-        print(f"Blob container {container_name} does not exist. Please try again with an existing Blob container.")
+        logger.error(f"Blob container {container_name} does not exist. Please try again with an existing Blob container.")
         return None
     #check number of files if force_upload False
+    logger.debug(f"Blob container {container_name} found. Uploading files...")
     if not force_upload:
         fnum = []
         for _, _, file in os.walk(os.path.realpath(f"./{folder}")):
@@ -575,7 +577,7 @@ def upload_files_in_folder(
     # get all files in folder
     file_list = []
     if not path.isdir(folder):
-        print(f"{folder} is not a folder/directory. Make sure to specify a valid folder.")
+        logger.warning(f"{folder} is not a folder/directory. Make sure to specify a valid folder.")
         return None
     for dirname, _, fname in walk(folder):
         for f in fname:
@@ -587,6 +589,7 @@ def upload_files_in_folder(
         drop_folder = path.dirname(file).replace(folder, "", 1)
         if drop_folder.startswith("/"):
             drop_folder = drop_folder[1:] #removes the / so path.join doesnt mistake for root
+        logger.debug(f"Calling upload_blob_file for {file}")
         upload_blob_file(file, path.join(location, drop_folder), container_client, verbose)
     return file_list
 
@@ -600,8 +603,10 @@ def get_batch_service_client(config: dict):
     Returns:
         object: Batch Service Client object
     """
-    # print("Initializing Batch Service Client...")
+    logger.debug("Initializing Batch Service Client...")
+    logger.debug("Pulling in SP Secret for batch client.")
     sp_secret = get_sp_secret(config)
+    logger.debug("Attempting to create Batch Service Client.")
     batch_client = BatchServiceClient(
         credentials=ServicePrincipalCredentials(
             client_id=config["Authentication"]["application_id"],
@@ -611,7 +616,7 @@ def get_batch_service_client(config: dict):
         ),
         batch_url=config["Batch"]["batch_service_url"],
     )
-    # print("Batch Service Client initialized successfully.")
+    logger.debug("Batch Service Client initialized successfully.")
     return batch_client
 
 
@@ -628,27 +633,30 @@ def add_job(
         end_job_on_task_failure (bool): whether to end a running job if a task fails
         batch_client (object): batch client object
     """
-    print(f"Attempting to create job '{job_id}'...")
+    logger.debug(f"Attempting to create job '{job_id}'...")
     if end_job_on_task_failure:
         end_job_str = "performExitOptionsJobAction"
+        logger.debug("Setting parameter to end job on task failure.")
     else:
         end_job_str = "noAction"
-
+        logger.debug("No action set for job ending.")
+    logger.debug("Adding job parameters to job.")
     job = batchmodels.JobAddParameter(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
         uses_task_dependencies=True,
         on_task_failure=end_job_str,
     )
+    logger.debug("Attempting to add job.")
     try:
         batch_client.job.add(job)
-        print(f"Job '{job_id}' created successfully.")
+        logger.info(f"Job '{job_id}' created successfully.")
     except batchmodels.BatchErrorException as err:
         if err.error.code == "JobExists":
-            print(f"Job '{job_id}' already exists. No further action taken.")
+            logger.warning(f"Job '{job_id}' already exists. No further action taken.")
         else:
-            print(f"Error creating job '{job_id}': {err}")
-            print("Rename this job or delete the pre-existing job.")
+            logger.error(f"Error creating job '{job_id}': {err}")
+            logger.error("Rename this job or delete the pre-existing job.")
             raise
 
 
@@ -679,9 +687,11 @@ def add_task_to_job(
     Returns:
         list: list of task IDs created
     """
+    logger.debug("Adding add_task process.")
     # convert docker command to string if in list format
     if isinstance(docker_command, list):
         d_cmd_str = " ".join(docker_command)
+        logger.debug("Docker command converted to string.")
     else:
         d_cmd_str = docker_command
 
@@ -698,14 +708,17 @@ def add_task_to_job(
         # Create a TaskDependencies object to pass in
         if isinstance(depends_on, str):
             depends_on = [depends_on]
+            logger.debug("Adding task dependency.")
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
-
+        
+    logger.debug("Creating mount configuration string.")
     mount_str = ""
     # src = env variable to fsmounts/rel_path
     # target = the directory(path) you reference in your code
     if mounts is not None:
         mount_str = ""
         for mount in mounts:
+            logger.debug(f"Adding mount to mount string.")
             mount_str = (
                 mount_str
                 + "--mount type=bind,source="
@@ -738,6 +751,7 @@ def add_task_to_job(
     else:
         task_id = f"{task_id_base}-{str(task_id_max + 1)}"
         command_line = d_cmd_str
+        logger.debug(f"Adding task {task_id}")
         task = batchmodels.TaskAddParameter(
             id=task_id,
             command_line=command_line,
@@ -750,7 +764,7 @@ def add_task_to_job(
             depends_on=task_deps,
         )
         batch_client.task.add(job_id=job_id, task=task)
-        print(f"Task '{task_id}' added to job '{job_id}'.")
+        logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
         t = []
         t.append(task_id)
         return t
@@ -779,7 +793,7 @@ def monitor_tasks(
         dict: dictionary with keys completed (whether the job completed) and runtime (total elapsed time)
     """
     # start monitoring
-    print(
+    logger.info(
         f"Starting to monitor tasks for job '{job_id}' with a timeout of {timeout} minutes."
     )
 
@@ -794,10 +808,10 @@ def monitor_tasks(
     _timeout = datetime.timedelta(minutes=timeout)
     timeout_expiration = start_time + _timeout
 
-    print(
+    logger.debug(
         f"Job '{job_id}' monitoring started at {start_time}. Timeout at {timeout_expiration}."
     )
-    print("-" * 20)
+    logger.debug("-" * 20)
 
     # count tasks and print to user the starting value
     # as tasks complete, print which complete
@@ -806,7 +820,7 @@ def monitor_tasks(
 
     # get total tasks
     total_tasks = len([task for task in tasks])
-    print(f"Total tasks to monitor: {total_tasks}")
+    logger.info(f"Total tasks to monitor: {total_tasks}")
 
     # pool setup and status
 
@@ -848,17 +862,27 @@ def monitor_tasks(
             "failures",
             end="\r",
         )
+        logger.debug(
+            completions,
+            "completed;",
+            incompletions,
+            "remaining;",
+            successes,
+            "successes;",
+            failures,
+            "failures"
+        )
 
         if not incomplete_tasks:
-            print("\nAll tasks completed.")
+            logger.info("\nAll tasks completed.")
             completed = True
             break
 
     if completed:
-        print(
+        logger.info(
             "All tasks have reached 'Completed' state within the timeout period."
         )
-        print(successes, "task(s) succeeded,", failures, "failed.")
+        logger.info(successes, "task(s) succeeded,", failures, "failed.")
     else:
         raise RuntimeError(
             f"ERROR: Tasks did not reach 'Completed' state within timeout period of {timeout} minutes."
@@ -866,7 +890,7 @@ def monitor_tasks(
 
     end_time = datetime.datetime.now().replace(microsecond=0)
     runtime = end_time - start_time
-    print(f"Monitoring ended: {end_time}. Total elapsed time: {runtime}.")
+    logger.info(f"Monitoring ended: {end_time}. Total elapsed time: {runtime}.")
     return {"completed": completed, "elapsed time": runtime}
 
 
@@ -883,7 +907,7 @@ def list_files_in_container(
     Returns:
         list: list of file names in the container
     """
-    print(f"Listing files in container '{container_name}'...")
+    logger.info(f"Listing files in container '{container_name}'...")
     try:
         cc = ContainerClient(
             account_url=config["Storage"]["storage_account_url"],
@@ -891,18 +915,12 @@ def list_files_in_container(
             container_name=container_name,
         )
         files = [f for f in cc.list_blob_names()]
-        print(f"Found {len(files)} files in container '{container_name}'.")
+        logger.info(files)
+        logger.info(f"Found {len(files)} files in container '{container_name}'.")
         return files
     except Exception as e:
-        print(f"Error connecting to container '{container_name}': {e}")
+        logger.error(f"Error connecting to container '{container_name}': {e}")
         return None
-
-    files = []
-    for f in cc.list_blob_names():
-        files.append(
-            f
-        )  # gather a list of file names from list_blob_names iterator
-    return files
 
 
 def df_to_yaml(df: pd.DataFrame):
@@ -914,11 +932,11 @@ def df_to_yaml(df: pd.DataFrame):
     Returns:
         dict:  yaml string converted from dataframe
     """
-    print("Converting DataFrame to YAML format...")
+    logger.debug("Converting DataFrame to YAML format...")
     yaml_str = dump(
         df.to_dict(orient="records"), sort_keys=False, default_flow_style=False
     )
-    print("Conversion complete.")
+    logger.debug("Conversion complete.")
     return yaml_str
 
 
@@ -931,9 +949,9 @@ def yaml_to_df(yaml_file: dict):
     Returns:
         pd.DataFrame: pandas dataframe converted from yaml file
     """
-    print("Converting YAML to DataFrame...")
+    logger.debug("Converting YAML to DataFrame...")
     df = pd.json_normalize(load(yaml_file, Loader=SafeLoader))
-    print("Conversion complete.")
+    logger.debug("Conversion complete.")
     return df
 
 
@@ -946,14 +964,15 @@ def edit_yaml_r0(file_path: str, r0_start=1, r0_end=4, step=0.1):
         r0_end (int, optional): The upped end of the r0 range (inclusive). Defaults to 4.
         step (float, optional): The step size of each r0 increase. Defaults to 0.1.
     """
-    print(
+    logger.debug(
         f"Starting to edit YAML file '{file_path}' with r0 range from {r0_start} to {r0_end} by steps of {step}."
     )
 
     with open(file_path, "r") as file:
         y = yaml.safe_load(file)
-
+    logger.debug("Getting list or r0 values.")
     r0_list = np.arange(r0_start, r0_end + step, step, dtype=float).tolist()
+    logger.debug("Looping through r0 values.")
     for r0 in r0_list:
         r0 = round(r0, len(str(step).split(".")[1]))
         y["baseScenario"]["r0"] = r0
@@ -961,8 +980,8 @@ def edit_yaml_r0(file_path: str, r0_start=1, r0_end=4, step=0.1):
         outfile = f"{file_path.replace('.yaml', '')}_{str(r0).replace('.', '-')}.yaml"
         with open(outfile, "w") as f:
             yaml.dump(y, f, default_flow_style=False)
-        print(f"Generated modified YAML file with r0={r0} at '{outfile}'.")
-    print("Completed editing YAML files.")
+        logger.debug(f"Generated modified YAML file with r0={r0} at '{outfile}'.")
+    logger.debug("Completed editing YAML files.")
 
 
 def get_user_identity(config: str):
@@ -974,6 +993,7 @@ def get_user_identity(config: str):
     Returns:
         dict: the dictionary containing user identity information to be used with the pool parameters.
     """
+    logger.debug("Getting user identity configuration.")
     user_identity = {
         "type": "UserAssigned",
         "userAssignedIdentities": {
@@ -995,6 +1015,7 @@ def get_network_config(config: str):
     Returns:
         dict: the dictionary containing network configurations to be used with the pool parameters.
     """
+    logger.debug("Getting network configuration.")
     network_config = {
         "subnetId": config["Authentication"]["subnet_id"],
         "publicIPAddressConfiguration": {"provision": "NoPublicIPAddresses"},
@@ -1020,6 +1041,7 @@ def get_deployment_config(
     Returns:
         dict: dictionary containing info for container deployment. Uses ubuntu server with info obtained from config file.
     """
+    logger.debug("Getting deployment config.")
     deployment_config = {
         "virtualMachineConfiguration": {
             "imageReference": {
@@ -1067,13 +1089,15 @@ def get_blob_config(
     Returns:
         dict: dictionary containing info for blob storage configuration. Used as input to get_mount_config().
     """
-    print(
+    logger.debug(
         f"Generating blob configuration for container '{container_name}' with mount path '{rel_mount_path}'..."
     )
     if cache_blobfuse:
         blob_str = ""
+        logger.debug("No Blob caching in use.")
     else:
         blob_str = "-o direct_io"
+        logger.debug("Will use blob caching.")
 
     blob_config = {
         "azureBlobFileSystemConfiguration": {
@@ -1088,6 +1112,7 @@ def get_blob_config(
             "relativeMountPath": rel_mount_path,
         }
     }
+    logger.debug("Generated Blob configuration.")
     return blob_config
 
 
@@ -1103,6 +1128,7 @@ def get_mount_config(blob_config: list[str]):
     _mount_config = []
     for blob in blob_config:
         _mount_config.append(blob)
+    logger.debug("Generated mount configuration.")
     return _mount_config
 
 
@@ -1138,7 +1164,7 @@ def get_pool_parameters(
     Returns:
         dict: dict of pool parameters for pool creation
     """
-    print(
+    logger.debug(
         f"Setting up pool parameters in '{mode}' mode with timeout={timeout} minutes..."
     )
     if mode == "fixed":
@@ -1149,6 +1175,7 @@ def get_pool_parameters(
                 "resizeTimeout": f"PT{timeout}M",
             }
         }
+        logger.debug("Fixed mode set with scale settings.")
     elif mode == "autoscale" and use_default_autoscale_formula is False:
         scale_settings = {
             "autoScale": {
@@ -1158,6 +1185,7 @@ def get_pool_parameters(
                 ),
             }
         }
+        logger.debug("Autoscale mode set with custom autoscale formula.")
     elif mode == "autoscale" and use_default_autoscale_formula is True:
         scale_settings = {
             "autoScale": {
@@ -1167,7 +1195,9 @@ def get_pool_parameters(
                 ),
             }
         }
+        logger.debug("Autoscale mode set with default autoscale formula.")
     else:
+        logger.debug("Returning empty pool parameters.")
         return {}
 
     pool_parameters = {
@@ -1198,7 +1228,7 @@ def get_pool_parameters(
             "mountConfiguration": mount_config,
         },
     }
-    print("Pool parameters successfully configured.")
+    logger.debug("Pool parameters successfully configured.")
     return pool_parameters
 
 

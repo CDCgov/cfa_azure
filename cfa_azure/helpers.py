@@ -43,18 +43,18 @@ def read_config(config_path: str = "./configuration.toml"):
     # print("Attempting to read configuration from:", config_path)
     try:
         config = toml.load(config_path)
-        # print("Configuration file loaded successfully.")
+        logger.debug("Configuration file loaded.")
         return config
     except FileNotFoundError as e:
-        print(
+        logger.warning(
             "Configuration file not found. Make sure the location (path) is correct."
         )
-        print(e)
+        logger.exception(e)
     except Exception as e:
-        print(
+        logger.warning(
             "Error occurred while loading the configuration file. Check file format and contents."
         )
-        print(e)
+        logger.exception(e)
 
 
 def create_container(container_name: str, blob_service_client: object):
@@ -67,15 +67,15 @@ def create_container(container_name: str, blob_service_client: object):
     Returns:
        object: ContainerClient object
     """
-    print(f"Attempting to create or access container: {container_name}")
+    logger.debug(f"Attempting to create or access container: {container_name}")
     container_client = blob_service_client.get_container_client(
         container=container_name
     )
     if not container_client.exists():
         container_client.create_container()
-        print(f"Container [{container_name}] created successfully.")
+        logger.debug(f"Container [{container_name}] created successfully.")
     else:
-        print(
+        logger.debug(
             f"Container [{container_name}] already exists. No action needed."
         )
     return container_client
@@ -95,21 +95,21 @@ def get_autoscale_formula(filepath: str = None, text_input: str = None):
     if filepath is None and text_input is None:
         # get default autoscale formula:
         autoscale_text = generate_autoscale_formula()
-        print(
+        logger.debug(
             "Default autoscale formula used. Please provide a path to autoscale formula to sepcify your own formula."
         )
         return autoscale_text
     elif filepath is not None:
         try:
             with open(filepath, "r") as autoscale_text:
-                print(f"Autoscale formula successfully read from {filepath}.")
+                logger.debug(f"Autoscale formula successfully read from {filepath}.")
                 return autoscale_text.read()
         except Exception:
-            print(
+            logger.error(
                 f"Error reading autoscale formula from {filepath}. Check file path and permissions."
             )
     elif text_input is not None:
-        print("Autoscale formula provided via text input.")
+        logger.debug("Autoscale formula provided via text input.")
         return text_input
 
 
@@ -125,31 +125,33 @@ def get_sp_secret(config: dict):
     Example:
         sp_secret = get_sp_secret(config)
     """
-    # print("Retrieving service principal secret from Azure Key Vault...")
+    logger.debug("Attempting to retrieve Azure credential.")
     try:
         user_credential = DefaultAzureCredential()
-        # print("User credential obtained.")
+        logger.debug("Credential obtained.")
     except Exception as e:
-        print("Error obtaining user credentials:", e)
+        logger.error("Error obtaining credential:", e)
 
+    logger.debug("Attempting to establish secret client.")
     try:
         secret_client = SecretClient(
             vault_url=config["Authentication"]["vault_url"],
             credential=user_credential,
         )
-        # print("Secret client initialized.")
+        logger.debug("Secret client initialized.")
     except KeyError as e:
-        print("Error:", e, "Key not found in configuration.")
+        logger.error("Error:", e, "Key not found in configuration.")
 
+    logger.debug("Attempting to retrieve Service Principal secret.")
     try:
         sp_secret = secret_client.get_secret(
             config["Authentication"]["vault_sp_secret_id"]
         ).value
-        # print("Service principal secret successfully retrieved.")
+        logger.debug("Service principal secret successfully retrieved.")
         return sp_secret
     except Exception as e:
-        print("Error retrieving secret:", e)
-        print(
+        logger.error("Error retrieving secret:", e)
+        logger.warning(
             "Check that vault_uri and vault_sp_secret_id are correctly configured in the config file."
         )
 
@@ -163,7 +165,7 @@ def get_sp_credential(config: dict):
     Returns:
         class: client credential for Azure Blob Service Client
     """
-    # print("Attempting to obtain service principal credentials...")
+    logger.debug("Attempting to obtain service principal credentials...")
     sp_secret = get_sp_secret(config)
     try:
         sp_credential = ClientSecretCredential(
@@ -171,10 +173,10 @@ def get_sp_credential(config: dict):
             client_id=config["Authentication"]["application_id"],
             client_secret=sp_secret,
         )
-        # print("Service principal credentials obtained successfully.")
+        logger.debug("Service principal credentials obtained successfully.")
         return sp_credential
     except KeyError as e:
-        print(
+        logger.error(
             f"Configuration error: '{e}' does not exist in the config file. Please add it in the Authentication section.",
         )
 
@@ -188,17 +190,17 @@ def get_blob_service_client(config: dict):
     Returns:
         class: an instance of BlobServiceClient
     """
-    # print("Initializing Blob Service Client...")
+    logger.debug("Initializing Blob Service Client...")
     sp_credential = get_sp_credential(config)
     try:
         blob_service_client = BlobServiceClient(
             account_url=config["Storage"]["storage_account_url"],
             credential=sp_credential,
         )
-        # print("Blob Service Client successfully created.")
+        logger.debug("Blob Service Client successfully created.")
         return blob_service_client
     except KeyError as e:
-        print(
+        logger.error(
             f"Configuration error: '{e}' does not exist in the config file. Please add it in the Storage section.",
         )
 
@@ -212,17 +214,17 @@ def get_batch_mgmt_client(config: dict):
     Returns:
         class: an instance of the Batch Management Client
     """
-    # print("Initializing Batch Management Client...")
+    logger.debug("Initializing Batch Management Client...")
     sp_credential = get_sp_credential(config)
     try:
         batch_mgmt_client = BatchManagementClient(
             credential=sp_credential,
             subscription_id=config["Authentication"]["subscription_id"],
         )
-        # print("Batch Management Client successfully created.")
+        logger.debug("Batch Management Client successfully created.")
         return batch_mgmt_client
     except KeyError as e:
-        print(
+        logger.error(
             f"Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section.",
         )
 
@@ -241,22 +243,22 @@ def create_blob_containers(
     """
     # print("Preparing to create blob containers...")
     if input_container_name:
-        print(
+        logger.info(
             f"Attempting to create input container: '{input_container_name}'..."
         )
         create_container(input_container_name, blob_service_client)
     else:
-        print(
+        logger.warning(
             "Input container name not specified. Skipping input container creation."
         )
 
     if output_container_name:
-        print(
+        logger.info(
             f"Attempting to create output container: '{output_container_name}'..."
         )
         create_container(output_container_name, blob_service_client)
     else:
-        print(
+        logger.warning(
             "Output container name not specified. Skipping output container creation."
         )
 
@@ -278,7 +280,7 @@ def get_batch_pool_json(
     Returns:
         json: relevant information for Batch pool creation
     """
-    print("Preparing batch pool configuration...")
+    logger.debug("Preparing batch pool configuration...")
     # User-assigned identity for the pool
     user_identity = {
         "type": "UserAssigned",
@@ -289,7 +291,7 @@ def get_batch_pool_json(
             }
         },
     }
-    print("User identity configuration prepared.")
+    logger.debug("User identity configuration prepared.")
 
     # Network configuration with no public IP and virtual network
     network_config = {
@@ -297,7 +299,7 @@ def get_batch_pool_json(
         "publicIPAddressConfiguration": {"provision": "NoPublicIPAddresses"},
         "dynamicVnetAssignmentScope": "None",
     }
-    print("Network configuration prepared.")
+    logger.debug("Network configuration prepared.")
 
     # Virtual machine configuration
     deployment_config = {
@@ -330,7 +332,7 @@ def get_batch_pool_json(
             },
         }
     }
-    print("VM and container configurations prepared.")
+    logger.debug("VM and container configurations prepared.")
 
     # Mount configuration
     mount_config = [
@@ -361,10 +363,10 @@ def get_batch_pool_json(
             }
         },
     ]
-    print("Mount configuration prepared.")
+    logger.debug("Mount configuration prepared.")
 
     # Assemble the pool parameters JSON
-    print("Generating autoscale formula...")
+    logger.debug("Generating autoscale formula...")
     pool_parameters = {
         "identity": user_identity,
         "properties": {
@@ -400,7 +402,7 @@ def get_batch_pool_json(
             "mountConfiguration": mount_config,
         },
     }
-    print("Batch pool parameters assembled.")
+    logger.debug("Batch pool parameters assembled.")
 
     pool_id = config["Batch"]["pool_id"]
     account_name = config["Batch"]["batch_account_name"]
@@ -415,7 +417,7 @@ def get_batch_pool_json(
         "account_name": account_name,
         "resource_group_name": resource_group_name,
     }
-    print("Batch pool JSON configuration is ready.")
+    logger.debug("Batch pool JSON configuration is ready.")
     return batch_json
 
 
@@ -559,7 +561,7 @@ def upload_files_in_folder(
     #check number of files if force_upload False
     if not force_upload:
         fnum = []
-        for _, _, file in os.walk(os.path.realpath(f"./{folder_name}")):
+        for _, _, file in os.walk(os.path.realpath(f"./{folder}")):
             fnum.append(len(file))
         fnum_sum = sum(fnum)
         if fnum_sum > 50:
@@ -722,7 +724,7 @@ def add_task_to_job(
             tasks.append(id)
             task = batchmodels.TaskAddParameter(
                 id=id,
-                command_line=d_cmd_str + " " + input_mount_dir + input_file,
+                command_line=d_cmd_str + " " + self.input_mount_dir + input_file,
                 container_settings=batchmodels.TaskContainerSettings(
                     image_name=full_container_name,
                     container_run_options=f"--name={job_id} --rm " + mount_str,

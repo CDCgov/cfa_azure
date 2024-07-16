@@ -1243,7 +1243,9 @@ def check_blob_existence(c_client: ContainerClient, blob_name: str) -> bool:
         bool: whether the specified Blob exists
 
     """
+    logger.debug("Checking Blob existence.")
     blob = c_client.get_blob_client(blob=blob_name)
+    logger.debug(f"Blob exists: {blob.exists()}")
     return blob.exists()
 
 
@@ -1263,10 +1265,10 @@ def check_virtual_directory_existence(
     blobs = c_client.list_blobs(name_starts_with=vdir_path)
     try:
         first_blob = next(blobs)
-        print(f"{first_blob.name} found.")
+        logger.debug(f"{first_blob.name} found.")
         return True
     except StopIteration as e:
-        print(repr(e))
+        logger.error(repr(e))
         return False
 
 
@@ -1302,6 +1304,7 @@ def download_file(
     with dest_path.open(mode="wb") as blob_download:
         download_stream = c_client.download_blob(blob=src_path)
         blob_download.write(download_stream.readall())
+        logger.debug("File downloaded.")
 
 
 def download_directory(
@@ -1331,6 +1334,8 @@ def download_directory(
         download_file(
             c_client, blob.name, os.path.join(dest_path, blob.name), False
         )
+        logger.debug(f"Downloaded {blob.name}")
+    logger.debug("Download complete.")
 
 
 # check whether job exists
@@ -1346,8 +1351,10 @@ def check_job_exists(job_id: str, batch_client: object):
     """
     job_list = batch_client.job.list()
     if job_id in job_list:
+        logger.debug(f"job {job_id} exists.")
         return True
     else:
+        logger.debug(f"job {job_id} does not exist.")
         return False
 
 
@@ -1362,6 +1369,7 @@ def get_completed_tasks(job_id: str, batch_client: object):
     Returns:
         dict: dictionary containing number of completed tasks and total tasks for the job
     """
+    logger.debug("Pulling in task information.")
     tasks = batch_client.task.list(job_id)
     total_tasks = len(tasks)
 
@@ -1398,6 +1406,7 @@ def get_job_state(job_id: str, batch_client: object):
         str: the state of the specified job, such as 'completed' or 'active'.
     """
     job_info = batch_client.job.get(job_id)
+    logger.debug(f"job state is {job_info.state}")
     return job_info.state
 
 
@@ -1421,18 +1430,21 @@ def package_and_upload_dockerfile(
         str: full container name
     """
     # check if Dockerfile exists
+    logger.debug("Trying to ping docker daemon.")
     try:
         d = docker.from_env(timeout=10).ping()
+        logger.debug("Docker is running.")
     except DockerException:
-        print("Could not ping Docker. Make sure Docker is running.")
-        print("Container not packaged/uploaded.")
-        print("Try again when Docker is running.")
+        logger.error("Could not ping Docker. Make sure Docker is running.")
+        logger.warning("Container not packaged/uploaded.")
+        logger.warning("Try again when Docker is running.")
         return None
 
     if os.path.exists(path_to_dockerfile) and d:
         full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
-        print(f"full container name: {full_container_name}")
+        logger.info(f"full container name: {full_container_name}")
         # Build container
+        logger.debug("Building container.")
         sp.run(
             f"docker image build -f {path_to_dockerfile} -t {full_container_name} .",
             shell=True,
@@ -1440,14 +1452,17 @@ def package_and_upload_dockerfile(
         # Upload container to registry
         # upload with device login if desired
         if use_device_code:
+            logger.debug("Logging in with device code.")
             sp.run("az login --use-device-code", shell=True)
         else:
+            logger.debug("Logging in to Azure.")
             sp.run("az login", shell=True)
         sp.run(f"az acr login --name {registry_name}", shell=True)
+        logger.debug("Pushing Docker container to ACR.")
         sp.run(f"docker push {full_container_name}", shell=True)
         return full_container_name
     else:
-        print("Dockerfile does not exist in the root of the directory.")
+        logger.error("Dockerfile does not exist in the root of the directory.")
 
 
 def check_pool_exists(
@@ -1467,12 +1482,15 @@ def check_pool_exists(
     Returns:
         bool: whether the pool exists
     """
+    logger.debug(f"Checking if pool {pool_name} exists.")
     try:
         batch_mgmt_client.pool.get(
             resource_group_name, account_name, pool_name
         )
+        logger.debug("Pool exists.")
         return True
     except Exception:
+        logger.debug("Pool does not exist.")
         return False
 
 
@@ -1493,9 +1511,11 @@ def get_pool_info(
     Returns:
         dict: json with name, last_modified, creation_time, vm_size, and task_slots_per_node info
     """
+    logger.debug("Pulling pool info.")
     result = batch_mgmt_client.pool.get(
         resource_group_name, account_name, pool_name
     )
+    logger.debug("Condensing pool info the readable json output.")
     j = {
         "name": result.name,
         "last_modified": result.last_modified.strftime("%m/%d/%y %H:%M"),
@@ -1523,6 +1543,7 @@ def get_pool_full_info(
     Returns:
         dict: dictionary with full pool information
     """
+    logger.debug("Pulling pool info.")
     result = batch_mgmt_client.pool.get(
         resource_group_name, account_name, pool_name
     )
@@ -1540,6 +1561,7 @@ def check_config_req(config: str):
     Returns:
         bool: true if config contains all required components, false otherwise
     """
+    
     req = set(
         [
             "Authentication.subscription_id",
@@ -1565,12 +1587,15 @@ def check_config_req(config: str):
             "Container.container_registry_password",
         ]
     )
+    logger.debug("Loading config info as a set.")
     loaded = set(pd.json_normalize(config).columns)
+    logger.debug("Comparing keys in config and the list of required keys.")
     check = req - loaded == set()
     if check:
+        logger.debug("All required keys exist in the config.")
         return True
     else:
-        print(
+        logger.warning(
             str(list(req - loaded)),
             "missing from the config file and will be required by client.",
         )
@@ -1593,30 +1618,34 @@ def check_azure_container_exists(
     # check full_container_name exists in ACR
     audience = "https://management.azure.com"
     endpoint = f"https://{registry_name}.azurecr.io"
+    logger.debug(f"Set audience to {audience}")
+    logger.debug(f"Set endpoint to {endpoint}")
     try:
         # check full_container_name exists in ACR
         cr_client = ContainerRegistryClient(
             endpoint, DefaultAzureCredential(), audience=audience
         )
+        logger.debug(f"Container registry client created. Container exists.")
     except Exception as e:
-        print(
+        logger.error(
             f"Registry [{registry_name}] or repo [{repo_name}] does not exist"
         )
-        print(e)
+        logger.exception(e)
         raise Exception
     tag_list = []
+    logger.debug("Checking tag exists.")
     for tag in cr_client.list_tag_properties(repo_name):
         tag_properties = cr_client.get_tag_properties(repo_name, tag.name)
         tag_list.append(tag_properties.name)
-    print("Available tags in repo:", tag_list)
+    logger.debug("Available tags in repo:", tag_list)
     if tag_name in tag_list:
-        print(f"setting {registry_name}/{repo_name}:{tag_name}")
+        logger.debug(f"setting {registry_name}/{repo_name}:{tag_name}")
         full_container_name = (
             f"{registry_name}.azurecr.io/{repo_name}:{tag_name}"
         )
         return full_container_name
     else:
-        print(f"{registry_name}/{repo_name}:{tag_name} does not exist")
+        logger.warning(f"{registry_name}/{repo_name}:{tag_name} does not exist")
         return None
 
 
@@ -1631,6 +1660,7 @@ def generate_autoscale_formula(max_nodes: int = 8) -> str:
         str: the text of an autoscale formula
 
     """
+    logger.debug("Creating default autoscale formula.")
     formula = f"""
     // Get pending tasks for the past 10 minutes.
     $samples = $ActiveTasks.GetSamplePercent(TimeInterval_Minute * 10);
@@ -1651,6 +1681,7 @@ def generate_autoscale_formula(max_nodes: int = 8) -> str:
 def format_rel_path(rel_path: str) -> str:
     if rel_path.startswith("/"):
         rel_path = rel_path[1:]
+        logger.debug(f"path formatted to {rel_path}")
     return rel_path
 
 
@@ -1671,17 +1702,18 @@ def get_timeout(_time: str) -> int:
 
 def list_blobs_flat(
     container_name: str, blob_service_client: BlobServiceClient, verbose=True
-):
+    ):
+    logger.debug("Creating container client for getting Blob info.")
     container_client = blob_service_client.get_container_client(
         container=container_name
     )
-
+    logger.debug("Container client created. Listing Blob info.")
     blob_list = container_client.list_blobs()
     blob_names = [blob.name for blob in blob_list]
+    logger.debug("Blob names gathered.")
     if verbose:
         for blob in blob_list:
-            print(f"Name: {blob.name}")
-
+            logger.info(f"Name: {blob.name}")
     return blob_names
 
 def get_log_level() -> int:

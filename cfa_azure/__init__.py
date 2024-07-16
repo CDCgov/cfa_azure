@@ -1,7 +1,8 @@
-import logging
 import datetime
+import logging
 import os
 import sys
+
 from cfa_azure import helpers
 
 __all__ = ["batch", "helpers", "clients"]

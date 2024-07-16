@@ -1,14 +1,13 @@
 import datetime
 import json
 import logging
-import os
-from os.path import exists, join
-import sys
+
 from azure.core.exceptions import HttpResponseError
 
 from cfa_azure import helpers
 
 logger = logging.getLogger(__name__)
+
 
 class AzureClient:
     def __init__(self, config_path: str):
@@ -126,7 +125,9 @@ class AzureClient:
         """
         # check if debug and scaling mode match, otherwise alert the user
         if self.debug is True and mode == "autoscale":
-            logger.debug("Debugging is set to True and autoscale is desired...")
+            logger.debug(
+                "Debugging is set to True and autoscale is desired..."
+            )
             logger.debug("This is not possible.")
             logger.info(
                 "Either change debugging to False or set the scaling mode to fixed."
@@ -135,7 +136,9 @@ class AzureClient:
         if mode == "autoscale" and autoscale_formula_path is None:
             use_default_autoscale_formula = True
             self.debug = False
-            logger.debug("Autoscale will be used with the default autoscale formula.")
+            logger.debug(
+                "Autoscale will be used with the default autoscale formula."
+            )
         else:
             use_default_autoscale_formula = False
             logger.debug("Autoscale formula provided by user.")
@@ -190,7 +193,9 @@ class AzureClient:
         self.input_mount_dir = helpers.format_rel_path(input_mount_dir)
         # add to self.mounts
         self.mounts.append((name, self.input_mount_dir))
-        logger.debug(f"Mounted {name} with relative mount dir {self.input_mount_dir}.")
+        logger.debug(
+            f"Mounted {name} with relative mount dir {self.input_mount_dir}."
+        )
         # create container and save the container client
         self.in_cont_client = helpers.create_container(
             self.input_container_name, self.blob_service_client
@@ -210,7 +215,9 @@ class AzureClient:
         self.output_mount_dir = helpers.format_rel_path(output_mount_dir)
         # add to self.mounts
         self.mounts.append((name, self.output_mount_dir))
-        logger.debug(f"Mounted {name} with relative mount dir {self.output_mount_dir}.")
+        logger.debug(
+            f"Mounted {name} with relative mount dir {self.output_mount_dir}."
+        )
         # create_container and save the container client
         self.out_cont_client = helpers.create_container(
             self.output_container_name, self.blob_service_client
@@ -227,7 +234,9 @@ class AzureClient:
         rel_mount_dir = helpers.format_rel_path(rel_mount_dir)
         # add to self.mounts
         self.mounts.append((name, rel_mount_dir))
-        logger.debug(f"Mounted {name} with relative mount dir {rel_mount_dir}.")
+        logger.debug(
+            f"Mounted {name} with relative mount dir {rel_mount_dir}."
+        )
         # create_container and save the container client
         mount_container_client = helpers.create_container(
             name, self.blob_service_client
@@ -247,7 +256,9 @@ class AzureClient:
         container_client = self.blob_service_client.get_container_client(
             container=name
         )
-        logger.debug("input container client generated from blob service client.")
+        logger.debug(
+            "input container client generated from blob service client."
+        )
         input_mount_dir = helpers.format_rel_path(input_mount_dir)
         logger.debug("formatted relative mount directory.")
         if not container_client.exists():
@@ -275,7 +286,9 @@ class AzureClient:
         container_client = self.blob_service_client.get_container_client(
             container=name
         )
-        logger.debug("output container client generated from blob service client.")
+        logger.debug(
+            "output container client generated from blob service client."
+        )
         if not container_client.exists():
             logger.warning(
                 f"Container [{name}] does not exist. Please create it if desired."
@@ -299,7 +312,9 @@ class AzureClient:
         container_client = self.blob_service_client.get_container_client(
             container=name
         )
-        logger.debug("Blob container client generated from blob service client.")
+        logger.debug(
+            "Blob container client generated from blob service client."
+        )
         if not container_client.exists():
             logger.warning(
                 f"Container [{name}] does not exist. Please create it if desired."
@@ -335,7 +350,9 @@ class AzureClient:
         logger.info(
             f"Attempting to create a pool with {(self.config)['Batch']['pool_vm_size']} VMs."
         )
-        logger.info("Verify the size of the VM is appropriate for the use case.")
+        logger.info(
+            "Verify the size of the VM is appropriate for the use case."
+        )
         try:
             self.batch_mgmt_client.pool.create(
                 resource_group_name=self.resource_group_name,
@@ -356,11 +373,13 @@ class AzureClient:
             "creation_time": round((end_time - start_time).total_seconds(), 2),
         }
 
-    def upload_files(self,
-                     files: list,
-                     container_name: str,
-                     location: str = "", 
-                     verbose: bool = False) -> None:
+    def upload_files(
+        self,
+        files: list,
+        container_name: str,
+        location: str = "",
+        verbose: bool = False,
+    ) -> None:
         """Uploads the files in the list to the input Blob storage container as stored in the client.
 
         Args:
@@ -370,29 +389,33 @@ class AzureClient:
             verbose (bool): whether to be verbose in uploaded files. Defaults to False
         """
         container_client = self.blob_service_client.get_container_client(
-            container=container_name)
+            container=container_name
+        )
         logger.debug(f"Container client generated for {container_name}.")
         if not container_client.exists():
-            logger.error(f"Blob container {container_name} does not exist. Please try again with an existing Blob container.")
+            logger.error(
+                f"Blob container {container_name} does not exist. Please try again with an existing Blob container."
+            )
             return None
-    
+
         for file_name in files:
-            helpers.upload_blob_file(filepath = file_name, 
-                                     location=location, 
-                                     container_client=container_client,
-                                     verbose=verbose)
+            helpers.upload_blob_file(
+                filepath=file_name,
+                location=location,
+                container_client=container_client,
+                verbose=verbose,
+            )
             logger.debug("Finished running helpers.upload_blob_file().")
         logger.debug("Uploaded all files in files list.")
-
 
     def upload_files_in_folder(
         self,
         folder_names: list[str],
-        container_name: str, 
-        location: str = "", 
+        container_name: str,
+        location: str = "",
         verbose: bool = True,
-        force_upload: bool = True
-        ) -> list[str]:
+        force_upload: bool = True,
+    ) -> list[str]:
         """Uploads all the files in folders provided
 
         Args:
@@ -409,21 +432,23 @@ class AzureClient:
         for _folder in folder_names:
             logger.debug(f"trying to upload folder {_folder}.")
             _uploaded_files = helpers.upload_files_in_folder(
-                folder = _folder, 
-                container_name=container_name, 
-                location=location, 
-                blob_service_client = self.blob_service_client,  
+                folder=_folder,
+                container_name=container_name,
+                location=location,
+                blob_service_client=self.blob_service_client,
                 verbose=verbose,
-                force_upload=force_upload)
+                force_upload=force_upload,
+            )
             _files += _uploaded_files
         logger.debug(f"uploaded {_files}")
         self.files += _files
         return _files
 
     def add_job(
-        self, job_id: str, 
+        self,
+        job_id: str,
         pool_name: str | None = None,
-        end_job_on_task_failure: bool = False
+        end_job_on_task_failure: bool = False,
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
@@ -798,7 +823,7 @@ class AzureClient:
                 verbose=False,
             )
         elif self.mounts:
-            logger.debug(f"Looping through mounts.")
+            logger.debug("Looping through mounts.")
             filenames = []
             for mount in self.mounts:
                 _files = helpers.list_blobs_flat(

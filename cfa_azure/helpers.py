@@ -5,6 +5,7 @@ import logging
 import os
 import subprocess as sp
 import time
+from os import path, walk
 from pathlib import Path
 
 import azure.batch.models as batchmodels
@@ -22,7 +23,6 @@ from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
 from azure.storage.blob import BlobServiceClient, ContainerClient
 from docker.errors import DockerException
-from os import path, walk
 from yaml import SafeLoader, dump, load
 
 logger = logging.getLogger(__name__)
@@ -102,7 +102,9 @@ def get_autoscale_formula(filepath: str = None, text_input: str = None):
     elif filepath is not None:
         try:
             with open(filepath, "r") as autoscale_text:
-                logger.debug(f"Autoscale formula successfully read from {filepath}.")
+                logger.debug(
+                    f"Autoscale formula successfully read from {filepath}."
+                )
                 return autoscale_text.read()
         except Exception:
             logger.error(
@@ -441,7 +443,9 @@ def create_batch_pool(batch_mgmt_client: object, batch_json: dict):
         pool_id = batch_json["pool_id"]
         parameters = batch_json["pool_parameters"]
 
-        logger.info(f"Creating pool: {pool_id} in the account: {account_name}...")
+        logger.info(
+            f"Creating pool: {pool_id} in the account: {account_name}..."
+        )
         batch_mgmt_client.pool.create(
             resource_group_name=resource_group_name,
             account_name=account_name,
@@ -451,7 +455,9 @@ def create_batch_pool(batch_mgmt_client: object, batch_json: dict):
         logger.info(f"Pool {pool_id!r} created successfully.")
     except HttpResponseError as error:
         if "PropertyCannotBeUpdated" in error.message:
-            logger.error(f"Pool {pool_id!r} already exists. No further action taken.")
+            logger.error(
+                f"Pool {pool_id!r} already exists. No further action taken."
+            )
         else:
             logger.error(f"Error creating pool {pool_id!r}: {error}")
             raise
@@ -499,11 +505,13 @@ def list_containers(blob_service_client: object):
     logger.debug("Completed listing containers.")
     return container_list
 
+
 def upload_blob_file(
-    filepath: str, 
-    location: str = "", 
+    filepath: str,
+    location: str = "",
     container_client: object = None,
-    verbose: bool = False):
+    verbose: bool = False,
+):
     """Uploads a specified file to Blob storage.
     Args:
         filepath (str): the path to the file.
@@ -526,16 +534,19 @@ def upload_blob_file(
         _name = path.join(location, _file)
         container_client.upload_blob(name=_name, data=data, overwrite=True)
     if verbose:
-        logger.info(f"Uploaded {filepath} to {container_client.container_name} as {_name}.")
+        logger.info(
+            f"Uploaded {filepath} to {container_client.container_name} as {_name}."
+        )
 
 
 def upload_files_in_folder(
-    folder: str, 
-    container_name: str, 
-    location: str = "", 
-    blob_service_client = None,  
+    folder: str,
+    container_name: str,
+    location: str = "",
+    blob_service_client=None,
     verbose: bool = True,
-    force_upload: bool = True):
+    force_upload: bool = True,
+):
     """uploads all files in specified folder to the input container.
     If there are more than 50 files in the folder, the user is asked to confirm
     the upload. This can be bypassed if force_upload = True.
@@ -557,9 +568,11 @@ def upload_files_in_folder(
         container=container_name
     )
     if not container_client.exists():
-        logger.error(f"Blob container {container_name} does not exist. Please try again with an existing Blob container.")
+        logger.error(
+            f"Blob container {container_name} does not exist. Please try again with an existing Blob container."
+        )
         return None
-    #check number of files if force_upload False
+    # check number of files if force_upload False
     logger.debug(f"Blob container {container_name} found. Uploading files...")
     if not force_upload:
         fnum = []
@@ -577,7 +590,9 @@ def upload_files_in_folder(
     # get all files in folder
     file_list = []
     if not path.isdir(folder):
-        logger.warning(f"{folder} is not a folder/directory. Make sure to specify a valid folder.")
+        logger.warning(
+            f"{folder} is not a folder/directory. Make sure to specify a valid folder."
+        )
         return None
     for dirname, _, fname in walk(folder):
         for f in fname:
@@ -585,12 +600,16 @@ def upload_files_in_folder(
             file_list.append(_path)
     # iteratively call the upload_blob_file function to upload individual files
     for file in file_list:
-        #get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders
+        # get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders
         drop_folder = path.dirname(file).replace(folder, "", 1)
         if drop_folder.startswith("/"):
-            drop_folder = drop_folder[1:] #removes the / so path.join doesnt mistake for root
+            drop_folder = drop_folder[
+                1:
+            ]  # removes the / so path.join doesnt mistake for root
         logger.debug(f"Calling upload_blob_file for {file}")
-        upload_blob_file(file, path.join(location, drop_folder), container_client, verbose)
+        upload_blob_file(
+            file, path.join(location, drop_folder), container_client, verbose
+        )
     return file_list
 
 
@@ -653,7 +672,9 @@ def add_job(
         logger.info(f"Job '{job_id}' created successfully.")
     except batchmodels.BatchErrorException as err:
         if err.error.code == "JobExists":
-            logger.warning(f"Job '{job_id}' already exists. No further action taken.")
+            logger.warning(
+                f"Job '{job_id}' already exists. No further action taken."
+            )
         else:
             logger.error(f"Error creating job '{job_id}': {err}")
             logger.error("Rename this job or delete the pre-existing job.")
@@ -710,7 +731,7 @@ def add_task_to_job(
             depends_on = [depends_on]
             logger.debug("Adding task dependency.")
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
-        
+
     logger.debug("Creating mount configuration string.")
     mount_str = ""
     # src = env variable to fsmounts/rel_path
@@ -718,7 +739,7 @@ def add_task_to_job(
     if mounts is not None:
         mount_str = ""
         for mount in mounts:
-            logger.debug(f"Adding mount to mount string.")
+            logger.debug("Adding mount to mount string.")
             mount_str = (
                 mount_str
                 + "--mount type=bind,source="
@@ -737,7 +758,10 @@ def add_task_to_job(
             tasks.append(id)
             task = batchmodels.TaskAddParameter(
                 id=id,
-                command_line=d_cmd_str + " " + self.input_mount_dir + input_file,
+                command_line=d_cmd_str
+                + " "
+                + self.input_mount_dir
+                + input_file,
                 container_settings=batchmodels.TaskContainerSettings(
                     image_name=full_container_name,
                     container_run_options=f"--name={job_id} --rm " + mount_str,
@@ -870,7 +894,7 @@ def monitor_tasks(
             successes,
             "successes;",
             failures,
-            "failures"
+            "failures",
         )
 
         if not incomplete_tasks:
@@ -890,7 +914,9 @@ def monitor_tasks(
 
     end_time = datetime.datetime.now().replace(microsecond=0)
     runtime = end_time - start_time
-    logger.info(f"Monitoring ended: {end_time}. Total elapsed time: {runtime}.")
+    logger.info(
+        f"Monitoring ended: {end_time}. Total elapsed time: {runtime}."
+    )
     return {"completed": completed, "elapsed time": runtime}
 
 
@@ -916,7 +942,9 @@ def list_files_in_container(
         )
         files = [f for f in cc.list_blob_names()]
         logger.info(files)
-        logger.info(f"Found {len(files)} files in container '{container_name}'.")
+        logger.info(
+            f"Found {len(files)} files in container '{container_name}'."
+        )
         return files
     except Exception as e:
         logger.error(f"Error connecting to container '{container_name}': {e}")
@@ -980,7 +1008,9 @@ def edit_yaml_r0(file_path: str, r0_start=1, r0_end=4, step=0.1):
         outfile = f"{file_path.replace('.yaml', '')}_{str(r0).replace('.', '-')}.yaml"
         with open(outfile, "w") as f:
             yaml.dump(y, f, default_flow_style=False)
-        logger.debug(f"Generated modified YAML file with r0={r0} at '{outfile}'.")
+        logger.debug(
+            f"Generated modified YAML file with r0={r0} at '{outfile}'."
+        )
     logger.debug("Completed editing YAML files.")
 
 
@@ -1561,7 +1591,7 @@ def check_config_req(config: str):
     Returns:
         bool: true if config contains all required components, false otherwise
     """
-    
+
     req = set(
         [
             "Authentication.subscription_id",
@@ -1625,7 +1655,7 @@ def check_azure_container_exists(
         cr_client = ContainerRegistryClient(
             endpoint, DefaultAzureCredential(), audience=audience
         )
-        logger.debug(f"Container registry client created. Container exists.")
+        logger.debug("Container registry client created. Container exists.")
     except Exception as e:
         logger.error(
             f"Registry [{registry_name}] or repo [{repo_name}] does not exist"
@@ -1645,7 +1675,9 @@ def check_azure_container_exists(
         )
         return full_container_name
     else:
-        logger.warning(f"{registry_name}/{repo_name}:{tag_name} does not exist")
+        logger.warning(
+            f"{registry_name}/{repo_name}:{tag_name} does not exist"
+        )
         return None
 
 
@@ -1702,7 +1734,7 @@ def get_timeout(_time: str) -> int:
 
 def list_blobs_flat(
     container_name: str, blob_service_client: BlobServiceClient, verbose=True
-    ):
+):
     logger.debug("Creating container client for getting Blob info.")
     container_client = blob_service_client.get_container_client(
         container=container_name
@@ -1715,6 +1747,7 @@ def list_blobs_flat(
         for blob in blob_list:
             logger.info(f"Name: {blob.name}")
     return blob_names
+
 
 def get_log_level() -> int:
     """

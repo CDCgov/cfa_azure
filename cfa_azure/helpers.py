@@ -1637,7 +1637,7 @@ def check_azure_container_exists(
     for tag in cr_client.list_tag_properties(repo_name):
         tag_properties = cr_client.get_tag_properties(repo_name, tag.name)
         tag_list.append(tag_properties.name)
-    logger.debug("Available tags in repo:", tag_list)
+    logger.debug(f"Available tags in repo: {tag_list}")
     if tag_name in tag_list:
         logger.debug(f"setting {registry_name}/{repo_name}:{tag_name}")
         full_container_name = (

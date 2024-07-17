@@ -897,7 +897,7 @@ def monitor_tasks(
         logger.info(
             "All tasks have reached 'Completed' state within the timeout period."
         )
-        logger.info(successes, "task(s) succeeded,", failures, "failed.")
+        logger.info(f"{successes} task(s) succeeded, {failures} failed.")
     else:
         raise RuntimeError(
             f"ERROR: Tasks did not reach 'Completed' state within timeout period of {timeout} minutes."

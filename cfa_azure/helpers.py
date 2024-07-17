@@ -886,16 +886,7 @@ def monitor_tasks(
             "failures",
             end="\r",
         )
-        logger.debug(
-            completions,
-            "completed;",
-            incompletions,
-            "remaining;",
-            successes,
-            "successes;",
-            failures,
-            "failures",
-        )
+        logger.debug(f"{completions} completed; {incompletions} remaining; {successes} successes; {failures} failures")
 
         if not incomplete_tasks:
             logger.info("\nAll tasks completed.")

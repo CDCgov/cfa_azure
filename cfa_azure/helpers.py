@@ -886,7 +886,9 @@ def monitor_tasks(
             "failures",
             end="\r",
         )
-        logger.debug(f"{completions} completed; {incompletions} remaining; {successes} successes; {failures} failures")
+        logger.debug(
+            f"{completions} completed; {incompletions} remaining; {successes} successes; {failures} failures"
+        )
 
         if not incomplete_tasks:
             logger.info("\nAll tasks completed.")
@@ -1749,7 +1751,6 @@ def get_log_level() -> int:
     If one was found, but not expected, set it to DEBUG
     """
     log_level = os.getenv("LOG_LEVEL")
-    
 
     if log_level is None:
         logger.info("Could not find logging level. Using DEBUG")

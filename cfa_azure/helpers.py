@@ -1749,6 +1749,7 @@ def get_log_level() -> int:
     If one was found, but not expected, set it to DEBUG
     """
     log_level = os.getenv("LOG_LEVEL")
+    
 
     if log_level is None:
         logger.info("Could not find logging level. Using DEBUG")

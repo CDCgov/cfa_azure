@@ -5,18 +5,30 @@
 The `cfa_azure` python module is intended to ease the challenge of working with Azure via multiple Azure python modules which require the correct steps and many lines of code to execute. `cfa_azure` simplifies many repeated workflows when interacting with Azure, Blob Storage, Batch, and more. For example, creating a pool in Azure may take different credentials and several clients to complete, but with `cfa_azure`, creating a pool is reduced to a single function with only a few parameters.
 
 # Components
-The `cfa_azure` module is composed of three submodules: `batch`, `clients`, and `helpers`. The module `batch` contains most of the main functions for interacting with Azure and, specifically, Azure Batch. The module `clients` contains what we call the AzureClient, which combines the multiple Azure Clients needed to interact with Azure and consolidates to a single client. The module `helpers` contains more fine-grained functions which are used within the `batch` and `clients` modules or independently for more control when working with Azure.
+The `cfa_azure` module is composed of three submodules: `batch`, `clients`, and `helpers`. The module `clients` contains what we call the AzureClient, which combines the multiple Azure Clients needed to interact with Azure and consolidates to a single client. The module `helpers` contains more fine-grained functions which are used within the `batch` and `clients` modules or independently for more control when working with Azure.
 
-### batch
-Functions:
-- create_pool: creates input and output containers and sets up Azure pool based on config.
-- upload_files_to_container: uploads files from specified folders to the specified Azure Blob container.
-- run_job: runs and monitors a job in Azure Batch based on user input Docker command.
-- package_and_upload_dockerfile: packages container specified in Dockerfile and uploads to Azure Container Registry based on info in config file.
 
 ### clients
 Classes:
 - AzureClient: a client object used for interacting with Azure. It initializes based on a supplied configuration file and creates various Azure clients under the hood. It can be used to upload containers, upload files, run jobs, and more.
+To customize the logging capabilities of cfa_azure, two environment variables can be set. These are LOG_LEVEL and LOG_OUTPUT.
+
+LOG_LEVEL: sets the logging level. Choices are:
+- debug
+- info
+- warning
+- error
+
+LOG_OUTPUT: sets the output of the logs. Choices are:
+- file: saves log output to a file, nested within a ./logs/ folder
+- stdout: saves log output to stdout
+- both: saves log output to both file and stdout
+
+Example:
+```
+export LOG_LEVEL="info"
+export LOG_OUTPUT="stdout"
+```
 
 ### helpers
 Functions:

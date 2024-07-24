@@ -1777,3 +1777,22 @@ def get_log_level() -> int:
                 f"Did not recognize log level string {ll}. Using DEBUG"
             )
             return logging.DEBUG
+
+def delete_blob_snapshots(blob_name: str, container_name: str, blob_service_client: object):
+    blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+    blob_client.delete_blob(delete_snapshots="include")
+    logger.info(f"Deleted {blob_name} from {container_name}.")
+
+def delete_blob_folder(folder_path: str, container_name: str, blob_service_client: object):
+    #create container client
+    c_client = blob_service_client.get_container_client(container = container_name)
+    #list out files in folder
+    blob_names = c_client.list_blob_names(name_starts_with = folder_path)
+    _files = [blob for blob in blob_names]
+    print(_files)
+    #call helpers.delete_blob_snapshots()
+    for file in _files:
+        delete_blob_snapshots(
+            blob_name = file, 
+            container_name = container_name,
+            blob_service_client = blob_service_client)

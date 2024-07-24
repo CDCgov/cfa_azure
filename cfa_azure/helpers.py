@@ -1,9 +1,11 @@
 # import modules for use
 import datetime
 import json
+import logging
 import os
 import subprocess as sp
 import time
+from os import path, walk
 from pathlib import Path
 
 import azure.batch.models as batchmodels
@@ -21,8 +23,9 @@ from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
 from azure.storage.blob import BlobServiceClient, ContainerClient
 from docker.errors import DockerException
-from os import path, walk
 from yaml import SafeLoader, dump, load
+
+logger = logging.getLogger(__name__)
 
 
 def read_config(config_path: str = "./configuration.toml"):
@@ -40,18 +43,18 @@ def read_config(config_path: str = "./configuration.toml"):
     # print("Attempting to read configuration from:", config_path)
     try:
         config = toml.load(config_path)
-        # print("Configuration file loaded successfully.")
+        logger.debug("Configuration file loaded.")
         return config
     except FileNotFoundError as e:
-        print(
+        logger.warning(
             "Configuration file not found. Make sure the location (path) is correct."
         )
-        print(e)
+        logger.exception(e)
     except Exception as e:
-        print(
+        logger.warning(
             "Error occurred while loading the configuration file. Check file format and contents."
         )
-        print(e)
+        logger.exception(e)
 
 
 def create_container(container_name: str, blob_service_client: object):
@@ -64,15 +67,15 @@ def create_container(container_name: str, blob_service_client: object):
     Returns:
        object: ContainerClient object
     """
-    print(f"Attempting to create or access container: {container_name}")
+    logger.debug(f"Attempting to create or access container: {container_name}")
     container_client = blob_service_client.get_container_client(
         container=container_name
     )
     if not container_client.exists():
         container_client.create_container()
-        print(f"Container [{container_name}] created successfully.")
+        logger.debug(f"Container [{container_name}] created successfully.")
     else:
-        print(
+        logger.debug(
             f"Container [{container_name}] already exists. No action needed."
         )
     return container_client
@@ -92,21 +95,23 @@ def get_autoscale_formula(filepath: str = None, text_input: str = None):
     if filepath is None and text_input is None:
         # get default autoscale formula:
         autoscale_text = generate_autoscale_formula()
-        print(
+        logger.debug(
             "Default autoscale formula used. Please provide a path to autoscale formula to sepcify your own formula."
         )
         return autoscale_text
     elif filepath is not None:
         try:
             with open(filepath, "r") as autoscale_text:
-                print(f"Autoscale formula successfully read from {filepath}.")
+                logger.debug(
+                    f"Autoscale formula successfully read from {filepath}."
+                )
                 return autoscale_text.read()
         except Exception:
-            print(
+            logger.error(
                 f"Error reading autoscale formula from {filepath}. Check file path and permissions."
             )
     elif text_input is not None:
-        print("Autoscale formula provided via text input.")
+        logger.debug("Autoscale formula provided via text input.")
         return text_input
 
 
@@ -122,31 +127,33 @@ def get_sp_secret(config: dict):
     Example:
         sp_secret = get_sp_secret(config)
     """
-    # print("Retrieving service principal secret from Azure Key Vault...")
+    logger.debug("Attempting to retrieve Azure credential.")
     try:
         user_credential = DefaultAzureCredential()
-        # print("User credential obtained.")
+        logger.debug("Credential obtained.")
     except Exception as e:
-        print("Error obtaining user credentials:", e)
+        logger.error("Error obtaining credential:", e)
 
+    logger.debug("Attempting to establish secret client.")
     try:
         secret_client = SecretClient(
             vault_url=config["Authentication"]["vault_url"],
             credential=user_credential,
         )
-        # print("Secret client initialized.")
+        logger.debug("Secret client initialized.")
     except KeyError as e:
-        print("Error:", e, "Key not found in configuration.")
+        logger.error("Error:", e, "Key not found in configuration.")
 
+    logger.debug("Attempting to retrieve Service Principal secret.")
     try:
         sp_secret = secret_client.get_secret(
             config["Authentication"]["vault_sp_secret_id"]
         ).value
-        # print("Service principal secret successfully retrieved.")
+        logger.debug("Service principal secret successfully retrieved.")
         return sp_secret
     except Exception as e:
-        print("Error retrieving secret:", e)
-        print(
+        logger.error("Error retrieving secret:", e)
+        logger.warning(
             "Check that vault_uri and vault_sp_secret_id are correctly configured in the config file."
         )
 
@@ -160,7 +167,7 @@ def get_sp_credential(config: dict):
     Returns:
         class: client credential for Azure Blob Service Client
     """
-    # print("Attempting to obtain service principal credentials...")
+    logger.debug("Attempting to obtain service principal credentials...")
     sp_secret = get_sp_secret(config)
     try:
         sp_credential = ClientSecretCredential(
@@ -168,10 +175,10 @@ def get_sp_credential(config: dict):
             client_id=config["Authentication"]["application_id"],
             client_secret=sp_secret,
         )
-        # print("Service principal credentials obtained successfully.")
+        logger.debug("Service principal credentials obtained successfully.")
         return sp_credential
     except KeyError as e:
-        print(
+        logger.error(
             f"Configuration error: '{e}' does not exist in the config file. Please add it in the Authentication section.",
         )
 
@@ -185,17 +192,17 @@ def get_blob_service_client(config: dict):
     Returns:
         class: an instance of BlobServiceClient
     """
-    # print("Initializing Blob Service Client...")
+    logger.debug("Initializing Blob Service Client...")
     sp_credential = get_sp_credential(config)
     try:
         blob_service_client = BlobServiceClient(
             account_url=config["Storage"]["storage_account_url"],
             credential=sp_credential,
         )
-        # print("Blob Service Client successfully created.")
+        logger.debug("Blob Service Client successfully created.")
         return blob_service_client
     except KeyError as e:
-        print(
+        logger.error(
             f"Configuration error: '{e}' does not exist in the config file. Please add it in the Storage section.",
         )
 
@@ -209,17 +216,17 @@ def get_batch_mgmt_client(config: dict):
     Returns:
         class: an instance of the Batch Management Client
     """
-    # print("Initializing Batch Management Client...")
+    logger.debug("Initializing Batch Management Client...")
     sp_credential = get_sp_credential(config)
     try:
         batch_mgmt_client = BatchManagementClient(
             credential=sp_credential,
             subscription_id=config["Authentication"]["subscription_id"],
         )
-        # print("Batch Management Client successfully created.")
+        logger.debug("Batch Management Client successfully created.")
         return batch_mgmt_client
     except KeyError as e:
-        print(
+        logger.error(
             f"Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section.",
         )
 
@@ -238,22 +245,22 @@ def create_blob_containers(
     """
     # print("Preparing to create blob containers...")
     if input_container_name:
-        print(
+        logger.info(
             f"Attempting to create input container: '{input_container_name}'..."
         )
         create_container(input_container_name, blob_service_client)
     else:
-        print(
+        logger.warning(
             "Input container name not specified. Skipping input container creation."
         )
 
     if output_container_name:
-        print(
+        logger.info(
             f"Attempting to create output container: '{output_container_name}'..."
         )
         create_container(output_container_name, blob_service_client)
     else:
-        print(
+        logger.warning(
             "Output container name not specified. Skipping output container creation."
         )
 
@@ -275,7 +282,7 @@ def get_batch_pool_json(
     Returns:
         json: relevant information for Batch pool creation
     """
-    print("Preparing batch pool configuration...")
+    logger.debug("Preparing batch pool configuration...")
     # User-assigned identity for the pool
     user_identity = {
         "type": "UserAssigned",
@@ -286,7 +293,7 @@ def get_batch_pool_json(
             }
         },
     }
-    print("User identity configuration prepared.")
+    logger.debug("User identity configuration prepared.")
 
     # Network configuration with no public IP and virtual network
     network_config = {
@@ -294,7 +301,7 @@ def get_batch_pool_json(
         "publicIPAddressConfiguration": {"provision": "NoPublicIPAddresses"},
         "dynamicVnetAssignmentScope": "None",
     }
-    print("Network configuration prepared.")
+    logger.debug("Network configuration prepared.")
 
     # Virtual machine configuration
     deployment_config = {
@@ -327,7 +334,7 @@ def get_batch_pool_json(
             },
         }
     }
-    print("VM and container configurations prepared.")
+    logger.debug("VM and container configurations prepared.")
 
     # Mount configuration
     mount_config = [
@@ -358,10 +365,10 @@ def get_batch_pool_json(
             }
         },
     ]
-    print("Mount configuration prepared.")
+    logger.debug("Mount configuration prepared.")
 
     # Assemble the pool parameters JSON
-    print("Generating autoscale formula...")
+    logger.debug("Generating autoscale formula...")
     pool_parameters = {
         "identity": user_identity,
         "properties": {
@@ -397,7 +404,7 @@ def get_batch_pool_json(
             "mountConfiguration": mount_config,
         },
     }
-    print("Batch pool parameters assembled.")
+    logger.debug("Batch pool parameters assembled.")
 
     pool_id = config["Batch"]["pool_id"]
     account_name = config["Batch"]["batch_account_name"]
@@ -412,7 +419,7 @@ def get_batch_pool_json(
         "account_name": account_name,
         "resource_group_name": resource_group_name,
     }
-    print("Batch pool JSON configuration is ready.")
+    logger.debug("Batch pool JSON configuration is ready.")
     return batch_json
 
 
@@ -429,26 +436,30 @@ def create_batch_pool(batch_mgmt_client: object, batch_json: dict):
     Returns:
         str: pool ID value of created pool
     """
-    print("Attempting to create the Azure Batch pool...")
+    logger.info("Attempting to create the Azure Batch pool...")
     try:
         resource_group_name = batch_json["resource_group_name"]
         account_name = batch_json["account_name"]
         pool_id = batch_json["pool_id"]
         parameters = batch_json["pool_parameters"]
 
-        print(f"Creating pool: {pool_id} in the account: {account_name}...")
+        logger.info(
+            f"Creating pool: {pool_id} in the account: {account_name}..."
+        )
         batch_mgmt_client.pool.create(
             resource_group_name=resource_group_name,
             account_name=account_name,
             pool_name=pool_id,
             parameters=parameters,
         )
-        print(f"Pool {pool_id!r} created successfully.")
+        logger.info(f"Pool {pool_id!r} created successfully.")
     except HttpResponseError as error:
         if "PropertyCannotBeUpdated" in error.message:
-            print(f"Pool {pool_id!r} already exists. No further action taken.")
+            logger.error(
+                f"Pool {pool_id!r} already exists. No further action taken."
+            )
         else:
-            print(f"Error creating pool {pool_id!r}: {error}")
+            logger.error(f"Error creating pool {pool_id!r}: {error}")
             raise
     return pool_id
 
@@ -467,13 +478,13 @@ def delete_pool(
         pool_name (str): name of pool to delete
         batch_mgmt_client (object): instance of BatchManagementClient
     """
-    print(f"Attempting to delete {pool_name}...")
+    logger.debug(f"Attempting to delete {pool_name}...")
     batch_mgmt_client.pool.begin_delete(
         resource_group_name=resource_group_name,
         account_name=account_name,
         pool_name=pool_name,
     )
-    print(f"Pool {pool_name} deleted.")
+    logger.info(f"Pool {pool_name} deleted.")
 
 
 def list_containers(blob_service_client: object):
@@ -490,15 +501,17 @@ def list_containers(blob_service_client: object):
 
     for container in blob_service_client.list_containers():
         container_list.append(container.name)
-        # print(f"Found container: {container.name}")
-    # print("Completed listing containers.")
+        logger.debug(f"Found container: {container.name}")
+    logger.debug("Completed listing containers.")
     return container_list
 
+
 def upload_blob_file(
-    filepath: str, 
-    location: str = "", 
+    filepath: str,
+    location: str = "",
     container_client: object = None,
-    verbose: bool = False):
+    verbose: bool = False,
+):
     """Uploads a specified file to Blob storage.
     Args:
         filepath (str): the path to the file.
@@ -521,16 +534,19 @@ def upload_blob_file(
         _name = path.join(location, _file)
         container_client.upload_blob(name=_name, data=data, overwrite=True)
     if verbose:
-        print(f"Uploaded {filepath} to {container_client.container_name} as {_name}.")
+        logger.info(
+            f"Uploaded {filepath} to {container_client.container_name} as {_name}."
+        )
 
 
 def upload_files_in_folder(
-    folder: str, 
-    container_name: str, 
-    location: str = "", 
-    blob_service_client = None,  
+    folder: str,
+    container_name: str,
+    location: str = "",
+    blob_service_client=None,
     verbose: bool = True,
-    force_upload: bool = True):
+    force_upload: bool = True,
+):
     """uploads all files in specified folder to the input container.
     If there are more than 50 files in the folder, the user is asked to confirm
     the upload. This can be bypassed if force_upload = True.
@@ -547,16 +563,20 @@ def upload_files_in_folder(
         list: list of files uploaded
     """
     # check container exists
+    logger.debug(f"Checking Blob container {container_name} exists.")
     container_client = blob_service_client.get_container_client(
         container=container_name
     )
     if not container_client.exists():
-        print(f"Blob container {container_name} does not exist. Please try again with an existing Blob container.")
+        logger.error(
+            f"Blob container {container_name} does not exist. Please try again with an existing Blob container."
+        )
         return None
-    #check number of files if force_upload False
+    # check number of files if force_upload False
+    logger.debug(f"Blob container {container_name} found. Uploading files...")
     if not force_upload:
         fnum = []
-        for _, _, file in os.walk(os.path.realpath(f"./{folder_name}")):
+        for _, _, file in os.walk(os.path.realpath(f"./{folder}")):
             fnum.append(len(file))
         fnum_sum = sum(fnum)
         if fnum_sum > 50:
@@ -570,7 +590,9 @@ def upload_files_in_folder(
     # get all files in folder
     file_list = []
     if not path.isdir(folder):
-        print(f"{folder} is not a folder/directory. Make sure to specify a valid folder.")
+        logger.warning(
+            f"{folder} is not a folder/directory. Make sure to specify a valid folder."
+        )
         return None
     for dirname, _, fname in walk(folder):
         for f in fname:
@@ -578,11 +600,16 @@ def upload_files_in_folder(
             file_list.append(_path)
     # iteratively call the upload_blob_file function to upload individual files
     for file in file_list:
-        #get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders
+        # get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders
         drop_folder = path.dirname(file).replace(folder, "", 1)
         if drop_folder.startswith("/"):
-            drop_folder = drop_folder[1:] #removes the / so path.join doesnt mistake for root
-        upload_blob_file(file, path.join(location, drop_folder), container_client, verbose)
+            drop_folder = drop_folder[
+                1:
+            ]  # removes the / so path.join doesnt mistake for root
+        logger.debug(f"Calling upload_blob_file for {file}")
+        upload_blob_file(
+            file, path.join(location, drop_folder), container_client, verbose
+        )
     return file_list
 
 
@@ -595,8 +622,10 @@ def get_batch_service_client(config: dict):
     Returns:
         object: Batch Service Client object
     """
-    # print("Initializing Batch Service Client...")
+    logger.debug("Initializing Batch Service Client...")
+    logger.debug("Pulling in SP Secret for batch client.")
     sp_secret = get_sp_secret(config)
+    logger.debug("Attempting to create Batch Service Client.")
     batch_client = BatchServiceClient(
         credentials=ServicePrincipalCredentials(
             client_id=config["Authentication"]["application_id"],
@@ -606,7 +635,7 @@ def get_batch_service_client(config: dict):
         ),
         batch_url=config["Batch"]["batch_service_url"],
     )
-    # print("Batch Service Client initialized successfully.")
+    logger.debug("Batch Service Client initialized successfully.")
     return batch_client
 
 
@@ -623,27 +652,32 @@ def add_job(
         end_job_on_task_failure (bool): whether to end a running job if a task fails
         batch_client (object): batch client object
     """
-    print(f"Attempting to create job '{job_id}'...")
+    logger.debug(f"Attempting to create job '{job_id}'...")
     if end_job_on_task_failure:
         end_job_str = "performExitOptionsJobAction"
+        logger.debug("Setting parameter to end job on task failure.")
     else:
         end_job_str = "noAction"
-
+        logger.debug("No action set for job ending.")
+    logger.debug("Adding job parameters to job.")
     job = batchmodels.JobAddParameter(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
         uses_task_dependencies=True,
         on_task_failure=end_job_str,
     )
+    logger.debug("Attempting to add job.")
     try:
         batch_client.job.add(job)
-        print(f"Job '{job_id}' created successfully.")
+        logger.info(f"Job '{job_id}' created successfully.")
     except batchmodels.BatchErrorException as err:
         if err.error.code == "JobExists":
-            print(f"Job '{job_id}' already exists. No further action taken.")
+            logger.warning(
+                f"Job '{job_id}' already exists. No further action taken."
+            )
         else:
-            print(f"Error creating job '{job_id}': {err}")
-            print("Rename this job or delete the pre-existing job.")
+            logger.error(f"Error creating job '{job_id}': {err}")
+            logger.error("Rename this job or delete the pre-existing job.")
             raise
 
 
@@ -674,9 +708,11 @@ def add_task_to_job(
     Returns:
         list: list of task IDs created
     """
+    logger.debug("Adding add_task process.")
     # convert docker command to string if in list format
     if isinstance(docker_command, list):
         d_cmd_str = " ".join(docker_command)
+        logger.debug("Docker command converted to string.")
     else:
         d_cmd_str = docker_command
 
@@ -693,14 +729,17 @@ def add_task_to_job(
         # Create a TaskDependencies object to pass in
         if isinstance(depends_on, str):
             depends_on = [depends_on]
+            logger.debug("Adding task dependency.")
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
 
+    logger.debug("Creating mount configuration string.")
     mount_str = ""
     # src = env variable to fsmounts/rel_path
     # target = the directory(path) you reference in your code
     if mounts is not None:
         mount_str = ""
         for mount in mounts:
+            logger.debug("Adding mount to mount string.")
             mount_str = (
                 mount_str
                 + "--mount type=bind,source="
@@ -719,7 +758,10 @@ def add_task_to_job(
             tasks.append(id)
             task = batchmodels.TaskAddParameter(
                 id=id,
-                command_line=d_cmd_str + " " + input_mount_dir + input_file,
+                command_line=d_cmd_str
+                + " "
+                + self.input_mount_dir
+                + input_file,
                 container_settings=batchmodels.TaskContainerSettings(
                     image_name=full_container_name,
                     container_run_options=f"--name={job_id} --rm " + mount_str,
@@ -733,6 +775,7 @@ def add_task_to_job(
     else:
         task_id = f"{task_id_base}-{str(task_id_max + 1)}"
         command_line = d_cmd_str
+        logger.debug(f"Adding task {task_id}")
         task = batchmodels.TaskAddParameter(
             id=task_id,
             command_line=command_line,
@@ -745,7 +788,7 @@ def add_task_to_job(
             depends_on=task_deps,
         )
         batch_client.task.add(job_id=job_id, task=task)
-        print(f"Task '{task_id}' added to job '{job_id}'.")
+        logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
         t = []
         t.append(task_id)
         return t
@@ -774,7 +817,7 @@ def monitor_tasks(
         dict: dictionary with keys completed (whether the job completed) and runtime (total elapsed time)
     """
     # start monitoring
-    print(
+    logger.info(
         f"Starting to monitor tasks for job '{job_id}' with a timeout of {timeout} minutes."
     )
 
@@ -789,10 +832,10 @@ def monitor_tasks(
     _timeout = datetime.timedelta(minutes=timeout)
     timeout_expiration = start_time + _timeout
 
-    print(
+    logger.debug(
         f"Job '{job_id}' monitoring started at {start_time}. Timeout at {timeout_expiration}."
     )
-    print("-" * 20)
+    logger.debug("-" * 20)
 
     # count tasks and print to user the starting value
     # as tasks complete, print which complete
@@ -801,7 +844,7 @@ def monitor_tasks(
 
     # get total tasks
     total_tasks = len([task for task in tasks])
-    print(f"Total tasks to monitor: {total_tasks}")
+    logger.info(f"Total tasks to monitor: {total_tasks}")
 
     # pool setup and status
 
@@ -843,17 +886,20 @@ def monitor_tasks(
             "failures",
             end="\r",
         )
+        logger.debug(
+            f"{completions} completed; {incompletions} remaining; {successes} successes; {failures} failures"
+        )
 
         if not incomplete_tasks:
-            print("\nAll tasks completed.")
+            logger.info("\nAll tasks completed.")
             completed = True
             break
 
     if completed:
-        print(
+        logger.info(
             "All tasks have reached 'Completed' state within the timeout period."
         )
-        print(successes, "task(s) succeeded,", failures, "failed.")
+        logger.info(f"{successes} task(s) succeeded, {failures} failed.")
     else:
         raise RuntimeError(
             f"ERROR: Tasks did not reach 'Completed' state within timeout period of {timeout} minutes."
@@ -861,7 +907,9 @@ def monitor_tasks(
 
     end_time = datetime.datetime.now().replace(microsecond=0)
     runtime = end_time - start_time
-    print(f"Monitoring ended: {end_time}. Total elapsed time: {runtime}.")
+    logger.info(
+        f"Monitoring ended: {end_time}. Total elapsed time: {runtime}."
+    )
     return {"completed": completed, "elapsed time": runtime}
 
 
@@ -878,7 +926,7 @@ def list_files_in_container(
     Returns:
         list: list of file names in the container
     """
-    print(f"Listing files in container '{container_name}'...")
+    logger.info(f"Listing files in container '{container_name}'...")
     try:
         cc = ContainerClient(
             account_url=config["Storage"]["storage_account_url"],
@@ -886,18 +934,14 @@ def list_files_in_container(
             container_name=container_name,
         )
         files = [f for f in cc.list_blob_names()]
-        print(f"Found {len(files)} files in container '{container_name}'.")
+        logger.info(files)
+        logger.info(
+            f"Found {len(files)} files in container '{container_name}'."
+        )
         return files
     except Exception as e:
-        print(f"Error connecting to container '{container_name}': {e}")
+        logger.error(f"Error connecting to container '{container_name}': {e}")
         return None
-
-    files = []
-    for f in cc.list_blob_names():
-        files.append(
-            f
-        )  # gather a list of file names from list_blob_names iterator
-    return files
 
 
 def df_to_yaml(df: pd.DataFrame):
@@ -909,11 +953,11 @@ def df_to_yaml(df: pd.DataFrame):
     Returns:
         dict:  yaml string converted from dataframe
     """
-    print("Converting DataFrame to YAML format...")
+    logger.debug("Converting DataFrame to YAML format...")
     yaml_str = dump(
         df.to_dict(orient="records"), sort_keys=False, default_flow_style=False
     )
-    print("Conversion complete.")
+    logger.debug("Conversion complete.")
     return yaml_str
 
 
@@ -926,9 +970,9 @@ def yaml_to_df(yaml_file: dict):
     Returns:
         pd.DataFrame: pandas dataframe converted from yaml file
     """
-    print("Converting YAML to DataFrame...")
+    logger.debug("Converting YAML to DataFrame...")
     df = pd.json_normalize(load(yaml_file, Loader=SafeLoader))
-    print("Conversion complete.")
+    logger.debug("Conversion complete.")
     return df
 
 
@@ -941,14 +985,15 @@ def edit_yaml_r0(file_path: str, r0_start=1, r0_end=4, step=0.1):
         r0_end (int, optional): The upped end of the r0 range (inclusive). Defaults to 4.
         step (float, optional): The step size of each r0 increase. Defaults to 0.1.
     """
-    print(
+    logger.debug(
         f"Starting to edit YAML file '{file_path}' with r0 range from {r0_start} to {r0_end} by steps of {step}."
     )
 
     with open(file_path, "r") as file:
         y = yaml.safe_load(file)
-
+    logger.debug("Getting list or r0 values.")
     r0_list = np.arange(r0_start, r0_end + step, step, dtype=float).tolist()
+    logger.debug("Looping through r0 values.")
     for r0 in r0_list:
         r0 = round(r0, len(str(step).split(".")[1]))
         y["baseScenario"]["r0"] = r0
@@ -956,8 +1001,10 @@ def edit_yaml_r0(file_path: str, r0_start=1, r0_end=4, step=0.1):
         outfile = f"{file_path.replace('.yaml', '')}_{str(r0).replace('.', '-')}.yaml"
         with open(outfile, "w") as f:
             yaml.dump(y, f, default_flow_style=False)
-        print(f"Generated modified YAML file with r0={r0} at '{outfile}'.")
-    print("Completed editing YAML files.")
+        logger.debug(
+            f"Generated modified YAML file with r0={r0} at '{outfile}'."
+        )
+    logger.debug("Completed editing YAML files.")
 
 
 def get_user_identity(config: str):
@@ -969,6 +1016,7 @@ def get_user_identity(config: str):
     Returns:
         dict: the dictionary containing user identity information to be used with the pool parameters.
     """
+    logger.debug("Getting user identity configuration.")
     user_identity = {
         "type": "UserAssigned",
         "userAssignedIdentities": {
@@ -990,6 +1038,7 @@ def get_network_config(config: str):
     Returns:
         dict: the dictionary containing network configurations to be used with the pool parameters.
     """
+    logger.debug("Getting network configuration.")
     network_config = {
         "subnetId": config["Authentication"]["subnet_id"],
         "publicIPAddressConfiguration": {"provision": "NoPublicIPAddresses"},
@@ -1015,6 +1064,7 @@ def get_deployment_config(
     Returns:
         dict: dictionary containing info for container deployment. Uses ubuntu server with info obtained from config file.
     """
+    logger.debug("Getting deployment config.")
     deployment_config = {
         "virtualMachineConfiguration": {
             "imageReference": {
@@ -1062,13 +1112,15 @@ def get_blob_config(
     Returns:
         dict: dictionary containing info for blob storage configuration. Used as input to get_mount_config().
     """
-    print(
+    logger.debug(
         f"Generating blob configuration for container '{container_name}' with mount path '{rel_mount_path}'..."
     )
     if cache_blobfuse:
         blob_str = ""
+        logger.debug("No Blob caching in use.")
     else:
         blob_str = "-o direct_io"
+        logger.debug("Will use blob caching.")
 
     blob_config = {
         "azureBlobFileSystemConfiguration": {
@@ -1083,6 +1135,7 @@ def get_blob_config(
             "relativeMountPath": rel_mount_path,
         }
     }
+    logger.debug("Generated Blob configuration.")
     return blob_config
 
 
@@ -1098,6 +1151,7 @@ def get_mount_config(blob_config: list[str]):
     _mount_config = []
     for blob in blob_config:
         _mount_config.append(blob)
+    logger.debug("Generated mount configuration.")
     return _mount_config
 
 
@@ -1133,7 +1187,7 @@ def get_pool_parameters(
     Returns:
         dict: dict of pool parameters for pool creation
     """
-    print(
+    logger.debug(
         f"Setting up pool parameters in '{mode}' mode with timeout={timeout} minutes..."
     )
     if mode == "fixed":
@@ -1144,6 +1198,7 @@ def get_pool_parameters(
                 "resizeTimeout": f"PT{timeout}M",
             }
         }
+        logger.debug("Fixed mode set with scale settings.")
     elif mode == "autoscale" and use_default_autoscale_formula is False:
         scale_settings = {
             "autoScale": {
@@ -1153,6 +1208,7 @@ def get_pool_parameters(
                 ),
             }
         }
+        logger.debug("Autoscale mode set with custom autoscale formula.")
     elif mode == "autoscale" and use_default_autoscale_formula is True:
         scale_settings = {
             "autoScale": {
@@ -1162,7 +1218,9 @@ def get_pool_parameters(
                 ),
             }
         }
+        logger.debug("Autoscale mode set with default autoscale formula.")
     else:
+        logger.debug("Returning empty pool parameters.")
         return {}
 
     pool_parameters = {
@@ -1193,7 +1251,7 @@ def get_pool_parameters(
             "mountConfiguration": mount_config,
         },
     }
-    print("Pool parameters successfully configured.")
+    logger.debug("Pool parameters successfully configured.")
     return pool_parameters
 
 
@@ -1208,7 +1266,9 @@ def check_blob_existence(c_client: ContainerClient, blob_name: str) -> bool:
         bool: whether the specified Blob exists
 
     """
+    logger.debug("Checking Blob existence.")
     blob = c_client.get_blob_client(blob=blob_name)
+    logger.debug(f"Blob exists: {blob.exists()}")
     return blob.exists()
 
 
@@ -1228,10 +1288,10 @@ def check_virtual_directory_existence(
     blobs = c_client.list_blobs(name_starts_with=vdir_path)
     try:
         first_blob = next(blobs)
-        print(f"{first_blob.name} found.")
+        logger.debug(f"{first_blob.name} found.")
         return True
     except StopIteration as e:
-        print(repr(e))
+        logger.error(repr(e))
         return False
 
 
@@ -1267,6 +1327,7 @@ def download_file(
     with dest_path.open(mode="wb") as blob_download:
         download_stream = c_client.download_blob(blob=src_path)
         blob_download.write(download_stream.readall())
+        logger.debug("File downloaded.")
 
 
 def download_directory(
@@ -1296,6 +1357,8 @@ def download_directory(
         download_file(
             c_client, blob.name, os.path.join(dest_path, blob.name), False
         )
+        logger.debug(f"Downloaded {blob.name}")
+    logger.debug("Download complete.")
 
 
 # check whether job exists
@@ -1311,8 +1374,10 @@ def check_job_exists(job_id: str, batch_client: object):
     """
     job_list = batch_client.job.list()
     if job_id in job_list:
+        logger.debug(f"job {job_id} exists.")
         return True
     else:
+        logger.debug(f"job {job_id} does not exist.")
         return False
 
 
@@ -1327,6 +1392,7 @@ def get_completed_tasks(job_id: str, batch_client: object):
     Returns:
         dict: dictionary containing number of completed tasks and total tasks for the job
     """
+    logger.debug("Pulling in task information.")
     tasks = batch_client.task.list(job_id)
     total_tasks = len(tasks)
 
@@ -1363,6 +1429,7 @@ def get_job_state(job_id: str, batch_client: object):
         str: the state of the specified job, such as 'completed' or 'active'.
     """
     job_info = batch_client.job.get(job_id)
+    logger.debug(f"job state is {job_info.state}")
     return job_info.state
 
 
@@ -1386,18 +1453,21 @@ def package_and_upload_dockerfile(
         str: full container name
     """
     # check if Dockerfile exists
+    logger.debug("Trying to ping docker daemon.")
     try:
         d = docker.from_env(timeout=10).ping()
+        logger.debug("Docker is running.")
     except DockerException:
-        print("Could not ping Docker. Make sure Docker is running.")
-        print("Container not packaged/uploaded.")
-        print("Try again when Docker is running.")
+        logger.error("Could not ping Docker. Make sure Docker is running.")
+        logger.warning("Container not packaged/uploaded.")
+        logger.warning("Try again when Docker is running.")
         return None
 
     if os.path.exists(path_to_dockerfile) and d:
         full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
-        print(f"full container name: {full_container_name}")
+        logger.info(f"full container name: {full_container_name}")
         # Build container
+        logger.debug("Building container.")
         sp.run(
             f"docker image build -f {path_to_dockerfile} -t {full_container_name} .",
             shell=True,
@@ -1405,14 +1475,17 @@ def package_and_upload_dockerfile(
         # Upload container to registry
         # upload with device login if desired
         if use_device_code:
+            logger.debug("Logging in with device code.")
             sp.run("az login --use-device-code", shell=True)
         else:
+            logger.debug("Logging in to Azure.")
             sp.run("az login", shell=True)
         sp.run(f"az acr login --name {registry_name}", shell=True)
+        logger.debug("Pushing Docker container to ACR.")
         sp.run(f"docker push {full_container_name}", shell=True)
         return full_container_name
     else:
-        print("Dockerfile does not exist in the root of the directory.")
+        logger.error("Dockerfile does not exist in the root of the directory.")
 
 
 def check_pool_exists(
@@ -1432,12 +1505,15 @@ def check_pool_exists(
     Returns:
         bool: whether the pool exists
     """
+    logger.debug(f"Checking if pool {pool_name} exists.")
     try:
         batch_mgmt_client.pool.get(
             resource_group_name, account_name, pool_name
         )
+        logger.debug("Pool exists.")
         return True
     except Exception:
+        logger.debug("Pool does not exist.")
         return False
 
 
@@ -1458,9 +1534,11 @@ def get_pool_info(
     Returns:
         dict: json with name, last_modified, creation_time, vm_size, and task_slots_per_node info
     """
+    logger.debug("Pulling pool info.")
     result = batch_mgmt_client.pool.get(
         resource_group_name, account_name, pool_name
     )
+    logger.debug("Condensing pool info the readable json output.")
     j = {
         "name": result.name,
         "last_modified": result.last_modified.strftime("%m/%d/%y %H:%M"),
@@ -1488,6 +1566,7 @@ def get_pool_full_info(
     Returns:
         dict: dictionary with full pool information
     """
+    logger.debug("Pulling pool info.")
     result = batch_mgmt_client.pool.get(
         resource_group_name, account_name, pool_name
     )
@@ -1505,6 +1584,7 @@ def check_config_req(config: str):
     Returns:
         bool: true if config contains all required components, false otherwise
     """
+
     req = set(
         [
             "Authentication.subscription_id",
@@ -1530,12 +1610,15 @@ def check_config_req(config: str):
             "Container.container_registry_password",
         ]
     )
+    logger.debug("Loading config info as a set.")
     loaded = set(pd.json_normalize(config).columns)
+    logger.debug("Comparing keys in config and the list of required keys.")
     check = req - loaded == set()
     if check:
+        logger.debug("All required keys exist in the config.")
         return True
     else:
-        print(
+        logger.warning(
             str(list(req - loaded)),
             "missing from the config file and will be required by client.",
         )
@@ -1558,30 +1641,36 @@ def check_azure_container_exists(
     # check full_container_name exists in ACR
     audience = "https://management.azure.com"
     endpoint = f"https://{registry_name}.azurecr.io"
+    logger.debug(f"Set audience to {audience}")
+    logger.debug(f"Set endpoint to {endpoint}")
     try:
         # check full_container_name exists in ACR
         cr_client = ContainerRegistryClient(
             endpoint, DefaultAzureCredential(), audience=audience
         )
+        logger.debug("Container registry client created. Container exists.")
     except Exception as e:
-        print(
+        logger.error(
             f"Registry [{registry_name}] or repo [{repo_name}] does not exist"
         )
-        print(e)
+        logger.exception(e)
         raise Exception
     tag_list = []
+    logger.debug("Checking tag exists.")
     for tag in cr_client.list_tag_properties(repo_name):
         tag_properties = cr_client.get_tag_properties(repo_name, tag.name)
         tag_list.append(tag_properties.name)
-    print("Available tags in repo:", tag_list)
+    logger.debug(f"Available tags in repo: {tag_list}")
     if tag_name in tag_list:
-        print(f"setting {registry_name}/{repo_name}:{tag_name}")
+        logger.debug(f"setting {registry_name}/{repo_name}:{tag_name}")
         full_container_name = (
             f"{registry_name}.azurecr.io/{repo_name}:{tag_name}"
         )
         return full_container_name
     else:
-        print(f"{registry_name}/{repo_name}:{tag_name} does not exist")
+        logger.warning(
+            f"{registry_name}/{repo_name}:{tag_name} does not exist"
+        )
         return None
 
 
@@ -1596,6 +1685,7 @@ def generate_autoscale_formula(max_nodes: int = 8) -> str:
         str: the text of an autoscale formula
 
     """
+    logger.debug("Creating default autoscale formula.")
     formula = f"""
     // Get pending tasks for the past 10 minutes.
     $samples = $ActiveTasks.GetSamplePercent(TimeInterval_Minute * 10);
@@ -1616,6 +1706,7 @@ def generate_autoscale_formula(max_nodes: int = 8) -> str:
 def format_rel_path(rel_path: str) -> str:
     if rel_path.startswith("/"):
         rel_path = rel_path[1:]
+        logger.debug(f"path formatted to {rel_path}")
     return rel_path
 
 
@@ -1637,14 +1728,52 @@ def get_timeout(_time: str) -> int:
 def list_blobs_flat(
     container_name: str, blob_service_client: BlobServiceClient, verbose=True
 ):
+    logger.debug("Creating container client for getting Blob info.")
     container_client = blob_service_client.get_container_client(
         container=container_name
     )
-
+    logger.debug("Container client created. Listing Blob info.")
     blob_list = container_client.list_blobs()
     blob_names = [blob.name for blob in blob_list]
+    logger.debug("Blob names gathered.")
     if verbose:
         for blob in blob_list:
-            print(f"Name: {blob.name}")
-
+            logger.info(f"Name: {blob.name}")
     return blob_names
+
+
+def get_log_level() -> int:
+    """
+    Gets the LOG_LEVEL from the environment.
+
+    If it could not find one, set it to DEBUG.
+
+    If one was found, but not expected, set it to DEBUG
+    """
+    log_level = os.getenv("LOG_LEVEL")
+
+    if log_level is None:
+        logger.info("Could not find logging level. Using DEBUG")
+        return logging.DEBUG
+
+    match log_level.lower():
+        case "debug":
+            logger.info("Log level set to DEBUG")
+            return logging.DEBUG
+        case "info":
+            logger.info("Log level set to INFO")
+            return logging.INFO
+        case "warning" | "warn":
+            logger.info("Log level set to WARNING")
+            return logging.WARNING
+        case "error":
+            logger.info("Log level set to ERROR")
+            return logging.ERROR
+        case "critical":
+            logger.info("Log level set to CRITICAL")
+            return logging.CRITICAL
+        case ll:
+            logger.warning(
+                f"Did not recognize log level string {ll}. Using DEBUG"
+            )
+            return logging.DEBUG

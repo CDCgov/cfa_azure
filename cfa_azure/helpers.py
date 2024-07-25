@@ -1789,7 +1789,6 @@ def delete_blob_folder(folder_path: str, container_name: str, blob_service_clien
     #list out files in folder
     blob_names = c_client.list_blob_names(name_starts_with = folder_path)
     _files = [blob for blob in blob_names]
-    print(_files)
     #call helpers.delete_blob_snapshots()
     for file in _files:
         delete_blob_snapshots(

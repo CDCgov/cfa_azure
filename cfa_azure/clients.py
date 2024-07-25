@@ -849,4 +849,4 @@ class AzureClient:
             container_name,
             self.blob_service_client
         )
-        logger.debug(f"Deleted folder {folder_name}.")
+        logger.debug(f"Deleted folder {folder_path}.")

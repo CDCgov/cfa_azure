@@ -1596,13 +1596,9 @@ def check_config_req(config: str):
             "Authentication.application_id",
             "Authentication.vault_url",
             "Authentication.vault_sp_secret_id",
-            "Authentication.vault_sa_secret_id",
-            "Authentication.vault_ab_secret_id",
             "Authentication.subnet_id",
             "Batch.batch_account_name",
-            "Batch.batch_url",
             "Batch.batch_service_url",
-            "Batch.pool-node-count",
             "Batch.pool_vm_size",
             "Storage.storage_account_name",
             "Storage.storage_account_url",
@@ -1778,20 +1774,31 @@ def get_log_level() -> int:
             )
             return logging.DEBUG
 
-def delete_blob_snapshots(blob_name: str, container_name: str, blob_service_client: object):
-    blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+
+def delete_blob_snapshots(
+    blob_name: str, container_name: str, blob_service_client: object
+):
+    blob_client = blob_service_client.get_blob_client(
+        container=container_name, blob=blob_name
+    )
     blob_client.delete_blob(delete_snapshots="include")
     logger.info(f"Deleted {blob_name} from {container_name}.")
 
-def delete_blob_folder(folder_path: str, container_name: str, blob_service_client: object):
-    #create container client
-    c_client = blob_service_client.get_container_client(container = container_name)
-    #list out files in folder
-    blob_names = c_client.list_blob_names(name_starts_with = folder_path)
+
+def delete_blob_folder(
+    folder_path: str, container_name: str, blob_service_client: object
+):
+    # create container client
+    c_client = blob_service_client.get_container_client(
+        container=container_name
+    )
+    # list out files in folder
+    blob_names = c_client.list_blob_names(name_starts_with=folder_path)
     _files = [blob for blob in blob_names]
-    #call helpers.delete_blob_snapshots()
+    # call helpers.delete_blob_snapshots()
     for file in _files:
         delete_blob_snapshots(
-            blob_name = file, 
-            container_name = container_name,
-            blob_service_client = blob_service_client)
+            blob_name=file,
+            container_name=container_name,
+            blob_service_client=blob_service_client,
+        )

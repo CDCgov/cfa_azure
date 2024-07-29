@@ -1,0 +1,24 @@
+[Authentication]
+subscription_id="sub_id"
+resource_group="resource_group"
+user_assigned_identity="user_assigned_identity"
+tenant_id="tenant_id"
+client_id="client_id"
+principal_id="principal_id"
+application_id="application_id"
+vault_url="https://vault_name.vault.azure.net/"
+vault_sp_secret_id="CFA-SECRET_ID"
+subnet_id="subnet_id"
+
+[Batch]
+batch_account_name="batch_account_name"
+batch_service_url="batch_service_url"
+pool_vm_size="STANDARD_A2_V2"  # VM Type/Size
+
+[Storage]
+storage_account_name="storage_account_name"
+storage_account_url="storage_account_url"
+
+[Container]
+container_registry_username="registry_username"
+container_registry_password="registry_password"

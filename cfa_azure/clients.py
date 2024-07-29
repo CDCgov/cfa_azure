@@ -837,16 +837,13 @@ class AzureClient:
     def delete_blob_file(self, blob_name, container_name):
         logger.debug(f"Deleting blob {blob_name} from {container_name}.")
         helpers.delete_blob_snapshots(
-            blob_name, 
-            container_name, 
-            self.blob_service_client)
+            blob_name, container_name, self.blob_service_client
+        )
         logger.debug(f"Deleted {blob_name}.")
 
     def delete_blob_folder(self, folder_path, container_name):
         logger.debug(f"Deleting files in {folder_path} folder.")
         helpers.delete_blob_folder(
-            folder_path,
-            container_name,
-            self.blob_service_client
+            folder_path, container_name, self.blob_service_client
         )
         logger.debug(f"Deleted folder {folder_path}.")

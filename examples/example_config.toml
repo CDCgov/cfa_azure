@@ -22,4 +22,3 @@ storage_account_url="storage_account_url"
 [Container]
 container_registry_username="registry_username"
 container_registry_password="registry_password"
-

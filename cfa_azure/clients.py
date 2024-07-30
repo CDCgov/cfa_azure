@@ -691,8 +691,8 @@ class AzureClient:
         self,
         src_path: str,
         dest_path: str,
-        do_check: bool = True,
-        container_client=None,
+        container_name: str = None,
+        do_check: bool = True
     ) -> None:
         """download a file from Blob storage
 
@@ -701,26 +701,22 @@ class AzureClient:
                 Path within the container to the desired file (including filename)
             dest_path (str):
                 Path to desired location to save the downloaded file
-            container (str):
-                Name of the storage container containing the file to be downloaded
+            container_name (str):
+                Name of the storage container containing the file to be downloaded.
             do_check (bool):
-                Whether or not to do an existence check
-            container_client (ContainerClient, optional):
-                Instance of ContainerClient provided with the storage account. Defaults to None.
+                Whether or not to do an existence check\
         """
         # use the output container client by default for downloading files
+        logger.debug(f"Creating container client for {container_name}.")
+        c_client = self.blob_service_client.get_container_client(container = container_name)
+        
         logger.debug("Attempting to download file.")
-        if container_client is None:
-            helpers.download_file(
-                self.output_container_client, src_path, dest_path, do_check
-            )
-        else:
-            helpers.download_file(
-                container_client, src_path, dest_path, do_check
-            )
+        helpers.download_file(
+            c_client, src_path, dest_path, do_check
+        )
 
     def download_directory(
-        self, src_path: str, dest_path: str, container_client=None
+        self, src_path: str, dest_path: str, container_name: str
     ) -> None:
         """download a whole directory from Azure Blob Storage
 
@@ -729,17 +725,19 @@ class AzureClient:
                 Prefix of the blobs to download
             dest_path (str):
                 Path to the directory in which to store the downloads
-            container_client (ContainerClient, optional):
-                Instance of ContainerClient provided with the storage account. Defaults to None.
+            container_name (str):
+                Name of Blob Storage container where the directory resides.
         """
+        #generate container client
+        logger.debug("Generating container client object.")
+        c_client = self.blob_service_client.get_container_client(container = container_name)
+        
         logger.debug("Attempting to download directory.")
-        if container_client is None:
-            helpers.download_directory(
-                self.output_container_client, src_path, dest_path
-            )
-        else:
-            helpers.download_directory(container_client, src_path, dest_path)
+        helpers.download_directory(
+            c_client, src_path, dest_path
+        )
 
+        
     def set_pool(self, pool_name: str) -> None:
         """checks if pool exists and if it does, it gets assigned to the client
 

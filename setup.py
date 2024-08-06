@@ -8,7 +8,7 @@ setup(
     author="Ryan Raasch",
     author_email="xng3@cdc.gov",
     install_requires=[
-        "azure-identity==1.13.0",
+        "azure-identity==1.16.1",
         "azure-keyvault==4.2.0",
         "azure-batch==14.0.0",
         "azure-mgmt-batch==17.1.0",

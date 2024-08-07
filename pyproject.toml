@@ -7,8 +7,8 @@ readme = "README.md"
 packages = [{include = "cfa_azure"}]
 
 [tool.poetry.dependencies]
-python = "^3.7"
-azure-identity = "1.13.0"
+python = "^3.8"
+azure-identity = "1.16.1"
 azure-keyvault = "4.2.0"
 azure-batch = "14.0.0"
 azure-mgmt-batch = "17.1.0"

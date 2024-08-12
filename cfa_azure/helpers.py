@@ -1753,6 +1753,8 @@ def get_log_level() -> int:
         return logging.CRITICAL+1
 
     match log_level.lower():
+        case "none":
+            return logging.CRITICAL+1
         case "debug":
             logger.info("Log level set to DEBUG")
             return logging.DEBUG

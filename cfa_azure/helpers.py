@@ -1742,17 +1742,19 @@ def get_log_level() -> int:
     """
     Gets the LOG_LEVEL from the environment.
 
-    If it could not find one, set it to DEBUG.
+    If it could not find one, set it to None.
 
     If one was found, but not expected, set it to DEBUG
     """
     log_level = os.getenv("LOG_LEVEL")
 
     if log_level is None:
-        logger.info("Could not find logging level. Using DEBUG")
-        return logging.DEBUG
+        print("Could not find logging level. Turning logging off.")
+        return logging.CRITICAL+1
 
     match log_level.lower():
+        case "none":
+            return logging.CRITICAL+1
         case "debug":
             logger.info("Log level set to DEBUG")
             return logging.DEBUG

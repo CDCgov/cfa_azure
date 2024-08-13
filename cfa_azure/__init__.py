@@ -19,7 +19,7 @@ FORMAT = "[%(levelname)s] %(asctime)s: %(message)s"
 
 log_status = os.getenv("LOG_OUTPUT")
 if log_status is None:
-    handler = [logging.StreamHandler(sys.stdout), logging.FileHandler(logfile)]
+    handler = [logging.StreamHandler(sys.stdout)]
 elif log_status.lower().startswith("both"):
     handler = [logging.StreamHandler(sys.stdout), logging.FileHandler(logfile)]
 elif log_status.lower().startswith("file"):
@@ -28,9 +28,9 @@ elif log_status.lower().startswith("std"):
     handler = [logging.StreamHandler(sys.stdout)]
 else:
     print(
-        f"Did not recognize {log_status}. Setting to BOTH (file and stdout.)"
+        f"Did not recognize {log_status}. Setting to stdout."
     )
-    handler = [logging.StreamHandler(sys.stdout), logging.FileHandler(logfile)]
+    handler = [logging.StreamHandler(sys.stdout)]
 
 logging.basicConfig(
     level=helpers.get_log_level(),

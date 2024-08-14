@@ -542,6 +542,8 @@ def upload_blob_file(
 def upload_files_in_folder(
     folder: str,
     container_name: str,
+    include_extensions: str|list|None = None,
+    exclude_extensions: str|list|None = None,
     location: str = "",
     blob_service_client=None,
     verbose: bool = True,
@@ -562,11 +564,20 @@ def upload_files_in_folder(
     Returns:
         list: list of files uploaded
     """
+    # check that include and exclude extensions are not both used, format if exist
+    if include_extensions is not None:
+        include_extensions = format_extensions(include_extensions)
+    elif exclude_extensions is not None:
+        exclude_extensions = format_extensions(exclude_extensions)
+    if include_extensions is not None and exclude_extensions is not None:
+        logger.error("Use included_extensions or exclude_extensions, not both.")
     # check container exists
     logger.debug(f"Checking Blob container {container_name} exists.")
+    #create container client
     container_client = blob_service_client.get_container_client(
         container=container_name
     )
+    #check if container client exists
     if not container_client.exists():
         logger.error(
             f"Blob container {container_name} does not exist. Please try again with an existing Blob container."
@@ -574,6 +585,7 @@ def upload_files_in_folder(
         return None
     # check number of files if force_upload False
     logger.debug(f"Blob container {container_name} found. Uploading files...")
+    #check if files should be force uploaded
     if not force_upload:
         fnum = []
         for _, _, file in os.walk(os.path.realpath(f"./{folder}")):
@@ -589,6 +601,7 @@ def upload_files_in_folder(
                 return None
     # get all files in folder
     file_list = []
+    #check if folder is valid
     if not path.isdir(folder):
         logger.warning(
             f"{folder} is not a folder/directory. Make sure to specify a valid folder."
@@ -598,8 +611,24 @@ def upload_files_in_folder(
         for f in fname:
             _path = path.join(dirname, f)
             file_list.append(_path)
+    #create sublist matching include_extensions and exclude_extensions
+    flist = []
+    if include_extensions is None:
+        if exclude_extensions is not None:
+            #find files that don't contain the specified extensions
+            for _file in file_list:
+                if not os.path.splitext(file)[1] in exclude_extensions:
+                    flist.append(_file)
+        else: #this is for no specified extensions to include of exclude
+            flist = file_list
+    else:
+        #include only specified extension files
+        for _file in file_list:
+            if os.path.splitext(_file)[1] in include_extensions:
+                flist.append(_file)
+        
     # iteratively call the upload_blob_file function to upload individual files
-    for file in file_list:
+    for file in fist:
         # get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders
         drop_folder = path.dirname(file).replace(folder, "", 1)
         if drop_folder.startswith("/"):
@@ -1804,3 +1833,15 @@ def delete_blob_folder(
             container_name=container_name,
             blob_service_client=blob_service_client,
         )
+
+
+def format_extensions(extension):
+    if isinstance(extension, str):
+        extension = [extension]
+    ext = []
+    for l in extension:
+        if l.startswith("."):
+            ext.append(l)
+        else:
+            ext.append("."+l)
+    return ext

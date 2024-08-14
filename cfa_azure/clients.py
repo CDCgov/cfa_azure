@@ -377,7 +377,7 @@ class AzureClient:
         self,
         files: list,
         container_name: str,
-        location: str = "",
+        location_in_blob: str = "",
         verbose: bool = False,
     ) -> None:
         """Uploads the files in the list to the input Blob storage container as stored in the client.
@@ -401,7 +401,7 @@ class AzureClient:
         for file_name in files:
             helpers.upload_blob_file(
                 filepath=file_name,
-                location=location,
+                location=location_in_blob,
                 container_client=container_client,
                 verbose=verbose,
             )
@@ -412,7 +412,9 @@ class AzureClient:
         self,
         folder_names: list[str],
         container_name: str,
-        location: str = "",
+        include_extensions: str|list|None = None,
+        exclude_extensions: str|list|None = None,
+        location_in_blob: str = "",
         verbose: bool = True,
         force_upload: bool = True,
     ) -> list[str]:
@@ -434,7 +436,9 @@ class AzureClient:
             _uploaded_files = helpers.upload_files_in_folder(
                 folder=_folder,
                 container_name=container_name,
-                location=location,
+                include_extensions=include_extensions,
+                exclude_extensions=exclude_extensions,
+                location_in_blob=location_in_blob,
                 blob_service_client=self.blob_service_client,
                 verbose=verbose,
                 force_upload=force_upload,

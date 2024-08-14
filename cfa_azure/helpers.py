@@ -556,6 +556,8 @@ def upload_files_in_folder(
     Args:
         folder (str): folder name containing files to be uploaded
         container_name (str): the name of the Blob container
+        include_extensions (str, list): a string or list of extensions desired for upload. Optional. Example: ".py" or [".py", ".csv"]
+        exclude_extensions (str, list): a string or list of extensions of files not to include in the upload. Optional. Example: ".py" or [".py", ".csv"]
         location (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
         blob_service_client (object): instance of Blob Service Client
         verbose (bool): whether to print the name of files uploaded. Default True.

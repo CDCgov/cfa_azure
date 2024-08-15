@@ -544,7 +544,7 @@ def upload_files_in_folder(
     container_name: str,
     include_extensions: str|list|None = None,
     exclude_extensions: str|list|None = None,
-    location: str = "",
+    location_in_blob: str = "",
     blob_service_client=None,
     verbose: bool = True,
     force_upload: bool = True,
@@ -639,7 +639,7 @@ def upload_files_in_folder(
             ]  # removes the / so path.join doesnt mistake for root
         logger.debug(f"Calling upload_blob_file for {file}")
         upload_blob_file(
-            file, path.join(location, drop_folder), container_client, verbose
+            file, path.join(location_in_blob, drop_folder), container_client, verbose
         )
     return file_list
 

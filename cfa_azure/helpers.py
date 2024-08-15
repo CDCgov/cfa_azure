@@ -534,6 +534,7 @@ def upload_blob_file(
         _name = path.join(location, _file)
         container_client.upload_blob(name=_name, data=data, overwrite=True)
     if verbose:
+        print(f"Uploaded {filepath} to {container_client.container_name} as {_name}.")
         logger.info(
             f"Uploaded {filepath} to {container_client.container_name} as {_name}."
         )
@@ -1780,7 +1781,6 @@ def get_log_level() -> int:
     log_level = os.getenv("LOG_LEVEL")
 
     if log_level is None:
-        print("Could not find logging level. Turning logging off.")
         return logging.CRITICAL+1
 
     match log_level.lower():

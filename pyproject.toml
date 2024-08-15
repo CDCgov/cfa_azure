@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cfa_azure"
-version = "0.1.0"
+version = "0.3.1"
 description = "module for use with Azure and Azure Batch"
 authors = ["Ryan Raasch <xng3@cdc.gov>"]
 readme = "README.md"

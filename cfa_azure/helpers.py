@@ -619,7 +619,7 @@ def upload_files_in_folder(
         if exclude_extensions is not None:
             #find files that don't contain the specified extensions
             for _file in file_list:
-                if not os.path.splitext(file)[1] in exclude_extensions:
+                if not os.path.splitext(_file)[1] in exclude_extensions:
                     flist.append(_file)
         else: #this is for no specified extensions to include of exclude
             flist = file_list

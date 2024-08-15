@@ -307,9 +307,9 @@ def get_batch_pool_json(
     deployment_config = {
         "virtualMachineConfiguration": {
             "imageReference": {
-                "publisher": "microsoft-azure-batch",
-                "offer": "ubuntu-server-container",
-                "sku": "22-04-lts",
+                "publisher": "Canonical",
+                "offer": "0001-com-ubuntu-server-jammy",
+                "sku": "22_04-lts-gen2",
                 "version": "latest",
             },
             "nodeAgentSkuId": "batch.node.ubuntu 24.04",
@@ -1068,12 +1068,12 @@ def get_deployment_config(
     deployment_config = {
         "virtualMachineConfiguration": {
             "imageReference": {
-                "publisher": "microsoft-azure-batch",
-                "offer": "ubuntu-server-container",
-                "sku": "22-04-lts",
+                "publisher": "Canonical",
+                "offer": "0001-com-ubuntu-server-jammy",
+                "sku": "22_04-lts-gen2",
                 "version": "latest",
             },
-            "nodeAgentSkuId": "batch.node.ubuntu 24.04",
+            "nodeAgentSkuId": "batch.node.ubuntu 22.04",
             "containerConfiguration": {
                 "type": "dockercompatible",
                 "containerImageNames": [container_image_name],

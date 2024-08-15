@@ -377,7 +377,7 @@ class AzureClient:
         self,
         files: list,
         container_name: str,
-        location: str = "",
+        location_in_blob: str = "",
         verbose: bool = False,
     ) -> None:
         """Uploads the files in the list to the input Blob storage container as stored in the client.
@@ -401,7 +401,7 @@ class AzureClient:
         for file_name in files:
             helpers.upload_blob_file(
                 filepath=file_name,
-                location=location,
+                location=location_in_blob,
                 container_client=container_client,
                 verbose=verbose,
             )
@@ -412,7 +412,9 @@ class AzureClient:
         self,
         folder_names: list[str],
         container_name: str,
-        location: str = "",
+        include_extensions: str|list|None = None,
+        exclude_extensions: str|list|None = None,
+        location_in_blob: str = "",
         verbose: bool = True,
         force_upload: bool = True,
     ) -> list[str]:
@@ -421,7 +423,9 @@ class AzureClient:
         Args:
             folder_names (list[str]): list of paths to folders
             container_name (str): the name of the Blob container
-            location (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
+            include_extensions (str, list): a string or list of extensions desired for upload. Optional. Example: ".py" or [".py", ".csv"]
+            exclude_extensions (str, list): a string or list of extensions of files not to include in the upload. Optional. Example: ".py" or [".py", ".csv"]
+            location_in_blob (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
             verbose (bool): whether to print the name of files uploaded. Default True.
             force_upload (bool): whether to force the upload despite the file count in folder. Default False.
 
@@ -434,7 +438,9 @@ class AzureClient:
             _uploaded_files = helpers.upload_files_in_folder(
                 folder=_folder,
                 container_name=container_name,
-                location=location,
+                include_extensions=include_extensions,
+                exclude_extensions=exclude_extensions,
+                location_in_blob=location_in_blob,
                 blob_service_client=self.blob_service_client,
                 verbose=verbose,
                 force_upload=force_upload,

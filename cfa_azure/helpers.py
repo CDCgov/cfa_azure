@@ -534,6 +534,7 @@ def upload_blob_file(
         _name = path.join(location, _file)
         container_client.upload_blob(name=_name, data=data, overwrite=True)
     if verbose:
+        print(f"Uploaded {filepath} to {container_client.container_name} as {_name}.")
         logger.info(
             f"Uploaded {filepath} to {container_client.container_name} as {_name}."
         )
@@ -542,7 +543,9 @@ def upload_blob_file(
 def upload_files_in_folder(
     folder: str,
     container_name: str,
-    location: str = "",
+    include_extensions: str|list|None = None,
+    exclude_extensions: str|list|None = None,
+    location_in_blob: str = "",
     blob_service_client=None,
     verbose: bool = True,
     force_upload: bool = True,
@@ -554,7 +557,9 @@ def upload_files_in_folder(
     Args:
         folder (str): folder name containing files to be uploaded
         container_name (str): the name of the Blob container
-        location (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
+        include_extensions (str, list): a string or list of extensions desired for upload. Optional. Example: ".py" or [".py", ".csv"]
+        exclude_extensions (str, list): a string or list of extensions of files not to include in the upload. Optional. Example: ".py" or [".py", ".csv"]
+        location_in_blob (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
         blob_service_client (object): instance of Blob Service Client
         verbose (bool): whether to print the name of files uploaded. Default True.
         force_upload (bool): whether to force the upload despite the file count in folder. Default False.
@@ -562,11 +567,20 @@ def upload_files_in_folder(
     Returns:
         list: list of files uploaded
     """
+    # check that include and exclude extensions are not both used, format if exist
+    if include_extensions is not None:
+        include_extensions = format_extensions(include_extensions)
+    elif exclude_extensions is not None:
+        exclude_extensions = format_extensions(exclude_extensions)
+    if include_extensions is not None and exclude_extensions is not None:
+        logger.error("Use included_extensions or exclude_extensions, not both.")
     # check container exists
     logger.debug(f"Checking Blob container {container_name} exists.")
+    #create container client
     container_client = blob_service_client.get_container_client(
         container=container_name
     )
+    #check if container client exists
     if not container_client.exists():
         logger.error(
             f"Blob container {container_name} does not exist. Please try again with an existing Blob container."
@@ -574,6 +588,7 @@ def upload_files_in_folder(
         return None
     # check number of files if force_upload False
     logger.debug(f"Blob container {container_name} found. Uploading files...")
+    #check if files should be force uploaded
     if not force_upload:
         fnum = []
         for _, _, file in os.walk(os.path.realpath(f"./{folder}")):
@@ -589,6 +604,7 @@ def upload_files_in_folder(
                 return None
     # get all files in folder
     file_list = []
+    #check if folder is valid
     if not path.isdir(folder):
         logger.warning(
             f"{folder} is not a folder/directory. Make sure to specify a valid folder."
@@ -598,8 +614,24 @@ def upload_files_in_folder(
         for f in fname:
             _path = path.join(dirname, f)
             file_list.append(_path)
+    #create sublist matching include_extensions and exclude_extensions
+    flist = []
+    if include_extensions is None:
+        if exclude_extensions is not None:
+            #find files that don't contain the specified extensions
+            for _file in file_list:
+                if not os.path.splitext(_file)[1] in exclude_extensions:
+                    flist.append(_file)
+        else: #this is for no specified extensions to include of exclude
+            flist = file_list
+    else:
+        #include only specified extension files
+        for _file in file_list:
+            if os.path.splitext(_file)[1] in include_extensions:
+                flist.append(_file)
+        
     # iteratively call the upload_blob_file function to upload individual files
-    for file in file_list:
+    for file in flist:
         # get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders
         drop_folder = path.dirname(file).replace(folder, "", 1)
         if drop_folder.startswith("/"):
@@ -608,7 +640,7 @@ def upload_files_in_folder(
             ]  # removes the / so path.join doesnt mistake for root
         logger.debug(f"Calling upload_blob_file for {file}")
         upload_blob_file(
-            file, path.join(location, drop_folder), container_client, verbose
+            file, path.join(location_in_blob, drop_folder), container_client, verbose
         )
     return file_list
 
@@ -1749,7 +1781,6 @@ def get_log_level() -> int:
     log_level = os.getenv("LOG_LEVEL")
 
     if log_level is None:
-        print("Could not find logging level. Turning logging off.")
         return logging.CRITICAL+1
 
     match log_level.lower():
@@ -1804,3 +1835,15 @@ def delete_blob_folder(
             container_name=container_name,
             blob_service_client=blob_service_client,
         )
+
+
+def format_extensions(extension):
+    if isinstance(extension, str):
+        extension = [extension]
+    ext = []
+    for l in extension:
+        if l.startswith("."):
+            ext.append(l)
+        else:
+            ext.append("."+l)
+    return ext

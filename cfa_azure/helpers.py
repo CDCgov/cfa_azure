@@ -630,7 +630,7 @@ def upload_files_in_folder(
                 flist.append(_file)
         
     # iteratively call the upload_blob_file function to upload individual files
-    for file in fist:
+    for file in flist:
         # get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders
         drop_folder = path.dirname(file).replace(folder, "", 1)
         if drop_folder.startswith("/"):

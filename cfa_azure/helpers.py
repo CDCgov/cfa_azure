@@ -309,7 +309,7 @@ def get_batch_pool_json(
             "imageReference": {
                 "publisher": "microsoft-azure-batch",
                 "offer": "ubuntu-server-container",
-                "sku": "24-04-lts",
+                "sku": "22-04-lts",
                 "version": "latest",
             },
             "nodeAgentSkuId": "batch.node.ubuntu 24.04",
@@ -1070,7 +1070,7 @@ def get_deployment_config(
             "imageReference": {
                 "publisher": "microsoft-azure-batch",
                 "offer": "ubuntu-server-container",
-                "sku": "24-04-lts",
+                "sku": "22-04-lts",
                 "version": "latest",
             },
             "nodeAgentSkuId": "batch.node.ubuntu 24.04",

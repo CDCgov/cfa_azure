@@ -1332,6 +1332,7 @@ def download_file(
     src_path: str,
     dest_path: str,
     do_check: bool = True,
+    verbose = False
 ) -> None:
     """
     Download a file from Azure Blob storage
@@ -1360,36 +1361,80 @@ def download_file(
         download_stream = c_client.download_blob(blob=src_path)
         blob_download.write(download_stream.readall())
         logger.debug("File downloaded.")
+        if verbose:
+            print(f"Downloaded {src_path} to {dest_path}")
 
 
 def download_directory(
-    c_client: ContainerClient, src_path: str, dest_path: str
+    container_name: str, src_path: str, dest_path: str,
+    blob_service_client,
+    include_extensions: str|list|None = None,
+    exclude_extensions: str|list|None = None,
+    verbose = True
 ) -> None:
     """
     Downloads a directory using prefix matching and the .list_blobs() method
 
     Args:
-        client (ContainerClient):
-            Instance of ContainerClient provided with the storage account
-            and container
+        container_name (str):
+            name of Blob container
         src_path (str):
             Prefix of the blobs to download
         dest_path (str):
             Path to the directory in which to store the downloads
+        blob_service_client (BlobServiceClient):
+            instance of BlobServiceClient
+        include_extensions (str, list, None):
+            a string or list of extensions to include in the download. Optional.
+        exclude_extensions (str, list, None):
+            a string of list of extensions to exclude from the download. Optional.
+        verbose (bool):
+            a Boolean whether to print file names when downloaded.
 
     Raises:
         ValueError:
             When no blobs exist with the specified prefix (src_path)
     """
+    # check that include and exclude extensions are not both used, format if exist
+    if include_extensions is not None:
+        include_extensions = format_extensions(include_extensions)
+    elif exclude_extensions is not None:
+        exclude_extensions = format_extensions(exclude_extensions)
+    if include_extensions is not None and exclude_extensions is not None:
+        logger.error("Use included_extensions or exclude_extensions, not both.")
+    # check container exists
+    logger.debug(f"Checking Blob container {container_name} exists.")
+    #create container client
+    c_client = blob_service_client.get_container_client(
+        container=container_name
+    )
     if not check_virtual_directory_existence(c_client, src_path):
         raise ValueError(
             f"Source virtual directory: {src_path} does not exist."
         )
+
+    blob_list = []
     for blob in c_client.list_blobs(name_starts_with=src_path):
+        blob_list.append(blob.name)
+        
+    flist = []
+    if include_extensions is None:
+        if exclude_extensions is not None:
+            #find files that don't contain the specified extensions
+            for _file in blob_list:
+                if not os.path.splitext(_file)[1] in exclude_extensions:
+                    flist.append(_file)
+        else: #this is for no specified extensions to include or exclude
+            flist = blob_list
+    else:
+        #include only specified extension files
+        for _file in blob_list:
+            if os.path.splitext(_file)[1] in include_extensions:
+                flist.append(_file)
+    for blob in flist:
         download_file(
-            c_client, blob.name, os.path.join(dest_path, blob.name), False
+            c_client, blob, os.path.join(dest_path, blob.name), False, verbose
         )
-        logger.debug(f"Downloaded {blob.name}")
     logger.debug("Download complete.")
 
 

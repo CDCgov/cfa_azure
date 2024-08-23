@@ -722,26 +722,36 @@ class AzureClient:
         )
 
     def download_directory(
-        self, src_path: str, dest_path: str, container_name: str
+        self, src_path: str, dest_path: str, container_name: str,
+        include_extensions: str|list|None = None,
+        exclude_extensions: str|list|None = None,
+        verbose = True
     ) -> None:
         """download a whole directory from Azure Blob Storage
 
         Args:
-            src_path (str):
-                Prefix of the blobs to download
-            dest_path (str):
-                Path to the directory in which to store the downloads
-            container_name (str):
-                Name of Blob Storage container where the directory resides.
+        src_path (str):
+            Prefix of the blobs to download
+        dest_path (str):
+            Path to the directory in which to store the downloads
+        container_name (str):
+            name of Blob container
+        include_extensions (str, list, None):
+            a string or list of extensions to include in the download. Optional.
+        exclude_extensions (str, list, None):
+            a string of list of extensions to exclude from the download. Optional.
+        verbose (bool):
+            a Boolean whether to print file names when downloaded.
         """
-        #generate container client
-        logger.debug("Generating container client object.")
-        c_client = self.blob_service_client.get_container_client(container = container_name)
-        
         logger.debug("Attempting to download directory.")
         helpers.download_directory(
-            c_client, src_path, dest_path
+            container_name, src_path, dest_path,
+            self.blob_service_client,
+            include_extensions,
+            exclude_extensions,
+            verbose
         )
+        logger.debug("finished call to download")
 
         
     def set_pool(self, pool_name: str) -> None:

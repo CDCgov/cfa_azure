@@ -1414,8 +1414,11 @@ def download_directory(
         )
 
     blob_list = []
+    if not src_path.endswith("/"):
+        src_path+= "/"
     for blob in c_client.list_blobs(name_starts_with=src_path):
-        blob_list.append(blob.name)
+        if blob.split(src_path)[0]=='':
+            blob_list.append(blob.name)
         
     flist = []
     if include_extensions is None:

@@ -1402,6 +1402,8 @@ def download_directory(
         exclude_extensions = format_extensions(exclude_extensions)
     if include_extensions is not None and exclude_extensions is not None:
         logger.error("Use included_extensions or exclude_extensions, not both.")
+        print("Use included_extensions or exclude_extensions, not both.")
+        return None
     # check container exists
     logger.debug(f"Checking Blob container {container_name} exists.")
     #create container client

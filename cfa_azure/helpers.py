@@ -1901,6 +1901,7 @@ def format_extensions(extension):
 
 def mark_job_completed_after_tasks_run(
     job_id: str,
+    batch_client: object,
     mark_complete: bool = True,
     ):
     if mark_complete:

@@ -861,3 +861,12 @@ class AzureClient:
             folder_path, container_name, self.blob_service_client
         )
         logger.debug(f"Deleted folder {folder_path}.")
+
+    def mark_job_completed_after_tasks_run(self,
+        job_id: str, mark_complete: bool = True,
+        ):
+        helpers.mark_job_completed_after_tasks_run(
+        job_id = job_id,
+        pool_id = self.pool_name,
+        batch_client = self.batch_client,
+        mark_complete = mark_complete)

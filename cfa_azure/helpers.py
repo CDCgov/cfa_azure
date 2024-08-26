@@ -1901,6 +1901,7 @@ def format_extensions(extension):
 
 def mark_job_completed_after_tasks_run(
     job_id: str,
+    pool_id: str,
     batch_client: object,
     mark_complete: bool = True,
     ):
@@ -1908,6 +1909,7 @@ def mark_job_completed_after_tasks_run(
         logger.debug("setting terminateJob when all tasks complete for job.")
         job_term = batchmodels.JobUpdateParameter(
             id=job_id,
+            pool_info=batchmodels.PoolInformation(pool_id=pool_id),
             on_all_tasks_complete = 'terminateJob'
         )  
         batch_client.job.update(job_term)

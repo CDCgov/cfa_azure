@@ -1913,4 +1913,4 @@ def mark_job_completed_after_tasks_run(
             on_all_tasks_complete = 'terminateJob'
         )  
         batch_client.job.update(job_id = job_id, job_update_parameter = job_term)
-    
+        print("Job will be marked complete when all tasks finish, even if task(s) fails.")

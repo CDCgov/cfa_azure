@@ -411,7 +411,7 @@ def get_batch_pool_json(
     resource_group_name = config["Authentication"]["resource_group"]
     batch_json = {
         "user_identity": user_identity,
-        "network_confi": network_config,
+        "network_config": network_config,
         "deployment_config": deployment_config,
         "mount_config": mount_config,
         "pool_parameters": pool_parameters,

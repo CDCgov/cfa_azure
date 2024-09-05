@@ -1,25 +1,10 @@
 import unittest
 from unittest.mock import patch, MagicMock
+from callee import Contains
 
 import cfa_azure
 import cfa_azure.batch
-from tests.fake_client import FakeClient
-
-FAKE_BATCH_POOL = "test_pool"
-FAKE_INPUT_CONTAINER = 'test_input_container'
-FAKE_OUTPUT_CONTAINER = 'test_output_container'
-FAKE_CONFIG = {
-    'Authentication': {
-        'resource_group': 'Test Resource Group'
-    },
-    'Batch': {
-        'batch_account_name': 'Test'
-    },
-    'Container': {
-        'container_name': FAKE_INPUT_CONTAINER,
-        'container_account_name': 'Test Account'
-    }
-}
+from tests.fake_client import *
 
 class TestBatch(unittest.TestCase):
 
@@ -45,14 +30,7 @@ class TestBatch(unittest.TestCase):
             config_path,
             autoscale_formula_path
         )
-        mock_print.asset_called_with('Starting the pool creation process...')
-        mock_print.asset_called_with('Retrieving service principal credentials...')
-        mock_print.asset_called_with('Setting up Blob service client...')
-        mock_print.asset_called_with('Setting up Azure Batch management client...')
-        mock_print.asset_called_with('Preparing batch pool configuration...')
-        mock_print.asset_called_with('Creating input and output containers...')
-        mock_print.asset_called_with(f"Creating the pool '{FAKE_BATCH_POOL}'...")
-        mock_print.asset_called_with(f"Pool '{FAKE_BATCH_POOL}' created successfully.")
+        mock_print.assert_called_with(Contains('Pool creation process completed'))
         self.assertTrue(status)
 
 
@@ -72,21 +50,14 @@ class TestBatch(unittest.TestCase):
         output_container_name = FAKE_OUTPUT_CONTAINER
         config_path = "some_path"
         autoscale_formula_path = "test_formula"
-        status = cfa_azure.batch.create_pool(
+        cfa_azure.batch.create_pool(
             FAKE_BATCH_POOL, 
             input_container_name, 
             output_container_name,
             config_path,
             autoscale_formula_path
         )
-        mock_print.asset_called_with('Starting the pool creation process...')
-        mock_print.asset_called_with('Retrieving service principal credentials...')
-        mock_print.asset_called_with('Setting up Blob service client...')
-        mock_print.asset_called_with('Setting up Azure Batch management client...')
-        mock_print.asset_called_with('Preparing batch pool configuration...')
-        mock_print.asset_called_with(f'{FAKE_BATCH_POOL} already exists')
-        mock_print.asset_called_with('Creating input and output containers...')
-        mock_print.asset_called_with(f"Creating the pool '{FAKE_BATCH_POOL}'...")
+        mock_print.assert_called_with('No pool created since it already exists. Exiting the process.')
 
 
     @patch("builtins.print")
@@ -105,7 +76,7 @@ class TestBatch(unittest.TestCase):
             FAKE_INPUT_CONTAINER, 
             FAKE_OUTPUT_CONTAINER
         )
-        mock_print.asset_called_with('Job complete. Time to debug. Job not deleted.')
+        mock_print.assert_called_with('Job complete. Time to debug. Job not deleted.')
 
 
     @patch("builtins.print")
@@ -125,18 +96,18 @@ class TestBatch(unittest.TestCase):
             FAKE_OUTPUT_CONTAINER,
             debug=False
         )
-        mock_print.asset_called_with('Cleaning up - deleting job.')
+        mock_print.assert_called_with('Cleaning up - deleting job.')
 
 
     @patch("builtins.print")
     @patch("subprocess.call", MagicMock(return_value=0))
     def test_package_and_upload_dockerfile(self, mock_print):
         cfa_azure.batch.package_and_upload_dockerfile(FAKE_CONFIG)
-        mock_print.asset_called_with('Dockerfile packaged and uploaded successfully.')
+        mock_print.assert_called_with('Dockerfile packaged and uploaded successfully.')
 
 
     @patch("builtins.print")
     @patch("subprocess.call", MagicMock(return_value=-1))
     def test_package_and_upload_dockerfile_failure(self, mock_print):
         cfa_azure.batch.package_and_upload_dockerfile(FAKE_CONFIG)
-        mock_print.asset_called_with('Failed to package and upload Dockerfile.')
+        mock_print.assert_called_with('Failed to package and upload Dockerfile.')

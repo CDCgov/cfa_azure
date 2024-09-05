@@ -16,3 +16,4 @@ acr*
 venv*
 req*
 yaml*
+.coverage

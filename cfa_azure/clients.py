@@ -64,7 +64,6 @@ class AzureClient:
         logger.debug("generated SP secret.")
         self.sp_credential = helpers.get_sp_credential(self.config)
         logger.debug("generated SP credential.")
-
         # create blob service account
         self.blob_service_client = helpers.get_blob_service_client(self.config)
         logger.debug("generated Blob Service Client.")

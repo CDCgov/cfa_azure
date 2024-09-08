@@ -540,6 +540,15 @@ def upload_blob_file(
         )
 
 
+def walk_folder(folder: str) -> list | None:
+    file_list = []
+    for dirname, _, fname in walk(folder):
+        for f in fname:
+            _path = path.join(dirname, f)
+            file_list.append(_path)
+    return file_list
+
+
 def upload_files_in_folder(
     folder: str,
     container_name: str,
@@ -610,10 +619,7 @@ def upload_files_in_folder(
             f"{folder} is not a folder/directory. Make sure to specify a valid folder."
         )
         return None
-    for dirname, _, fname in walk(folder):
-        for f in fname:
-            _path = path.join(dirname, f)
-            file_list.append(_path)
+    file_list = walk_folder(folder)
     #create sublist matching include_extensions and exclude_extensions
     flist = []
     if include_extensions is None:
@@ -629,11 +635,12 @@ def upload_files_in_folder(
         for _file in file_list:
             if os.path.splitext(_file)[1] in include_extensions:
                 flist.append(_file)
-        
+
     # iteratively call the upload_blob_file function to upload individual files
     for file in flist:
         # get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders
         drop_folder = path.dirname(file).replace(folder, "", 1)
+        print(drop_folder)
         if drop_folder.startswith("/"):
             drop_folder = drop_folder[
                 1:
@@ -792,7 +799,6 @@ def add_task_to_job(
                 id=id,
                 command_line=d_cmd_str
                 + " "
-                + self.input_mount_dir
                 + input_file,
                 container_settings=batchmodels.TaskContainerSettings(
                     image_name=full_container_name,

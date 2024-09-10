@@ -1,9 +1,12 @@
 import unittest
 from unittest.mock import patch, MagicMock, call
+from azure.core.exceptions import HttpResponseError 
 import cfa_azure.helpers
 from tests.fake_client import *
 from callee import Contains
+from docker.errors import DockerException
 import logging
+
 
 class TestHelpers(unittest.TestCase):
 
@@ -269,3 +272,189 @@ class TestHelpers(unittest.TestCase):
                 task_id_max=0
             )
             self.assertIsNotNone(task_list)
+
+    @patch("cfa_azure.helpers.logger")
+    def test_create_batch_pool(self, mock_logger):
+        batch_mgmt_client = FakeClient()
+        batch_json = {
+            'pool_id': FAKE_BATCH_POOL,
+            'resource_group_name': FAKE_RESOURCE_GROUP,
+            'account_name': FAKE_ACCOUNT,
+            'pool_parameters': 'some parameters'
+        }
+        pool_id  = cfa_azure.helpers.create_batch_pool(batch_mgmt_client, batch_json)
+        mock_logger.info.assert_called_with(f"Pool {pool_id!r} created successfully.")
+        self.assertEqual(pool_id , FAKE_BATCH_POOL)
+
+    @patch("cfa_azure.helpers.logger")
+    @patch("cfa_azure.helpers.check_virtual_directory_existence", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.download_file", MagicMock(return_value=True))
+    def test_download_directory(self, mock_logger):
+        blob_service_client = FakeClient()
+        cfa_azure.helpers.download_directory(
+            container_name=FAKE_INPUT_CONTAINER,
+            src_path="some_path/",
+            dest_path="another_path",
+            blob_service_client=blob_service_client,
+            include_extensions=".csv",
+            verbose = True
+        )
+        mock_logger.debug.assert_called_with("Download complete.")
+
+    @patch("cfa_azure.helpers.logger")
+    @patch("cfa_azure.helpers.check_virtual_directory_existence", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.download_file", MagicMock(return_value=True))
+    def test_download_directory_extensions(self, mock_logger):
+        blob_service_client = FakeClient()
+        cfa_azure.helpers.download_directory(
+            container_name=FAKE_INPUT_CONTAINER,
+            src_path="some_path/",
+            dest_path="another_path",
+            blob_service_client=blob_service_client,
+            exclude_extensions=".txt",
+            verbose = True
+        )
+        mock_logger.debug.assert_called_with("Download complete.")
+
+    @patch("cfa_azure.helpers.logger")
+    @patch("cfa_azure.helpers.check_blob_existence", MagicMock(return_value=True))
+    def test_download_file(self, mock_logger):
+        blob_service_client = FakeClient()
+        cfa_azure.helpers.download_file(
+            c_client=blob_service_client,
+            src_path="some_path/",
+            dest_path="/another_path",
+            do_check= False,
+            verbose = False 
+        )
+        mock_logger.debug.assert_called_with("File downloaded.")
+
+    @patch("cfa_azure.helpers.logger")
+    @patch("cfa_azure.helpers.download_file", MagicMock(return_value=True))
+    def test_download_directory_extensions_inclusions(self, mock_logger):
+        blob_service_client = FakeClient()
+        response = cfa_azure.helpers.download_directory(
+            container_name=FAKE_INPUT_CONTAINER,
+            src_path="some_path/",
+            dest_path="another_path",
+            blob_service_client=blob_service_client,
+            include_extensions=".csv",
+            exclude_extensions=".txt",
+            verbose = True
+        )
+        mock_logger.error.assert_called_with("Use included_extensions or exclude_extensions, not both.")
+        self.assertIsNone(response)
+
+    @patch("docker.from_env", MagicMock(return_value=FakeClient()))
+    @patch("os.path.exists", MagicMock(return_value=True))
+    @patch("subprocess.run", MagicMock(return_value=True))
+    def test_package_and_upload_dockerfile(self):
+        full_container_name = cfa_azure.helpers.package_and_upload_dockerfile(
+            registry_name=FAKE_CONTAINER_REGISTRY, 
+            repo_name="Fake Repo",
+            tag="latest", 
+            path_to_dockerfile="./Dockerfile", 
+            use_device_code= False
+        )
+        self.assertIsNotNone(full_container_name)
+
+    @patch("docker.from_env", MagicMock(return_value=FakeClient()))
+    @patch("os.path.exists", MagicMock(return_value=True))
+    @patch("subprocess.run", MagicMock(return_value=True))
+    def test_package_and_upload_dockerfile_devicecode(self):
+        full_container_name = cfa_azure.helpers.package_and_upload_dockerfile(
+            registry_name=FAKE_CONTAINER_REGISTRY, 
+            repo_name="Fake Repo",
+            tag="latest", 
+            path_to_dockerfile="./Dockerfile", 
+            use_device_code= True
+        )
+        self.assertIsNotNone(full_container_name)
+
+    @patch("cfa_azure.helpers.logger")
+    @patch("docker.from_env", MagicMock(return_value=FakeClient()))
+    @patch("tests.fake_client.FakeClient.ping", MagicMock(side_effect=DockerException))
+    @patch("os.path.exists", MagicMock(return_value=True))
+    @patch("subprocess.run", MagicMock(return_value=True))
+    def test_package_and_upload_dockerfile_error(self, mock_logger):
+        full_container_name = cfa_azure.helpers.package_and_upload_dockerfile(
+            registry_name=FAKE_CONTAINER_REGISTRY, 
+            repo_name="Fake Repo",
+            tag="latest", 
+            path_to_dockerfile="./Dockerfile", 
+            use_device_code= True
+        )
+        self.assertIsNone(full_container_name)
+        mock_logger.error.assert_called_with("Could not ping Docker. Make sure Docker is running.")
+        mock_logger.warning.assert_called_with("Try again when Docker is running.")
+
+    def test_check_azure_container_exists(self):
+        fake_client = FakeContainerRegistryClient("some_endpoint", "some_credential", "some_audience")
+        with patch("cfa_azure.helpers.get_container_registry_client", MagicMock(return_value=fake_client)):
+            response = cfa_azure.helpers.check_azure_container_exists(
+                registry_name=FAKE_CONTAINER_REGISTRY, 
+                repo_name="Fake Repo",
+                tag_name="latest"
+            )
+            self.assertTrue(response)
+
+    def test_check_azure_container_exists_missing_tag(self):
+        fake_client = FakeContainerRegistryClient("some_endpoint", "some_credential", "some_audience")
+        with patch("cfa_azure.helpers.get_container_registry_client", MagicMock(return_value=fake_client)):
+            response = cfa_azure.helpers.check_azure_container_exists(
+                registry_name=FAKE_CONTAINER_REGISTRY, 
+                repo_name="Fake Repo",
+                tag_name="bad_tag_1"
+            )
+            self.assertIsNone(response)
+
+    def test_get_pool_parameters(self):
+        response = cfa_azure.helpers.get_pool_parameters(
+            mode="autoscale",
+            container_image_name=FAKE_CONTAINER_IMAGE,
+            container_registry_url=FAKE_CONTAINER_REGISTRY,
+            container_registry_server=FAKE_CONTAINER_REGISTRY,
+            config=FAKE_CONFIG,
+            mount_config=[],
+            autoscale_formula_path="some_autoscale_formula",
+            timeout=60,
+            dedicated_nodes=1,
+            low_priority_nodes=0,
+            use_default_autoscale_formula=False,
+            max_autoscale_nodes=3        
+        )
+        self.assertIsNotNone(response)
+
+    def test_get_pool_parameters_use_default(self):
+        response = cfa_azure.helpers.get_pool_parameters(
+            mode="autoscale",
+            container_image_name=FAKE_CONTAINER_IMAGE,
+            container_registry_url=FAKE_CONTAINER_REGISTRY,
+            container_registry_server=FAKE_CONTAINER_REGISTRY,
+            config=FAKE_CONFIG,
+            mount_config=[],
+            autoscale_formula_path="some_autoscale_formula",
+            timeout=60,
+            dedicated_nodes=1,
+            low_priority_nodes=0,
+            use_default_autoscale_formula=True,
+            max_autoscale_nodes=3        
+        )
+        self.assertIsNotNone(response)
+
+    def test_get_pool_parameters_bad_mode(self):
+        response = cfa_azure.helpers.get_pool_parameters(
+            mode="bad_mode",
+            container_image_name=FAKE_CONTAINER_IMAGE,
+            container_registry_url=FAKE_CONTAINER_REGISTRY,
+            container_registry_server=FAKE_CONTAINER_REGISTRY,
+            config=FAKE_CONFIG,
+            mount_config=[],
+            autoscale_formula_path="some_autoscale_formula",
+            timeout=60,
+            dedicated_nodes=1,
+            low_priority_nodes=0,
+            use_default_autoscale_formula=False,
+            max_autoscale_nodes=3        
+        )
+        self.assertEqual(response, {})

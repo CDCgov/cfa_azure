@@ -1710,6 +1710,9 @@ def check_config_req(config: str):
         return False
 
 
+def get_container_registry_client(endpoint:str, audience:str):
+    return ContainerRegistryClient(endpoint, DefaultAzureCredential(), audience=audience)
+
 def check_azure_container_exists(
     registry_name: str, repo_name: str, tag_name: str
 ) -> str:
@@ -1730,9 +1733,7 @@ def check_azure_container_exists(
     logger.debug(f"Set endpoint to {endpoint}")
     try:
         # check full_container_name exists in ACR
-        cr_client = ContainerRegistryClient(
-            endpoint, DefaultAzureCredential(), audience=audience
-        )
+        cr_client = get_container_registry_client(endpoint=endpoint, audience=audience)
         logger.debug("Container registry client created. Container exists.")
     except Exception as e:
         logger.error(

@@ -17,6 +17,13 @@ FAKE_RESOURCE_GROUP     = 'Test Resource Group'
 FAKE_SECRET             = "fake_secret"
 FAKE_TAGS               = ["fake_tag_1", "fake_tag_2", "latest"]
 
+FAKE_YAML_CONTENT       = {
+    'baseScenario': {
+        'r0': 10
+    },
+    'outputDirectory': "some_directory"
+}
+
 FAKE_CONFIG = {
     'Authentication': {
         'application_id': 'Test Application ID',
@@ -57,13 +64,19 @@ FAKE_POOL_INFO = {
 }
 
 class FakeClient:
+
     class FakeBatchJob:
         def delete(self, *args):
             return True
+        
+        def add(self, job):
+            return True
+
 
     class FakeTag:
         def __init__(self, tag):
             self.name = tag
+
 
     class FakeBlob:
         def __init__(self):
@@ -77,6 +90,7 @@ class FakeClient:
 
         def readall(self):
             return bytes(FAKE_BLOB_CONTENT, 'utf-8')
+
 
     class FakeTask:
         @property
@@ -96,6 +110,7 @@ class FakeClient:
         def list(self, job_id):
             return [FakeClient.FakeTask()]
 
+
     class FakeContainerClient:
         def exists(self):
             return False
@@ -103,8 +118,25 @@ class FakeClient:
         def create_container(self):
             return True
         
-        def list_blobs(self, name_starts_with):
+        def list_blobs(self, name_starts_with=None):
             return [FakeClient.FakeBlob(f) for f in FAKE_BLOBS]
+
+
+    class FakeSecretClient:
+        class FakeSecret:
+            @property
+            def value(self):
+                return FAKE_SECRET
+            
+        def __init__(self, vault_url, credential):
+            print('reached here BB')
+            self.vault_url = vault_url
+            self.credential = credential
+
+        def get_secret(self, vault_sp_secret_id=None):
+            print('reached here BBB')
+            return self.FakeSecret()
+
 
     class FakePool:
         class FakePoolInfo:

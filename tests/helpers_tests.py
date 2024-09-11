@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock, call, mock_open
 from azure.core.exceptions import HttpResponseError 
 import cfa_azure.helpers
 from tests.fake_client import *
@@ -458,3 +458,89 @@ class TestHelpers(unittest.TestCase):
             max_autoscale_nodes=3        
         )
         self.assertEqual(response, {})
+
+    @patch("cfa_azure.helpers.logger")
+    def test_add_job(self, mock_logger):
+        batch_client = FakeClient()
+        job_id = 'my_job_id'
+        cfa_azure.helpers.add_job(
+            job_id,
+            FAKE_BATCH_POOL,
+            end_job_on_task_failure=True,
+            batch_client=batch_client
+        )
+        mock_logger.info.assert_called_with(f"Job '{job_id}' created successfully.")
+
+    @patch("cfa_azure.helpers.logger")
+    def test_add_job_task_failure(self, mock_logger):
+        batch_client = FakeClient()
+        job_id = 'my_job_id'
+        cfa_azure.helpers.add_job(
+            job_id,
+            FAKE_BATCH_POOL,
+            end_job_on_task_failure=False,
+            batch_client=batch_client
+        )
+        mock_logger.debug.assert_called_with("Attempting to add job.")
+
+    def test_get_timeout(self):
+        timeout = cfa_azure.helpers.get_timeout('PT2H10M30S')
+        self.assertEqual(timeout, 130)
+
+    def test_get_timeout_hours(self):
+        timeout = cfa_azure.helpers.get_timeout('PT2H')
+        self.assertEqual(timeout, 120)
+
+    def test_get_timeout_min(self):
+        timeout = cfa_azure.helpers.get_timeout('PT10M')
+        self.assertEqual(timeout, 10)
+
+    @patch("cfa_azure.helpers.logger")
+    @patch("builtins.open", mock_open(read_data='data'))
+    @patch("yaml.safe_load", MagicMock(return_value=FAKE_YAML_CONTENT))
+    @patch("yaml.dump", MagicMock(return_value=True))
+    def test_edit_yaml_r0(self, mock_logger):
+        cfa_azure.helpers.edit_yaml_r0(file_path="some_yaml_file", r0_start=1, r0_end=4, step=0.1)
+        mock_logger.debug.assert_called_with("Completed editing YAML files.")
+
+    def test_list_blobs_flat(self):
+        blob_service_client = FakeClient()
+        blob_names = cfa_azure.helpers.list_blobs_flat(
+            container_name=FAKE_INPUT_CONTAINER, 
+            blob_service_client=blob_service_client, 
+            verbose=True
+        )
+        self.assertEqual(blob_names, FAKE_BLOBS)
+
+    @patch("azure.keyvault.secrets.SecretClient.get_secret")
+    @patch("azure.identity.DefaultAzureCredential", MagicMock(return_value=True))
+    def test_get_sp_secret(self, mock_secret):
+        mock_secret.return_value = FakeClient.FakeSecretClient.FakeSecret()
+        secret = cfa_azure.helpers.get_sp_secret(FAKE_CONFIG)
+        self.assertEqual(secret, FAKE_SECRET)
+
+    @patch("cfa_azure.helpers.logger")
+    @patch("azure.keyvault.secrets.SecretClient.get_secret", MagicMock(side_effect=Exception))
+    def test_get_sp_secret_bad_key(self, mock_logger):
+        cfa_azure.helpers.get_sp_secret(FAKE_CONFIG)
+        mock_logger.error.assert_called_once()
+
+    def test_get_blob_config(self):
+        blob_config = cfa_azure.helpers.get_blob_config(
+            container_name=FAKE_INPUT_CONTAINER,
+            rel_mount_path="some_path",
+            cache_blobfuse=True,
+            config=FAKE_CONFIG
+        )
+        self.assertEqual(blob_config['azureBlobFileSystemConfiguration']['containerName'], FAKE_INPUT_CONTAINER)
+        self.assertFalse(blob_config['azureBlobFileSystemConfiguration']['blobfuseOptions'])
+
+    def test_get_blob_config_nofuse(self):
+        blob_config = cfa_azure.helpers.get_blob_config(
+            container_name=FAKE_INPUT_CONTAINER,
+            rel_mount_path="some_path",
+            cache_blobfuse=False,
+            config=FAKE_CONFIG
+        )
+        self.assertEqual(blob_config['azureBlobFileSystemConfiguration']['containerName'], FAKE_INPUT_CONTAINER)
+        self.assertEqual(blob_config['azureBlobFileSystemConfiguration']['blobfuseOptions'], "-o direct_io")

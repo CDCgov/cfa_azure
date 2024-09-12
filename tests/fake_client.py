@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import azure.batch.models as batchmodels
+import json
 
 FAKE_ACCOUNT            = 'Test Account'
 FAKE_AUTOSCALE_FORMULA  = 'some_formula'
@@ -9,7 +10,8 @@ FAKE_BLOB_CONTENT       = 'Test Blob Content'
 FAKE_CONTAINER_IMAGE    = 'Test Container Image'
 FAKE_CONTAINER_REGISTRY = 'Test Container Registry'
 FAKE_FOLDER             = '/test_folder'
-FAKE_FOLDER_CONTENTS    =  [f'{FAKE_FOLDER}/test_file.csv', f'{FAKE_FOLDER}/test_file.txt']
+FAKE_FOLDER_CONTENTS    = [f'{FAKE_FOLDER}/test_file.csv', f'{FAKE_FOLDER}/test_file.txt']
+#FAKE_FOLDER_CONTENTS_51 = [f'{FAKE_FOLDER}/test_file{n}.csv' for n in range(1,52)]
 FAKE_INPUT_CONTAINER    = 'test_input_container'
 FAKE_OUTPUT_CONTAINER   = 'test_output_container'
 FAKE_POOL_SIZE          = 10
@@ -58,9 +60,17 @@ FAKE_CONFIG = {
 }
 
 FAKE_POOL_INFO = {
+    "deployment_configuration": {
+        "virtual_machine_configuration": {
+            "container_configuration": {
+                "container_image_names": [FAKE_CONTAINER_IMAGE]
+            }
+        }
+    },
     "resize_operation_status": {
         "resize_timeout": 10
-    }
+    },
+    "vm_size": 20
 }
 
 class FakeClient:
@@ -185,7 +195,6 @@ class FakeClient:
     def ping(self):
         return True
 
-
 class FakeContainerRegistryClient:
     def __init__(self, endpoint, credential, audience):
         self.endpoint = endpoint
@@ -197,3 +206,13 @@ class FakeContainerRegistryClient:
 
     def get_tag_properties(self, repo_name, tag_name):
         return FakeClient.FakeTag(tag_name)
+
+class obj:     
+    def __init__(self, dict1):
+        self.__dict__.update(dict1)
+
+def dict2obj(dict1):
+     
+    # using json.loads method and passing json.dumps
+    # method and custom object hook as arguments
+    return json.loads(json.dumps(dict1), object_hook=obj)

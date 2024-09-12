@@ -108,6 +108,7 @@ class AzureClient:
         dedicated_nodes=1,
         low_priority_nodes=0,
         cache_blobfuse: bool = True,
+        task_slots_per_node: int = 1
     ) -> None:
         """Sets the scaling mode of the client, either "fixed" or "autoscale".
         If "fixed" is selected, debug must be turned off.
@@ -122,6 +123,7 @@ class AzureClient:
             dedicated_nodes (int, optional): number of dedicated nodes for the pool. Defaults to 1.
             low_priority_nodes (int, optional): number of low priority nodes for the pool. Defaults to 0.
             cache_blobfuse (bool): True to use blobfuse caching, False to download data from blobfuse every time. Defaults to True.
+            task_slots_per_node (int): number of task slots per node. Default 1.
         """
         # check if debug and scaling mode match, otherwise alert the user
         if self.debug is True and mode == "autoscale":
@@ -163,18 +165,19 @@ class AzureClient:
             self.low_priority_nodes = low_priority_nodes
             # create batch_json with fixed
             self.pool_parameters = helpers.get_pool_parameters(
-                mode,
-                self.container_image_name,
-                self.registry_url,
-                self.container_registry_server,
-                self.config,
-                self.mount_config,
-                autoscale_formula_path,
-                timeout,
-                dedicated_nodes,
-                low_priority_nodes,
-                use_default_autoscale_formula,
-                max_autoscale_nodes,
+                mode = mode,
+                container_image_name= self.container_image_name,
+                container_registry_url=self.registry_url,
+                container_registry_server=self.container_registry_server,
+                config=self.config,
+                mount_config=self.mount_config,
+                autoscale_formula_path=autoscale_formula_path,
+                timeout=timeout,
+                dedicated_nodes=dedicated_nodes,
+                low_priority_nodes=low_priority_nodes,
+                use_default_autoscale_formula=use_default_autoscale_formula,
+                max_autoscale_nodes=max_autoscale_nodes,
+                task_slots_per_node= task_slots_per_node
             )
             logger.debug("pool parameters generated")
         else:

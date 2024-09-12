@@ -1200,6 +1200,7 @@ def get_pool_parameters(
     low_priority_nodes: int = 0,
     use_default_autoscale_formula: bool = False,
     max_autoscale_nodes: int = 3,
+    task_slots_per_node: int = 1
 ):
     """creates a pool parameter dictionary to be used with pool creation.
 
@@ -1215,6 +1216,8 @@ def get_pool_parameters(
         dedicated_nodes (int, optional): number of dedicated nodes. Defaults to 1.
         low_priority_nodes (int, optional): number of low priority nodes. Defaults to 0.
         use_default_autoscale_formula (bool, optional)
+        max_autoscale_nodes (int): maximum number of nodes to use with autoscaling. Default 3.
+        task_slots_per_node (int): number of task slots per node. Default is 1.
 
     Returns:
         dict: dict of pool parameters for pool creation
@@ -1260,7 +1263,7 @@ def get_pool_parameters(
         "properties": {
             "vmSize": config["Batch"]["pool_vm_size"],
             "interNodeCommunication": "Disabled",
-            "taskSlotsPerNode": 1,
+            "taskSlotsPerNode": task_slots_per_node,
             "taskSchedulingPolicy": {"nodeFillType": "Spread"},
             "deploymentConfiguration": get_deployment_config(
                 container_image_name,

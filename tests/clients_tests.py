@@ -1,0 +1,168 @@
+import unittest
+from unittest.mock import patch, MagicMock, call
+import cfa_azure.clients
+import cfa_azure.helpers
+from tests.fake_client import *
+
+class TestClients(unittest.TestCase):
+
+    @patch("cfa_azure.clients.logger")
+    @patch("cfa_azure.helpers.read_config", MagicMock(return_value=FAKE_CONFIG))
+    @patch("cfa_azure.helpers.check_config_req", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.get_sp_secret", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.get_sp_credential", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.get_blob_service_client", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.get_batch_mgmt_client", MagicMock(return_value=FakeClient()))
+    @patch("cfa_azure.helpers.get_batch_service_client", MagicMock(return_value=FakeClient()))
+    def setUp(self, mock_logger):
+        config_path = "some_path"
+        self.azure_client = cfa_azure.clients.AzureClient(config_path)
+        mock_logger.info.assert_called_with("Client initialized! Happy coding!")
+
+    @patch("cfa_azure.clients.logger")
+    def test_set_pool_info(self, mock_logger):
+        self.azure_client.set_pool_info(
+            mode="fixed",
+            max_autoscale_nodes=3,
+            timeout=60,
+            dedicated_nodes=1,
+            low_priority_nodes=0,
+            cache_blobfuse=True
+        )
+        mock_logger.debug.assert_called_with("pool parameters generated")
+
+    @patch("cfa_azure.clients.logger")
+    def test_set_pool_info_autoscale(self, mock_logger):
+        self.azure_client.debug = True
+        response = self.azure_client.set_pool_info(
+            mode="autoscale",
+            max_autoscale_nodes=3,
+            timeout=60,
+            dedicated_nodes=1,
+            low_priority_nodes=0,
+            cache_blobfuse=True
+        )
+        mock_logger.info.assert_called_with("Either change debugging to False or set the scaling mode to fixed.")
+        self.assertIsNone(response)
+
+    @patch("cfa_azure.helpers.check_azure_container_exists", MagicMock(return_value=FAKE_CONTAINER_IMAGE))    
+    @patch("cfa_azure.helpers.get_pool_full_info", MagicMock(return_value=dict2obj(FAKE_POOL_INFO)))
+    def test_add_task_nocontainer(self):
+        self.azure_client.pool_name = FAKE_BATCH_POOL
+        task_list = self.azure_client.add_task(
+            "test_job_id", 
+            docker_cmd=["some", "docker", "command"],
+            use_uploaded_files=False
+        )
+        self.assertIsNotNone(task_list)
+
+    @patch("cfa_azure.helpers.check_azure_container_exists", MagicMock(return_value=FAKE_CONTAINER_IMAGE))    
+    @patch("cfa_azure.helpers.get_pool_full_info", MagicMock(return_value=dict2obj(FAKE_POOL_INFO)))
+    def test_add_task_inputfiles(self):
+        self.azure_client.pool_name = FAKE_BATCH_POOL
+        task_list = self.azure_client.add_task(
+            "test_job_id", 
+            docker_cmd=["some", "docker", "command"],
+            use_uploaded_files=False, 
+            input_files=["test_file_1.sh"]
+        )
+        self.assertIsNotNone(task_list)
+
+    @patch("cfa_azure.helpers.check_azure_container_exists", MagicMock(return_value=FAKE_CONTAINER_IMAGE))    
+    def test_add_task(self):
+        task_list = self.azure_client.add_task(
+            "test_job_id",
+            docker_cmd=["some", "docker", "command"], 
+            use_uploaded_files=False, 
+            container=FAKE_INPUT_CONTAINER
+        )
+        self.assertIsNotNone(task_list)
+
+    @patch("cfa_azure.clients.logger")
+    def test_set_debugging(self, mock_logger):
+        self.azure_client.set_debugging(True)
+        self.assertTrue(self.azure_client.debug)
+        assert mock_logger.info.call_count == 5
+
+    @patch("cfa_azure.clients.logger")
+    def test_set_debugging_badlevel(self, mock_logger):
+        self.azure_client.set_debugging('Hello')
+        mock_logger.warning.assert_called_with("Please use True or False to set debugging mode.")
+
+    @patch("cfa_azure.clients.logger")
+    def test_set_debugging_disable(self, mock_logger):
+        self.azure_client.set_debugging(False)
+        self.assertFalse(self.azure_client.debug)
+        mock_logger.debug.assert_called_with("Debugging turned off.")
+
+    def test_create_pool(self):
+        pool_details = self.azure_client.create_pool(FAKE_BATCH_POOL)
+        self.assertIsNotNone(pool_details)
+
+    @patch("cfa_azure.helpers.list_blobs_flat", MagicMock(return_value=FAKE_BLOBS))
+    def test_list_blob_files(self):
+        filenames = self.azure_client.list_blob_files(FAKE_INPUT_CONTAINER)
+        self.assertIsNotNone(filenames)
+
+    @patch("cfa_azure.helpers.list_blobs_flat", MagicMock(return_value=FAKE_BLOBS))
+    def test_list_blob_files_nocontainer(self):
+        self.azure_client.mounts = ["some_mounts"]
+        filenames = self.azure_client.list_blob_files()
+        self.assertIsNotNone(filenames)
+
+    @patch("cfa_azure.clients.logger")
+    @patch("cfa_azure.helpers.check_pool_exists", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.get_pool_info", MagicMock(return_value=json.dumps(FAKE_POOL_INFO)))
+    def test_set_pool(self, mock_logger):
+        self.azure_client.mounts = ["some_mounts"]
+        self.azure_client.set_pool(FAKE_BATCH_POOL)
+        mock_logger.info.assert_called_with("Make sure the VM size matches the use case.\n")
+
+    @patch("cfa_azure.clients.logger")
+    @patch("cfa_azure.helpers.check_pool_exists", MagicMock(return_value=False))
+    def test_set_pool_nopool(self, mock_logger):
+        self.azure_client.set_pool(FAKE_BATCH_POOL)
+        mock_logger.info.assert_called_with("Choose an existing pool or create a new pool.")
+
+    @patch("cfa_azure.clients.logger")
+    @patch("tests.fake_client.FakeClient.FakeContainerClient.exists", MagicMock(return_value=True))
+    def test_set_input_container(self, mock_logger):
+        self.azure_client.mounts = []
+        self.azure_client.blob_service_client = FakeClient()
+        self.azure_client.set_input_container(FAKE_INPUT_CONTAINER)
+        mock_logger.debug.assert_called_with(f"Added input Blob container {FAKE_INPUT_CONTAINER} to AzureClient.")
+
+    @patch("cfa_azure.clients.logger")
+    @patch("tests.fake_client.FakeClient.FakeContainerClient.exists", MagicMock(return_value=False))
+    def test_set_input_container_nocontainer(self, mock_logger):
+        self.azure_client.blob_service_client = FakeClient()
+        self.azure_client.set_input_container(FAKE_INPUT_CONTAINER)
+        mock_logger.warning.assert_called_with(f"Container [{FAKE_INPUT_CONTAINER}] does not exist. Please create it if desired.")
+
+    @patch("cfa_azure.clients.logger")
+    @patch("tests.fake_client.FakeClient.FakeContainerClient.exists", MagicMock(return_value=True))
+    def test_set_output_container(self, mock_logger):
+        self.azure_client.blob_service_client = FakeClient()
+        self.azure_client.set_output_container(FAKE_OUTPUT_CONTAINER)
+        mock_logger.debug.assert_called_with(f'Added output Blob container {FAKE_OUTPUT_CONTAINER} to AzureClient.')
+
+    @patch("cfa_azure.clients.logger")
+    @patch("tests.fake_client.FakeClient.FakeContainerClient.exists", MagicMock(return_value=False))
+    def test_set_output_container_nocontainer(self, mock_logger):
+        self.azure_client.blob_service_client = FakeClient()
+        self.azure_client.set_output_container(FAKE_OUTPUT_CONTAINER)
+        mock_logger.warning.assert_called_with(f"Container [{FAKE_OUTPUT_CONTAINER}] does not exist. Please create it if desired.")
+
+    @patch("cfa_azure.clients.logger")
+    @patch("tests.fake_client.FakeClient.FakeContainerClient.exists", MagicMock(return_value=True))
+    def test_set_blob_container(self, mock_logger):
+        self.azure_client.blob_service_client = FakeClient()
+        self.azure_client.set_blob_container(FAKE_OUTPUT_CONTAINER, rel_mount_dir="relative_mount")
+        mock_logger.debug.assert_called_with(f'Added Blob container {FAKE_OUTPUT_CONTAINER} to AzureClient.')
+
+    @patch("cfa_azure.clients.logger")
+    @patch("tests.fake_client.FakeClient.FakeContainerClient.exists", MagicMock(return_value=False))
+    def test_set_blob_container_nocontainer(self, mock_logger):
+        self.azure_client.blob_service_client = FakeClient()
+        self.azure_client.set_blob_container(FAKE_OUTPUT_CONTAINER, rel_mount_dir="relative_mount")
+        mock_logger.warning.assert_called_with(f'Container [{FAKE_OUTPUT_CONTAINER}] does not exist. Please create it if desired.')

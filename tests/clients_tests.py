@@ -166,3 +166,59 @@ class TestClients(unittest.TestCase):
         self.azure_client.blob_service_client = FakeClient()
         self.azure_client.set_blob_container(FAKE_OUTPUT_CONTAINER, rel_mount_dir="relative_mount")
         mock_logger.warning.assert_called_with(f'Container [{FAKE_OUTPUT_CONTAINER}] does not exist. Please create it if desired.')
+
+    @patch("cfa_azure.helpers.get_autoscale_formula", MagicMock(return_value=FAKE_AUTOSCALE_FORMULA))
+    @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
+    def test_update_scale_settings_default(self):
+        self.azure_client.scaling = None
+        pool_info = self.azure_client.update_scale_settings(
+            autoscale_formula_path="some_path",
+            evaluation_interval="PT30M"
+        )
+        self.assertEqual(self.azure_client.scaling, "autoscale")
+        self.assertEqual(pool_info['pool_id'], FAKE_BATCH_POOL)
+
+    @patch("cfa_azure.helpers.get_autoscale_formula", MagicMock(return_value=FAKE_AUTOSCALE_FORMULA))
+    @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
+    def test_update_scale_settings_autoscaling(self):
+        self.azure_client.scaling = "autoscale"
+        pool_info = self.azure_client.update_scale_settings(
+            autoscale_formula_path="some_path",
+            evaluation_interval="PT30M"
+        )
+        self.assertEqual(pool_info['pool_id'], FAKE_BATCH_POOL)
+
+    @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
+    def test_update_scale_settings_fixedscale(self):
+        self.azure_client.scaling = "fixed"
+        pool_info = self.azure_client.update_scale_settings(
+            dedicated_nodes=10,
+            node_deallocation_option='Requeue'
+        )
+        self.assertEqual(pool_info['pool_id'], FAKE_BATCH_POOL)
+
+    @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
+    def test_update_scale_settings_fixedscale_spot(self):
+        self.azure_client.scaling = "fixed"
+        pool_info = self.azure_client.update_scale_settings(
+            low_priority_nodes=10
+        )
+        self.assertEqual(pool_info['pool_id'], FAKE_BATCH_POOL)
+
+    @patch("cfa_azure.helpers.add_job", MagicMock(return_value=True))
+    def test_add_job(self):
+        self.azure_client.add_job(
+            job_id = "fake_job_id",
+            pool_name = FAKE_BATCH_POOL,
+            end_job_on_task_failure = False
+        )
+        self.assertEqual(len(self.azure_client.jobs), 1)
+
+    @patch("cfa_azure.helpers.add_job", MagicMock(return_value=True))
+    def test_add_job_default(self):
+        self.azure_client.pool_name = FAKE_BATCH_POOL
+        self.azure_client.add_job(
+            job_id = "fake_job_id",
+            end_job_on_task_failure = False
+        )
+        self.assertEqual(len(self.azure_client.jobs), 1)

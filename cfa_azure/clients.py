@@ -325,6 +325,60 @@ class AzureClient:
             self.mounts.append((name, rel_mount_dir))
             logger.debug(f"Added Blob container {name} to AzureClient.")
 
+    def update_scale_settings(
+        self, 
+        dedicated_nodes:int=None,
+        low_priority_nodes:int=None,
+        node_deallocation_option:int=None,
+        autoscale_formula_path:str=None,
+        evaluation_interval:str=None
+    ) -> dict | None:
+        """Updates scale mode (fixed or autoscale) and related settings for an existing Azure batch pool
+
+        Args:
+            dedicated_nodes (int): optional, the target number of dedicated compute nodes for the pool in fixed scaling mode. Defaults to None.
+            low_priority_nodes (int): optional, the target number of spot compute nodes for the pool in fixed scaling mode. Defaults to None.
+            node_deallocation_option (str): optional, determines what to do with a node and its running tasks after it has been selected for deallocation. Defaults to None.
+            autoscale_formula_path (str): optional, path to autoscale formula file if mode is autoscale. Defaults to None.
+            evaluation_interval (str): optional, how often Batch service should adjust pool size according to its autoscale formula. Defaults to 15 minutes. 
+        """
+        scale_settings = {}
+        if self.scaling is None:
+            # set scaling
+            self.scaling = "autoscale"
+            # set autoscale formula from default
+
+        if self.scaling == "autoscale":
+            # Autoscaling configuration
+            autoScalingParameters = {}
+            if autoscale_formula_path:
+                self.autoscale_formula_path = autoscale_formula_path
+                formula = helpers.get_autoscale_formula(filepath=autoscale_formula_path)
+                if formula:
+                    autoScalingParameters['formula'] = formula
+            if evaluation_interval:
+                autoScalingParameters['evaluationInterval'] = evaluation_interval
+            scale_settings['autoScale'] = autoScalingParameters
+        else:
+            # Fixed scaling
+            fixedScalingParameters = {}
+            if dedicated_nodes:
+                fixedScalingParameters["targetDedicatedNodes"] = dedicated_nodes
+            if low_priority_nodes:
+                fixedScalingParameters["targetLowPriorityNodes"] = low_priority_nodes
+            if node_deallocation_option:
+                fixedScalingParameters["nodeDeallocationOption"] = node_deallocation_option
+            scale_settings['fixedScale'] = fixedScalingParameters
+
+        if scale_settings:
+            pool_parameters = {
+                "properties": {
+                    "scaleSettings": scale_settings
+                }
+            }
+            return helpers.update_pool(self.config, pool_parameters)
+
+
     def create_pool(self, pool_name: str) -> dict:
         """Creates the pool for Azure Batch jobs
 

@@ -17,6 +17,7 @@ import toml
 import yaml
 from azure.batch import BatchServiceClient
 import azure.batch.models as batchmodels
+from azure.batch.models import ExitOptions, JobAction, DependencyAction
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -788,6 +789,7 @@ def add_task_to_job(
     input_files: list[str] | None = None,
     mounts: list | None = None,
     depends_on: str | list[str] | None = None,
+    run_on_dep_task_fail: bool = False,
     batch_client: object | None = None,
     full_container_name: str | None = None,
     task_id_max: int = 0,
@@ -803,6 +805,7 @@ def add_task_to_job(
         input_files (list[str]): a  list of input files
         mounts (list[tuple]): a list of tuples in the form (container_name, relative_mount_directory)
         depends_on (str | list[str]): list of tasks this task depends on
+        run_on_dep_task_fail (bool): whether to run even if the dependent task fails. Default is False.
         batch_client (object): batch client object
         full_container_name (str): name ACR container to run task on
         task_id_max (int): current max task id in use by Batch
@@ -833,6 +836,11 @@ def add_task_to_job(
             depends_on = [depends_on]
             logger.debug("Adding task dependency.")
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
+
+    if run_on_dep_task_fail:
+        exit_options = ExitOptions(dependency_action = DependencyAction.satisfy)
+    else:
+        exit_options = DependencyAction(dependency_action = DependencyAction.block)
 
     logger.debug("Creating mount configuration string.")
     mount_str = ""
@@ -903,8 +911,9 @@ def add_task_to_job(
             ),
             user_identity=user_identity,
             depends_on=task_deps,
+            exit_conditions = {'default': exit_options}
         )
-        batch_client.task.add(job_id=job_id, task=task)
+        batch_client.task.add(job_id=job_id, task=task, exit_conditions = )
         logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
         t = []
         t.append(task_id)

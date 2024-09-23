@@ -47,6 +47,9 @@ export LOG_OUTPUT="stdout"
       evaluation_interval="PT30M"
   )
 
+  # Set the pool name property to avoid sending pool_name parameter on every call to update_scale_settings
+  client.pool_name = "My Test Pool"
+
   # Use default 15 minute evaluation interval
   client.update_scale_settings(autoscale_formula_path="./new_autoscale_formula.txt")
 

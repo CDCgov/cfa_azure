@@ -422,20 +422,9 @@ def get_batch_pool_json(
     logger.debug("Batch pool JSON configuration is ready.")
     return batch_json
 
-def update_pool(pool_name: str, config:dict, pool_parameters:dict) -> dict:
+def update_pool(pool_name: str, pool_parameters: dict, batch_mgmt_client: object, account_name: str, resource_group_name: str) -> dict:
     print("Updating the pool...")
 
-    # Get credentials
-    print("Retrieving service principal credentials...")
-    sp_secret = get_sp_secret(config)
-    sp_credential = get_sp_credential(sp_secret, config)
-
-    print("Setting up Azure Batch management client...")
-    batch_mgmt_client = get_batch_mgmt_client(sp_credential, config)
-
-    print("Preparing batch pool configuration...")
-    account_name = config["Batch"]["batch_account_name"]
-    resource_group_name = config["Authentication"]["resource_group"]
     start_time = datetime.datetime.now()
     print(f"Updating the pool '{pool_name}'...")
     batch_mgmt_client.pool.update(

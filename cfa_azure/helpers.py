@@ -754,9 +754,7 @@ def add_job(
     job = batchmodels.JobAddParameter(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
-        uses_task_dependencies=True,
-        on_task_failure=end_job_str,
-        constraints = batchmodels.JobConstraints(max_task_retry_count = task_retries)
+        uses_task_dependencies=True
     )
     logger.debug("Attempting to add job.")
     try:

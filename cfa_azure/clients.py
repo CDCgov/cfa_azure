@@ -385,7 +385,11 @@ class AzureClient:
                     "scaleSettings": scale_settings
                 }
             }
-            return helpers.update_pool(p_name, self.config, pool_parameters)
+            return helpers.update_pool(pool_name = p_name, 
+                                       pool_parameters = pool_parameters, 
+                                       batch_mgmt_client = self.batch_mgmt_client, 
+                                       account_name = self.account_name, 
+                                       resource_group_name = self.resource_group_name)
 
 
     def create_pool(self, pool_name: str) -> dict:

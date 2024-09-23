@@ -905,7 +905,7 @@ def add_task_to_job(
             depends_on=task_deps,
             exit_conditions = {'default': exit_options}
         )
-        batch_client.task.add(job_id=job_id, task=task)
+        batch_client.task.add(job_id=job_id, task=task, exit_conditions = )
         logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
         t = []
         t.append(task_id)

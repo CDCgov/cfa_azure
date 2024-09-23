@@ -711,19 +711,13 @@ class AzureClient:
     def add_job(
         self,
         job_id: str,
-        pool_name: str | None = None,
-        end_job_on_task_failure: bool = False,
-        save_logs_to_blob: str | None = None,
-        task_retries: int = 3
+        pool_name: str | None = None
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
         Args:
             job_id (str): name of job
             pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
-            end_job_on_task_failure (bool): whether to end the job if a task fails. Default False.
-            save_logs_to_blob (str): the name of the blob container. Must be mounted to the pool. Default None for no saving.
-            task_retries (int): the maximum number of retries for a task that fails. Default 3 retries.
         """
         # make sure the job_id does not have spaces
         job_id_r = job_id.replace(" ", "")
@@ -731,23 +725,17 @@ class AzureClient:
 
         if pool_name:
             p_name = pool_name
-            self.pool_name = pool_name
         elif self.pool_name:
             p_name = self.pool_name
         else:
             logger.error("Please specify a pool for the job and try again.")
             raise Exception("Please specify a pool for the job and try again.")
-
-        self.save_logs_to_blob = save_logs_to_blob
-        
         # add the job to the pool
         logger.debug(f"Attempting to add job {job_id_r}.")
         helpers.add_job(
             job_id=job_id_r,
             pool_id=p_name,
-            end_job_on_task_failure=end_job_on_task_failure,
-            batch_client=self.batch_client,
-            task_retries=task_retries
+            batch_client=self.batch_client
         )
         self.jobs.add(job_id_r)
 
@@ -759,6 +747,7 @@ class AzureClient:
         use_uploaded_files: bool = False,
         input_files: list[str] | None = None,
         depends_on: list[str] | None = None,
+        run_on_dep_task_fail: bool = False,
         container: str = None,
     ) -> list[str]:
         """adds task to existing job.
@@ -774,6 +763,7 @@ class AzureClient:
                 and create a task for each input file uploaded or specified in input_files. Default is False.
             input_files (list[str]): a list of file names. Each file will be assigned its own task and executed against the docker command provided. Default is [].
             depends_on (list[str]): a list of tasks this task depends on. Default is None.
+            run_on_dep_task_fail (bool): whether to run even if the dependent task fails. Default is False.
             container (str): name of ACR container in form "registry_name/repo_name:tag_name". Default is None to use container attached to client.
 
 
@@ -851,6 +841,7 @@ class AzureClient:
             input_files=in_files,
             mounts=self.mounts,
             depends_on=depends_on,
+            run_on_dep_task_fail = run_on_dep_task_fail,
             batch_client=self.batch_client,
             full_container_name=container_name,
             task_id_max=self.task_id_max,

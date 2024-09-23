@@ -422,7 +422,7 @@ def get_batch_pool_json(
     logger.debug("Batch pool JSON configuration is ready.")
     return batch_json
 
-def update_pool(config:dict, pool_parameters:dict) -> dict:
+def update_pool(pool_name: str, config:dict, pool_parameters:dict) -> dict:
     print("Updating the pool...")
 
     # Get credentials
@@ -434,15 +434,14 @@ def update_pool(config:dict, pool_parameters:dict) -> dict:
     batch_mgmt_client = get_batch_mgmt_client(sp_credential, config)
 
     print("Preparing batch pool configuration...")
-    pool_id = config["Batch"]["pool_id"]
     account_name = config["Batch"]["batch_account_name"]
     resource_group_name = config["Authentication"]["resource_group"]
     start_time = datetime.datetime.now()
-    print(f"Updating the pool '{pool_id}'...")
+    print(f"Updating the pool '{pool_name}'...")
     batch_mgmt_client.pool.update(
         resource_group_name=resource_group_name,
         account_name=account_name,
-        pool_name=pool_id,
+        pool_name=pool_name,
         parameters=pool_parameters,
     )
 
@@ -451,7 +450,7 @@ def update_pool(config:dict, pool_parameters:dict) -> dict:
     print(f"Pool update process completed in {updation_time} seconds.")
 
     return {
-        "pool_id": pool_id,
+        "pool_id": pool_name,
         "updation_time": updation_time,
     }
 

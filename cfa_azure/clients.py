@@ -326,7 +326,8 @@ class AzureClient:
             logger.debug(f"Added Blob container {name} to AzureClient.")
 
     def update_scale_settings(
-        self, 
+        self,
+        pool_name: str | None = None,
         dedicated_nodes:int=None,
         low_priority_nodes:int=None,
         node_deallocation_option:int=None,
@@ -336,12 +337,20 @@ class AzureClient:
         """Updates scale mode (fixed or autoscale) and related settings for an existing Azure batch pool
 
         Args:
+            pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
             dedicated_nodes (int): optional, the target number of dedicated compute nodes for the pool in fixed scaling mode. Defaults to None.
             low_priority_nodes (int): optional, the target number of spot compute nodes for the pool in fixed scaling mode. Defaults to None.
             node_deallocation_option (str): optional, determines what to do with a node and its running tasks after it has been selected for deallocation. Defaults to None.
             autoscale_formula_path (str): optional, path to autoscale formula file if mode is autoscale. Defaults to None.
             evaluation_interval (str): optional, how often Batch service should adjust pool size according to its autoscale formula. Defaults to 15 minutes. 
         """
+        if pool_name:
+            p_name = pool_name
+        elif self.pool_name:
+            p_name = self.pool_name
+        else:
+            logger.error("Please specify a pool and try again.")
+            return None
         scale_settings = {}
         if self.scaling is None:
             # set scaling
@@ -376,7 +385,7 @@ class AzureClient:
                     "scaleSettings": scale_settings
                 }
             }
-            return helpers.update_pool(self.config, pool_parameters)
+            return helpers.update_pool(p_name, self.config, pool_parameters)
 
 
     def create_pool(self, pool_name: str) -> dict:

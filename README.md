@@ -42,7 +42,9 @@ export LOG_OUTPUT="stdout"
   # Specify new autoscale formula that will be evaluated every 30 minutes
   client.scaling = "autoscale"
   client.update_scale_settings(
-      autoscale_formula_path="./new_autoscale_formula.txt", evaluation_interval="PT30M"
+      pool_name="My Test Pool",
+      autoscale_formula_path="./new_autoscale_formula.txt", 
+      evaluation_interval="PT30M"
   )
 
   # Use default 15 minute evaluation interval

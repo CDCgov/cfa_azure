@@ -411,7 +411,7 @@ def get_batch_pool_json(
     resource_group_name = config["Authentication"]["resource_group"]
     batch_json = {
         "user_identity": user_identity,
-        "network_confi": network_config,
+        "network_config": network_config,
         "deployment_config": deployment_config,
         "mount_config": mount_config,
         "pool_parameters": pool_parameters,
@@ -534,15 +534,27 @@ def upload_blob_file(
         _name = path.join(location, _file)
         container_client.upload_blob(name=_name, data=data, overwrite=True)
     if verbose:
+        print(f"Uploaded {filepath} to {container_client.container_name} as {_name}.")
         logger.info(
             f"Uploaded {filepath} to {container_client.container_name} as {_name}."
         )
 
 
+def walk_folder(folder: str) -> list | None:
+    file_list = []
+    for dirname, _, fname in walk(folder):
+        for f in fname:
+            _path = path.join(dirname, f)
+            file_list.append(_path)
+    return file_list
+
+
 def upload_files_in_folder(
     folder: str,
     container_name: str,
-    location: str = "",
+    include_extensions: str|list|None = None,
+    exclude_extensions: str|list|None = None,
+    location_in_blob: str = "",
     blob_service_client=None,
     verbose: bool = True,
     force_upload: bool = True,
@@ -554,7 +566,9 @@ def upload_files_in_folder(
     Args:
         folder (str): folder name containing files to be uploaded
         container_name (str): the name of the Blob container
-        location (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
+        include_extensions (str, list): a string or list of extensions desired for upload. Optional. Example: ".py" or [".py", ".csv"]
+        exclude_extensions (str, list): a string or list of extensions of files not to include in the upload. Optional. Example: ".py" or [".py", ".csv"]
+        location_in_blob (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
         blob_service_client (object): instance of Blob Service Client
         verbose (bool): whether to print the name of files uploaded. Default True.
         force_upload (bool): whether to force the upload despite the file count in folder. Default False.
@@ -562,11 +576,20 @@ def upload_files_in_folder(
     Returns:
         list: list of files uploaded
     """
+    # check that include and exclude extensions are not both used, format if exist
+    if include_extensions is not None:
+        include_extensions = format_extensions(include_extensions)
+    elif exclude_extensions is not None:
+        exclude_extensions = format_extensions(exclude_extensions)
+    if include_extensions is not None and exclude_extensions is not None:
+        logger.error("Use included_extensions or exclude_extensions, not both.")
     # check container exists
     logger.debug(f"Checking Blob container {container_name} exists.")
+    #create container client
     container_client = blob_service_client.get_container_client(
         container=container_name
     )
+    #check if container client exists
     if not container_client.exists():
         logger.error(
             f"Blob container {container_name} does not exist. Please try again with an existing Blob container."
@@ -574,6 +597,7 @@ def upload_files_in_folder(
         return None
     # check number of files if force_upload False
     logger.debug(f"Blob container {container_name} found. Uploading files...")
+    #check if files should be force uploaded
     if not force_upload:
         fnum = []
         for _, _, file in os.walk(os.path.realpath(f"./{folder}")):
@@ -589,26 +613,41 @@ def upload_files_in_folder(
                 return None
     # get all files in folder
     file_list = []
+    #check if folder is valid
     if not path.isdir(folder):
         logger.warning(
             f"{folder} is not a folder/directory. Make sure to specify a valid folder."
         )
         return None
-    for dirname, _, fname in walk(folder):
-        for f in fname:
-            _path = path.join(dirname, f)
-            file_list.append(_path)
+    file_list = walk_folder(folder)
+    #create sublist matching include_extensions and exclude_extensions
+    flist = []
+    if include_extensions is None:
+        if exclude_extensions is not None:
+            #find files that don't contain the specified extensions
+            for _file in file_list:
+                if not os.path.splitext(_file)[1] in exclude_extensions:
+                    flist.append(_file)
+        else: #this is for no specified extensions to include of exclude
+            flist = file_list
+    else:
+        #include only specified extension files
+        for _file in file_list:
+            if os.path.splitext(_file)[1] in include_extensions:
+                flist.append(_file)
+
     # iteratively call the upload_blob_file function to upload individual files
-    for file in file_list:
+    for file in flist:
         # get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders
         drop_folder = path.dirname(file).replace(folder, "", 1)
+        print(drop_folder)
         if drop_folder.startswith("/"):
             drop_folder = drop_folder[
                 1:
             ]  # removes the / so path.join doesnt mistake for root
         logger.debug(f"Calling upload_blob_file for {file}")
         upload_blob_file(
-            file, path.join(location, drop_folder), container_client, verbose
+            file, path.join(location_in_blob, drop_folder), container_client, verbose
         )
     return file_list
 
@@ -760,7 +799,6 @@ def add_task_to_job(
                 id=id,
                 command_line=d_cmd_str
                 + " "
-                + self.input_mount_dir
                 + input_file,
                 container_settings=batchmodels.TaskContainerSettings(
                     image_name=full_container_name,
@@ -1168,6 +1206,7 @@ def get_pool_parameters(
     low_priority_nodes: int = 0,
     use_default_autoscale_formula: bool = False,
     max_autoscale_nodes: int = 3,
+    task_slots_per_node: int = 1
 ):
     """creates a pool parameter dictionary to be used with pool creation.
 
@@ -1183,6 +1222,8 @@ def get_pool_parameters(
         dedicated_nodes (int, optional): number of dedicated nodes. Defaults to 1.
         low_priority_nodes (int, optional): number of low priority nodes. Defaults to 0.
         use_default_autoscale_formula (bool, optional)
+        max_autoscale_nodes (int): maximum number of nodes to use with autoscaling. Default 3.
+        task_slots_per_node (int): number of task slots per node. Default is 1.
 
     Returns:
         dict: dict of pool parameters for pool creation
@@ -1228,7 +1269,7 @@ def get_pool_parameters(
         "properties": {
             "vmSize": config["Batch"]["pool_vm_size"],
             "interNodeCommunication": "Disabled",
-            "taskSlotsPerNode": 1,
+            "taskSlotsPerNode": task_slots_per_node,
             "taskSchedulingPolicy": {"nodeFillType": "Spread"},
             "deploymentConfiguration": get_deployment_config(
                 container_image_name,
@@ -1300,6 +1341,7 @@ def download_file(
     src_path: str,
     dest_path: str,
     do_check: bool = True,
+    verbose = False
 ) -> None:
     """
     Download a file from Azure Blob storage
@@ -1328,36 +1370,86 @@ def download_file(
         download_stream = c_client.download_blob(blob=src_path)
         blob_download.write(download_stream.readall())
         logger.debug("File downloaded.")
+        if verbose:
+            print(f"Downloaded {src_path} to {dest_path}")
 
 
 def download_directory(
-    c_client: ContainerClient, src_path: str, dest_path: str
+    container_name: str, src_path: str, dest_path: str,
+    blob_service_client,
+    include_extensions: str|list|None = None,
+    exclude_extensions: str|list|None = None,
+    verbose = True
 ) -> None:
     """
     Downloads a directory using prefix matching and the .list_blobs() method
 
     Args:
-        client (ContainerClient):
-            Instance of ContainerClient provided with the storage account
-            and container
+        container_name (str):
+            name of Blob container
         src_path (str):
             Prefix of the blobs to download
         dest_path (str):
             Path to the directory in which to store the downloads
+        blob_service_client (BlobServiceClient):
+            instance of BlobServiceClient
+        include_extensions (str, list, None):
+            a string or list of extensions to include in the download. Optional.
+        exclude_extensions (str, list, None):
+            a string of list of extensions to exclude from the download. Optional.
+        verbose (bool):
+            a Boolean whether to print file names when downloaded.
 
     Raises:
         ValueError:
             When no blobs exist with the specified prefix (src_path)
     """
+    # check that include and exclude extensions are not both used, format if exist
+    if include_extensions is not None:
+        include_extensions = format_extensions(include_extensions)
+    elif exclude_extensions is not None:
+        exclude_extensions = format_extensions(exclude_extensions)
+    if include_extensions is not None and exclude_extensions is not None:
+        logger.error("Use included_extensions or exclude_extensions, not both.")
+        print("Use included_extensions or exclude_extensions, not both.")
+        return None
+    # check container exists
+    logger.debug(f"Checking Blob container {container_name} exists.")
+    #create container client
+    c_client = blob_service_client.get_container_client(
+        container=container_name
+    )
     if not check_virtual_directory_existence(c_client, src_path):
         raise ValueError(
             f"Source virtual directory: {src_path} does not exist."
         )
+
+    blob_list = []
+    if not src_path.endswith("/"):
+        src_path+= "/"
     for blob in c_client.list_blobs(name_starts_with=src_path):
+        b = blob.name
+        if b.split(src_path)[0]=='':
+            blob_list.append(b)
+        
+    flist = []
+    if include_extensions is None:
+        if exclude_extensions is not None:
+            #find files that don't contain the specified extensions
+            for _file in blob_list:
+                if not os.path.splitext(_file)[1] in exclude_extensions:
+                    flist.append(_file)
+        else: #this is for no specified extensions to include or exclude
+            flist = blob_list
+    else:
+        #include only specified extension files
+        for _file in blob_list:
+            if os.path.splitext(_file)[1] in include_extensions:
+                flist.append(_file)
+    for blob in flist:
         download_file(
-            c_client, blob.name, os.path.join(dest_path, blob.name), False
+            c_client, blob, os.path.join(dest_path, blob), False, verbose
         )
-        logger.debug(f"Downloaded {blob.name}")
     logger.debug("Download complete.")
 
 
@@ -1621,6 +1713,9 @@ def check_config_req(config: str):
         return False
 
 
+def get_container_registry_client(endpoint:str, audience:str):
+    return ContainerRegistryClient(endpoint, DefaultAzureCredential(), audience=audience)
+
 def check_azure_container_exists(
     registry_name: str, repo_name: str, tag_name: str
 ) -> str:
@@ -1641,9 +1736,7 @@ def check_azure_container_exists(
     logger.debug(f"Set endpoint to {endpoint}")
     try:
         # check full_container_name exists in ACR
-        cr_client = ContainerRegistryClient(
-            endpoint, DefaultAzureCredential(), audience=audience
-        )
+        cr_client = get_container_registry_client(endpoint=endpoint, audience=audience)
         logger.debug("Container registry client created. Container exists.")
     except Exception as e:
         logger.error(
@@ -1742,17 +1835,18 @@ def get_log_level() -> int:
     """
     Gets the LOG_LEVEL from the environment.
 
-    If it could not find one, set it to DEBUG.
+    If it could not find one, set it to None.
 
     If one was found, but not expected, set it to DEBUG
     """
     log_level = os.getenv("LOG_LEVEL")
 
     if log_level is None:
-        logger.info("Could not find logging level. Using DEBUG")
-        return logging.DEBUG
+        return logging.CRITICAL+1
 
     match log_level.lower():
+        case "none":
+            return logging.CRITICAL+1
         case "debug":
             logger.info("Log level set to DEBUG")
             return logging.DEBUG
@@ -1802,3 +1896,31 @@ def delete_blob_folder(
             container_name=container_name,
             blob_service_client=blob_service_client,
         )
+
+
+def format_extensions(extension):
+    if isinstance(extension, str):
+        extension = [extension]
+    ext = []
+    for l in extension:
+        if l.startswith("."):
+            ext.append(l)
+        else:
+            ext.append("."+l)
+    return ext
+
+def mark_job_completed_after_tasks_run(
+    job_id: str,
+    pool_id: str,
+    batch_client: object,
+    mark_complete: bool = True,
+    ):
+    if mark_complete:
+        logger.debug("setting terminateJob when all tasks complete for job.")
+        job_term = batchmodels.JobUpdateParameter(
+            id=job_id,
+            pool_info=batchmodels.PoolInformation(pool_id=pool_id),
+            on_all_tasks_complete = 'terminateJob'
+        )  
+        batch_client.job.update(job_id = job_id, job_update_parameter = job_term)
+        print("Job will be marked complete when all tasks finish, even if task(s) fails.")

@@ -64,7 +64,6 @@ class AzureClient:
         logger.debug("generated SP secret.")
         self.sp_credential = helpers.get_sp_credential(self.config)
         logger.debug("generated SP credential.")
-
         # create blob service account
         self.blob_service_client = helpers.get_blob_service_client(self.config)
         logger.debug("generated Blob Service Client.")
@@ -108,6 +107,7 @@ class AzureClient:
         dedicated_nodes=1,
         low_priority_nodes=0,
         cache_blobfuse: bool = True,
+        task_slots_per_node: int = 1
     ) -> None:
         """Sets the scaling mode of the client, either "fixed" or "autoscale".
         If "fixed" is selected, debug must be turned off.
@@ -122,6 +122,7 @@ class AzureClient:
             dedicated_nodes (int, optional): number of dedicated nodes for the pool. Defaults to 1.
             low_priority_nodes (int, optional): number of low priority nodes for the pool. Defaults to 0.
             cache_blobfuse (bool): True to use blobfuse caching, False to download data from blobfuse every time. Defaults to True.
+            task_slots_per_node (int): number of task slots per node. Default 1.
         """
         # check if debug and scaling mode match, otherwise alert the user
         if self.debug is True and mode == "autoscale":
@@ -163,18 +164,19 @@ class AzureClient:
             self.low_priority_nodes = low_priority_nodes
             # create batch_json with fixed
             self.pool_parameters = helpers.get_pool_parameters(
-                mode,
-                self.container_image_name,
-                self.registry_url,
-                self.container_registry_server,
-                self.config,
-                self.mount_config,
-                autoscale_formula_path,
-                timeout,
-                dedicated_nodes,
-                low_priority_nodes,
-                use_default_autoscale_formula,
-                max_autoscale_nodes,
+                mode = mode,
+                container_image_name= self.container_image_name,
+                container_registry_url=self.registry_url,
+                container_registry_server=self.container_registry_server,
+                config=self.config,
+                mount_config=self.mount_config,
+                autoscale_formula_path=autoscale_formula_path,
+                timeout=timeout,
+                dedicated_nodes=dedicated_nodes,
+                low_priority_nodes=low_priority_nodes,
+                use_default_autoscale_formula=use_default_autoscale_formula,
+                max_autoscale_nodes=max_autoscale_nodes,
+                task_slots_per_node= task_slots_per_node
             )
             logger.debug("pool parameters generated")
         else:
@@ -377,7 +379,7 @@ class AzureClient:
         self,
         files: list,
         container_name: str,
-        location: str = "",
+        location_in_blob: str = "",
         verbose: bool = False,
     ) -> None:
         """Uploads the files in the list to the input Blob storage container as stored in the client.
@@ -401,7 +403,7 @@ class AzureClient:
         for file_name in files:
             helpers.upload_blob_file(
                 filepath=file_name,
-                location=location,
+                location=location_in_blob,
                 container_client=container_client,
                 verbose=verbose,
             )
@@ -412,7 +414,9 @@ class AzureClient:
         self,
         folder_names: list[str],
         container_name: str,
-        location: str = "",
+        include_extensions: str|list|None = None,
+        exclude_extensions: str|list|None = None,
+        location_in_blob: str = "",
         verbose: bool = True,
         force_upload: bool = True,
     ) -> list[str]:
@@ -421,7 +425,9 @@ class AzureClient:
         Args:
             folder_names (list[str]): list of paths to folders
             container_name (str): the name of the Blob container
-            location (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
+            include_extensions (str, list): a string or list of extensions desired for upload. Optional. Example: ".py" or [".py", ".csv"]
+            exclude_extensions (str, list): a string or list of extensions of files not to include in the upload. Optional. Example: ".py" or [".py", ".csv"]
+            location_in_blob (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
             verbose (bool): whether to print the name of files uploaded. Default True.
             force_upload (bool): whether to force the upload despite the file count in folder. Default False.
 
@@ -434,7 +440,9 @@ class AzureClient:
             _uploaded_files = helpers.upload_files_in_folder(
                 folder=_folder,
                 container_name=container_name,
-                location=location,
+                include_extensions=include_extensions,
+                exclude_extensions=exclude_extensions,
+                location_in_blob=location_in_blob,
                 blob_service_client=self.blob_service_client,
                 verbose=verbose,
                 force_upload=force_upload,
@@ -716,26 +724,36 @@ class AzureClient:
         )
 
     def download_directory(
-        self, src_path: str, dest_path: str, container_name: str
+        self, src_path: str, dest_path: str, container_name: str,
+        include_extensions: str|list|None = None,
+        exclude_extensions: str|list|None = None,
+        verbose = True
     ) -> None:
         """download a whole directory from Azure Blob Storage
 
         Args:
-            src_path (str):
-                Prefix of the blobs to download
-            dest_path (str):
-                Path to the directory in which to store the downloads
-            container_name (str):
-                Name of Blob Storage container where the directory resides.
+        src_path (str):
+            Prefix of the blobs to download
+        dest_path (str):
+            Path to the directory in which to store the downloads
+        container_name (str):
+            name of Blob container
+        include_extensions (str, list, None):
+            a string or list of extensions to include in the download. Optional.
+        exclude_extensions (str, list, None):
+            a string of list of extensions to exclude from the download. Optional.
+        verbose (bool):
+            a Boolean whether to print file names when downloaded.
         """
-        #generate container client
-        logger.debug("Generating container client object.")
-        c_client = self.blob_service_client.get_container_client(container = container_name)
-        
         logger.debug("Attempting to download directory.")
         helpers.download_directory(
-            c_client, src_path, dest_path
+            container_name, src_path, dest_path,
+            self.blob_service_client,
+            include_extensions,
+            exclude_extensions,
+            verbose
         )
+        logger.debug("finished call to download")
 
         
     def set_pool(self, pool_name: str) -> None:
@@ -845,3 +863,12 @@ class AzureClient:
             folder_path, container_name, self.blob_service_client
         )
         logger.debug(f"Deleted folder {folder_path}.")
+
+    def mark_job_completed_after_tasks_run(self,
+        job_id: str, mark_complete: bool = True,
+        ):
+        helpers.mark_job_completed_after_tasks_run(
+        job_id = job_id,
+        pool_id = self.pool_name,
+        batch_client = self.batch_client,
+        mark_complete = mark_complete)

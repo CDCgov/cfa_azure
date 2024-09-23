@@ -460,7 +460,6 @@ class AzureClient:
         Args:
             job_id (str): name of job
             pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
-            end_job_on_task_failure (bool): whether to end the job if a task fails. Default False.
         """
         # make sure the job_id does not have spaces
         job_id_r = job_id.replace(" ", "")

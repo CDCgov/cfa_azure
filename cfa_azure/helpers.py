@@ -831,7 +831,7 @@ def add_task_to_job(
     if run_on_dep_task_fail:
         exit_options = ExitOptions(dependency_action = DependencyAction.satisfy)
     else:
-        exit_options = DependencyAction(dependency_action = DependencyAction.block)
+        exit_options = ExitOptions(dependency_action = DependencyAction.block)
 
     logger.debug("Creating mount configuration string.")
     mount_str = ""

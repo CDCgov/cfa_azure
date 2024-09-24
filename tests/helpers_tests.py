@@ -84,6 +84,22 @@ class TestHelpers(unittest.TestCase):
             }
         )
 
+    def test_get_batch_pool_json_custominterval(self):
+        batch_json = cfa_azure.helpers.get_batch_pool_json(
+            input_container_name=FAKE_INPUT_CONTAINER,
+            output_container_name=FAKE_OUTPUT_CONTAINER,
+            config=FAKE_CONFIG,
+            autoscale_formula_path=FAKE_AUTOSCALE_FORMULA,
+            autoscale_evaluation_interval="PT35M",
+            fixedscale_resize_timeout="PT45M"
+        )
+        self.assertEqual(
+            batch_json['pool_parameters']['properties']['scaleSettings']['autoScale']['evaluationInterval'], "PT35M"
+        )
+        self.assertEqual(
+            batch_json['pool_parameters']['properties']['resizeOperationStatus']['resizeTimeout'], "PT45M"
+        )
+
     def test_format_extensions(self):
         extension = 'csv'
         formatted = cfa_azure.helpers.format_extensions(extension)

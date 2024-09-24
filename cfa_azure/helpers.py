@@ -1929,6 +1929,7 @@ def format_extensions(extension):
             ext.append("."+l)
     return ext
 
+
 def mark_job_completed_after_tasks_run(
     job_id: str,
     pool_id: str,
@@ -1944,3 +1945,39 @@ def mark_job_completed_after_tasks_run(
         )  
         batch_client.job.update(job_id = job_id, job_update_parameter = job_term)
         print("Job will be marked complete when all tasks finish, even if task(s) fails.")
+
+
+def check_autoscale_parameters(
+    mode:str,
+    dedicated_nodes:int=None,
+    low_priority_nodes:int=None,
+    node_deallocation_option:int=None,
+    autoscale_formula_path:str=None,
+    evaluation_interval:str=None
+) -> str | None:
+    """Checks which arguments are incompatible with the provided scale mode
+
+    Args:
+        dedicated_nodes (int): optional, the target number of dedicated compute nodes for the pool in fixed scaling mode. Defaults to None.
+        low_priority_nodes (int): optional, the target number of spot compute nodes for the pool in fixed scaling mode. Defaults to None.
+        node_deallocation_option (str): optional, determines what to do with a node and its running tasks after it has been selected for deallocation. Defaults to None.
+        autoscale_formula_path (str): optional, path to autoscale formula file if mode is autoscale. Defaults to None.
+        evaluation_interval (str): optional, how often Batch service should adjust pool size according to its autoscale formula. Defaults to 15 minutes. 
+    """
+    if mode == "autoscale":
+        disallowed_args = [ 
+            { 'arg': dedicated_nodes, 'label': "dedicated_nodes" },
+            { 'arg': low_priority_nodes, 'label': "low_priority_nodes" },
+            { 'arg': node_deallocation_option, 'label': "node_deallocation_option" }
+        ]
+    else:
+        disallowed_args = [ 
+            { 'arg': autoscale_formula_path, 'label': "autoscale_formula_path" },
+            { 'arg': evaluation_interval, 'label': "evaluation_interval" }
+        ]
+    validation_errors = [d_arg['label'] for d_arg in disallowed_args if d_arg['arg']]
+    if validation_errors:
+        invalid_fields = ", ".join(validation_errors)
+        validation_msg = f'{invalid_fields} cannot be specified with {mode} option'
+        return validation_msg
+    return None

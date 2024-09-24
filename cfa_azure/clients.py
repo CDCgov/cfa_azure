@@ -325,41 +325,6 @@ class AzureClient:
             self.mounts.append((name, rel_mount_dir))
             logger.debug(f"Added Blob container {name} to AzureClient.")
 
-    def check_autoscale_parameters(
-        self,
-        dedicated_nodes:int=None,
-        low_priority_nodes:int=None,
-        node_deallocation_option:int=None,
-        autoscale_formula_path:str=None,
-        evaluation_interval:str=None
-    ) -> str | None:
-        """Checks which arguments are incompatible with the provided scale mode
-
-        Args:
-            dedicated_nodes (int): optional, the target number of dedicated compute nodes for the pool in fixed scaling mode. Defaults to None.
-            low_priority_nodes (int): optional, the target number of spot compute nodes for the pool in fixed scaling mode. Defaults to None.
-            node_deallocation_option (str): optional, determines what to do with a node and its running tasks after it has been selected for deallocation. Defaults to None.
-            autoscale_formula_path (str): optional, path to autoscale formula file if mode is autoscale. Defaults to None.
-            evaluation_interval (str): optional, how often Batch service should adjust pool size according to its autoscale formula. Defaults to 15 minutes. 
-        """
-        if self.scaling == "autoscale":
-            disallowed_args = [ 
-                { 'arg': dedicated_nodes, 'label': "dedicated_nodes" },
-                { 'arg': low_priority_nodes, 'label': "low_priority_nodes" },
-                { 'arg': node_deallocation_option, 'label': "node_deallocation_option" }
-            ]
-        else:
-            disallowed_args = [ 
-                { 'arg': autoscale_formula_path, 'label': "autoscale_formula_path" },
-                { 'arg': evaluation_interval, 'label': "evaluation_interval" }
-            ]
-        validation_errors = [d_arg['label'] for d_arg in disallowed_args if d_arg['arg']]
-        if validation_errors:
-            invalid_fields = ", ".join(validation_errors)
-            validation_msg = f'{invalid_fields} cannot be specified with {self.scaling} option'
-            return validation_msg
-        return None
-
     def update_scale_settings(
         self,
         pool_name: str | None = None,
@@ -394,7 +359,7 @@ class AzureClient:
 
         if self.scaling == "autoscale":
             # Autoscaling configuration
-            validation_errors = self.check_autoscale_parameters(dedicated_nodes=dedicated_nodes, low_priority_nodes=low_priority_nodes, node_deallocation_option=node_deallocation_option)
+            validation_errors = helpers.check_autoscale_parameters(mode=self.scaling, dedicated_nodes=dedicated_nodes, low_priority_nodes=low_priority_nodes, node_deallocation_option=node_deallocation_option)
             if validation_errors:
                 logger.error(validation_errors)
                 return None
@@ -408,7 +373,7 @@ class AzureClient:
                 autoScalingParameters['evaluationInterval'] = evaluation_interval
             scale_settings['autoScale'] = autoScalingParameters
         else:
-            validation_errors = self.check_autoscale_parameters(autoscale_formula_path=autoscale_formula_path, evaluation_interval=evaluation_interval)
+            validation_errors = helpers.check_autoscale_parameters(mode=self.scaling, autoscale_formula_path=autoscale_formula_path, evaluation_interval=evaluation_interval)
             if validation_errors:
                 logger.error(validation_errors)
                 return None

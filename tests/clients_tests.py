@@ -247,3 +247,29 @@ class TestClients(unittest.TestCase):
             end_job_on_task_failure = False
         )
         self.assertEqual(len(self.azure_client.jobs), 1)
+
+    @patch("cfa_azure.clients.logger")
+    @patch("cfa_azure.helpers.check_job_exists", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.get_completed_tasks", MagicMock(return_value=[FakeClient.FakeTask()]))
+    @patch("cfa_azure.helpers.check_job_complete", MagicMock(return_value=True))
+    def test_check_job_status(self, mock_logger):
+        job_id = "my_job_id"
+        self.azure_client.check_job_status(job_id)
+        mock_logger.info.assert_called_with(f"Job {job_id} completed.")
+
+    @patch("cfa_azure.clients.logger")
+    @patch("cfa_azure.helpers.check_job_exists", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.get_completed_tasks", MagicMock(return_value=[FakeClient.FakeTask()]))
+    @patch("cfa_azure.helpers.check_job_complete", MagicMock(return_value=False))
+    @patch("cfa_azure.helpers.get_job_state", MagicMock(return_value="running"))
+    def test_check_job_status_running(self, mock_logger):
+        job_id = "my_job_id"
+        self.azure_client.check_job_status(job_id)
+        mock_logger.info.assert_called_with("Job in running state")
+
+    @patch("cfa_azure.clients.logger")
+    @patch("cfa_azure.helpers.check_job_exists", MagicMock(return_value=False))
+    def test_check_job_status_noexist(self, mock_logger):
+        job_id = "my_job_id"
+        self.azure_client.check_job_status(job_id)
+        mock_logger.info.assert_called_with(f"Job {job_id} does not exist.")

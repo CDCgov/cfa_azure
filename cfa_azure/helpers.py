@@ -1540,6 +1540,7 @@ def package_and_upload_dockerfile(
         repo_name (str): name of repo
         tag (str): tag for the Docker container
         path_to_dockerfile (str): path to Dockerfile. Default is ./Dockerfile.
+        use_device_code (bool): whether to use the device code when authenticating. Default False.
 
     Returns:
         str: full container name
@@ -1579,6 +1580,51 @@ def package_and_upload_dockerfile(
     else:
         logger.error("Dockerfile does not exist in the root of the directory.")
 
+def upload_docker_image(
+            image_name: str, 
+            registry_name: str, 
+            repo_name: str, 
+            tag: str = "latest",
+            use_device_code: bool = False
+        )
+    """
+    Args:
+        image_name (str): name of image in local Docker
+        registry_name (str): name of Azure Container Registry
+        repo_name (str): name of repo
+        tag (str): tag for the Docker container
+        path_to_dockerfile (str): path to Dockerfile. Default is ./Dockerfile.
+        use_device_code (bool): whether to use the device code when authenticating. Default False.
+
+    Returns:
+        str: full container name
+    """
+    #check if docker image exists
+    docker_client = docker.from_env()
+    d_list = [image.tag for image in docker_client.images]
+    status = sum([image_name in image for image in d_list])
+    if status == 0:
+        logger.error(f"Image {image_name} does not exist. Check the image name.")
+        return None
+    full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
+
+    #tag the image with full_container_name
+    sp.run(f"docker tag {image_name} {full_container_name}", shell=True)
+    if True:
+        # Upload container to registry
+        # upload with device login if desired
+        if use_device_code:
+            logger.debug("Logging in with device code.")
+            sp.run("az login --use-device-code", shell=True)
+        else:
+            logger.debug("Logging in to Azure.")
+            sp.run("az login", shell=True)
+        sp.run(f"az acr login --name {registry_name}", shell=True)
+        logger.debug("Pushing Docker container to ACR.")
+        sp.run(f"docker push {full_container_name}", shell=True)
+        return full_container_name
+    else:
+        logger.error("Docker image does not exist.")
 
 def check_pool_exists(
     resource_group_name: str,

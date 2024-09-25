@@ -1608,6 +1608,7 @@ def upload_docker_image(
     status = sum([image_name in image for image in d_list])
     if status == 0:
         logger.error(f"Image {image_name} does not exist. Check the image name.")
+        print(f"Image {image_name} does not exist. Check the image name.")
         return None
     else:
         logger.debug(f"{image_name} found in docker repo.")

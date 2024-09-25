@@ -678,7 +678,7 @@ class AzureClient:
         self.full_container_name = helpers.upload_docker_image(
             image_name, registry_name, repo_name, tag, use_device_code
         )
-        logger.debug("Completed package_and_upload_dockerfile() function.")
+        logger.debug("Completed package_and_upload_docker_image() function.")
         self.container_registry_server = f"{registry_name}.azurecr.io"
         self.registry_url = f"https://{self.container_registry_server}"
         self.container_image_name = f"https://{self.full_container_name}"

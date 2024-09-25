@@ -1586,7 +1586,7 @@ def upload_docker_image(
             repo_name: str, 
             tag: str = "latest",
             use_device_code: bool = False
-        )
+        ):
     """
     Args:
         image_name (str): name of image in local Docker

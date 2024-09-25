@@ -327,7 +327,8 @@ class AzureClient:
 
     def update_scale_settings(
         self,
-        pool_name: str | None = None,
+        scaling:str,
+        pool_name:str=None,
         dedicated_nodes:int=None,
         low_priority_nodes:int=None,
         node_deallocation_option:int=None,
@@ -352,14 +353,10 @@ class AzureClient:
             logger.error("Please specify a pool and try again.")
             return None
         scale_settings = {}
-        if self.scaling is None:
-            # set scaling
-            self.scaling = "autoscale"
-            # set autoscale formula from default
-
-        if self.scaling == "autoscale":
+        self.scaling = scaling
+        if scaling == "autoscale":
             # Autoscaling configuration
-            validation_errors = helpers.check_autoscale_parameters(mode=self.scaling, dedicated_nodes=dedicated_nodes, low_priority_nodes=low_priority_nodes, node_deallocation_option=node_deallocation_option)
+            validation_errors = helpers.check_autoscale_parameters(mode=scaling, dedicated_nodes=dedicated_nodes, low_priority_nodes=low_priority_nodes, node_deallocation_option=node_deallocation_option)
             if validation_errors:
                 logger.error(validation_errors)
                 return None
@@ -373,7 +370,7 @@ class AzureClient:
                 autoScalingParameters['evaluationInterval'] = evaluation_interval
             scale_settings['autoScale'] = autoScalingParameters
         else:
-            validation_errors = helpers.check_autoscale_parameters(mode=self.scaling, autoscale_formula_path=autoscale_formula_path, evaluation_interval=evaluation_interval)
+            validation_errors = helpers.check_autoscale_parameters(mode=scaling, autoscale_formula_path=autoscale_formula_path, evaluation_interval=evaluation_interval)
             if validation_errors:
                 logger.error(validation_errors)
                 return None

@@ -11,7 +11,6 @@ FAKE_CONTAINER_IMAGE    = 'Test Container Image'
 FAKE_CONTAINER_REGISTRY = 'Test Container Registry'
 FAKE_FOLDER             = '/test_folder'
 FAKE_FOLDER_CONTENTS    = [f'{FAKE_FOLDER}/test_file.csv', f'{FAKE_FOLDER}/test_file.txt']
-#FAKE_FOLDER_CONTENTS_51 = [f'{FAKE_FOLDER}/test_file{n}.csv' for n in range(1,52)]
 FAKE_INPUT_CONTAINER    = 'test_input_container'
 FAKE_OUTPUT_CONTAINER   = 'test_output_container'
 FAKE_POOL_SIZE          = 10

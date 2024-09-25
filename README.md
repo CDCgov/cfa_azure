@@ -29,7 +29,38 @@ Example:
 export LOG_LEVEL="info"
 export LOG_OUTPUT="stdout"
 ```
+#### Functions
+- create_pool: creates a new Azure batch pool using default autoscale mode   
+  Example:
+  ```
+  client = AzureClient("./configuration.toml")
+  client.create_pool("My Test Pool")
+  ```
+- update_scale_settings: modifies the scaling mode (fixed or autoscale) for an existing pool
+  Example:
+  ```
+  # Specify new autoscale formula that will be evaluated every 30 minutes
+  client.scaling = "autoscale"
+  client.update_scale_settings(
+      pool_name="My Test Pool",
+      autoscale_formula_path="./new_autoscale_formula.txt", 
+      evaluation_interval="PT30M"
+  )
 
+  # Set the pool name property to avoid sending pool_name parameter on every call to update_scale_settings
+  client.pool_name = "My Test Pool"
+
+  # Use default 15 minute evaluation interval
+  client.update_scale_settings(autoscale_formula_path="./new_autoscale_formula.txt")
+
+  # Switch to fixed scaling mode with 10 on-demand EC2 nodes and requeuing of current jobs
+  client.scaling = "fixed"
+  client.update_scale_settings(dedicated_nodes=10, node_deallocation_option='Requeue')
+
+  # Switch to fixed scaling mode with 15 spot EC2 nodes and forced termination of current jobs
+  client.update_scale_settings(low_priority_nodes=15, node_deallocation_option='Terminate')
+  ```
+ 
 ### helpers
 Functions:
 - read_config: reads in a configuration toml file to a python object

@@ -169,31 +169,30 @@ class TestClients(unittest.TestCase):
 
     @patch("cfa_azure.helpers.get_autoscale_formula", MagicMock(return_value=FAKE_AUTOSCALE_FORMULA))
     @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
-    def test_update_scale_settings_default(self):
-        self.azure_client.scaling = None
+    def test_update_scale_settings_autoscaling(self):
         self.azure_client.pool_name = FAKE_BATCH_POOL
         pool_info = self.azure_client.update_scale_settings(
+            scaling="autoscale",
             autoscale_formula_path="some_path",
             evaluation_interval="PT30M"
         )
-        self.assertEqual(self.azure_client.scaling, "autoscale")
         self.assertEqual(pool_info['pool_id'], FAKE_BATCH_POOL)
 
     @patch("cfa_azure.helpers.get_autoscale_formula", MagicMock(return_value=FAKE_AUTOSCALE_FORMULA))
     @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
-    def test_update_scale_settings_autoscaling(self):
-        self.azure_client.scaling = "autoscale"
+    def test_update_scale_settings_autoscaling_badparams(self):
         self.azure_client.pool_name = FAKE_BATCH_POOL
         pool_info = self.azure_client.update_scale_settings(
-            autoscale_formula_path="some_path",
-            evaluation_interval="PT30M"
+            scaling="autoscale",
+            dedicated_nodes=10,
+            node_deallocation_option='Requeue'
         )
-        self.assertEqual(pool_info['pool_id'], FAKE_BATCH_POOL)
+        self.assertIsNone(pool_info)
 
     @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
     def test_update_scale_settings_fixedscale(self):
-        self.azure_client.scaling = "fixed"
         pool_info = self.azure_client.update_scale_settings(
+            scaling="fixed",
             pool_name=FAKE_BATCH_POOL,
             dedicated_nodes=10,
             node_deallocation_option='Requeue'
@@ -201,9 +200,19 @@ class TestClients(unittest.TestCase):
         self.assertEqual(pool_info['pool_id'], FAKE_BATCH_POOL)
 
     @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
-    def test_update_scale_settings_fixedscale_spot(self):
-        self.azure_client.scaling = "fixed"
+    def test_update_scale_settings_fixedscale_badparams(self):
         pool_info = self.azure_client.update_scale_settings(
+            scaling="fixed",
+            pool_name=FAKE_BATCH_POOL,
+            autoscale_formula_path="some_path",
+            evaluation_interval="PT30M"
+        )
+        self.assertIsNone(pool_info)
+
+    @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
+    def test_update_scale_settings_fixedscale_spot(self):
+        pool_info = self.azure_client.update_scale_settings(
+            scaling="fixed",
             pool_name=FAKE_BATCH_POOL,
             low_priority_nodes=10
         )
@@ -226,3 +235,29 @@ class TestClients(unittest.TestCase):
             end_job_on_task_failure = False
         )
         self.assertEqual(len(self.azure_client.jobs), 1)
+
+    @patch("cfa_azure.clients.logger")
+    @patch("cfa_azure.helpers.check_job_exists", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.get_completed_tasks", MagicMock(return_value=[FakeClient.FakeTask()]))
+    @patch("cfa_azure.helpers.check_job_complete", MagicMock(return_value=True))
+    def test_check_job_status(self, mock_logger):
+        job_id = "my_job_id"
+        self.azure_client.check_job_status(job_id)
+        mock_logger.info.assert_called_with(f"Job {job_id} completed.")
+
+    @patch("cfa_azure.clients.logger")
+    @patch("cfa_azure.helpers.check_job_exists", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.get_completed_tasks", MagicMock(return_value=[FakeClient.FakeTask()]))
+    @patch("cfa_azure.helpers.check_job_complete", MagicMock(return_value=False))
+    @patch("cfa_azure.helpers.get_job_state", MagicMock(return_value="running"))
+    def test_check_job_status_running(self, mock_logger):
+        job_id = "my_job_id"
+        self.azure_client.check_job_status(job_id)
+        mock_logger.info.assert_called_with("Job in running state")
+
+    @patch("cfa_azure.clients.logger")
+    @patch("cfa_azure.helpers.check_job_exists", MagicMock(return_value=False))
+    def test_check_job_status_noexist(self, mock_logger):
+        job_id = "my_job_id"
+        self.azure_client.check_job_status(job_id)
+        mock_logger.info.assert_called_with(f"Job {job_id} does not exist.")

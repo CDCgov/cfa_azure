@@ -327,7 +327,8 @@ class AzureClient:
 
     def update_scale_settings(
         self,
-        pool_name: str | None = None,
+        scaling:str,
+        pool_name:str=None,
         dedicated_nodes:int=None,
         low_priority_nodes:int=None,
         node_deallocation_option:int=None,
@@ -352,13 +353,13 @@ class AzureClient:
             logger.error("Please specify a pool and try again.")
             return None
         scale_settings = {}
-        if self.scaling is None:
-            # set scaling
-            self.scaling = "autoscale"
-            # set autoscale formula from default
-
-        if self.scaling == "autoscale":
+        self.scaling = scaling
+        if scaling == "autoscale":
             # Autoscaling configuration
+            validation_errors = helpers.check_autoscale_parameters(mode=scaling, dedicated_nodes=dedicated_nodes, low_priority_nodes=low_priority_nodes, node_deallocation_option=node_deallocation_option)
+            if validation_errors:
+                logger.error(validation_errors)
+                return None
             autoScalingParameters = {}
             if autoscale_formula_path:
                 self.autoscale_formula_path = autoscale_formula_path
@@ -369,6 +370,10 @@ class AzureClient:
                 autoScalingParameters['evaluationInterval'] = evaluation_interval
             scale_settings['autoScale'] = autoScalingParameters
         else:
+            validation_errors = helpers.check_autoscale_parameters(mode=scaling, autoscale_formula_path=autoscale_formula_path, evaluation_interval=evaluation_interval)
+            if validation_errors:
+                logger.error(validation_errors)
+                return None
             # Fixed scaling
             fixedScalingParameters = {}
             if dedicated_nodes:
@@ -385,7 +390,11 @@ class AzureClient:
                     "scaleSettings": scale_settings
                 }
             }
-            return helpers.update_pool(p_name, self.config, pool_parameters)
+            return helpers.update_pool(pool_name = p_name, 
+                                       pool_parameters = pool_parameters, 
+                                       batch_mgmt_client = self.batch_mgmt_client, 
+                                       account_name = self.account_name, 
+                                       resource_group_name = self.resource_group_name)
 
 
     def create_pool(self, pool_name: str) -> dict:

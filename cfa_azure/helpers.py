@@ -424,20 +424,9 @@ def get_batch_pool_json(
     logger.debug("Batch pool JSON configuration is ready.")
     return batch_json
 
-def update_pool(pool_name: str, config:dict, pool_parameters:dict) -> dict:
+def update_pool(pool_name: str, pool_parameters: dict, batch_mgmt_client: object, account_name: str, resource_group_name: str) -> dict:
     print("Updating the pool...")
 
-    # Get credentials
-    print("Retrieving service principal credentials...")
-    sp_secret = get_sp_secret(config)
-    sp_credential = get_sp_credential(sp_secret, config)
-
-    print("Setting up Azure Batch management client...")
-    batch_mgmt_client = get_batch_mgmt_client(sp_credential, config)
-
-    print("Preparing batch pool configuration...")
-    account_name = config["Batch"]["batch_account_name"]
-    resource_group_name = config["Authentication"]["resource_group"]
     start_time = datetime.datetime.now()
     print(f"Updating the pool '{pool_name}'...")
     batch_mgmt_client.pool.update(
@@ -1996,6 +1985,7 @@ def format_extensions(extension):
             ext.append("."+l)
     return ext
 
+
 def mark_job_completed_after_tasks_run(
     job_id: str,
     pool_id: str,
@@ -2011,3 +2001,39 @@ def mark_job_completed_after_tasks_run(
         )  
         batch_client.job.update(job_id = job_id, job_update_parameter = job_term)
         print("Job will be marked complete when all tasks finish, even if task(s) fails.")
+
+
+def check_autoscale_parameters(
+    mode:str,
+    dedicated_nodes:int=None,
+    low_priority_nodes:int=None,
+    node_deallocation_option:int=None,
+    autoscale_formula_path:str=None,
+    evaluation_interval:str=None
+) -> str | None:
+    """Checks which arguments are incompatible with the provided scale mode
+
+    Args:
+        dedicated_nodes (int): optional, the target number of dedicated compute nodes for the pool in fixed scaling mode. Defaults to None.
+        low_priority_nodes (int): optional, the target number of spot compute nodes for the pool in fixed scaling mode. Defaults to None.
+        node_deallocation_option (str): optional, determines what to do with a node and its running tasks after it has been selected for deallocation. Defaults to None.
+        autoscale_formula_path (str): optional, path to autoscale formula file if mode is autoscale. Defaults to None.
+        evaluation_interval (str): optional, how often Batch service should adjust pool size according to its autoscale formula. Defaults to 15 minutes. 
+    """
+    if mode == "autoscale":
+        disallowed_args = [ 
+            { 'arg': dedicated_nodes, 'label': "dedicated_nodes" },
+            { 'arg': low_priority_nodes, 'label': "low_priority_nodes" },
+            { 'arg': node_deallocation_option, 'label': "node_deallocation_option" }
+        ]
+    else:
+        disallowed_args = [ 
+            { 'arg': autoscale_formula_path, 'label': "autoscale_formula_path" },
+            { 'arg': evaluation_interval, 'label': "evaluation_interval" }
+        ]
+    validation_errors = [d_arg['label'] for d_arg in disallowed_args if d_arg['arg']]
+    if validation_errors:
+        invalid_fields = ", ".join(validation_errors)
+        validation_msg = f'{invalid_fields} cannot be specified with {mode} option'
+        return validation_msg
+    return None

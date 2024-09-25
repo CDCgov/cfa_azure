@@ -739,6 +739,24 @@ class AzureClient:
         self.container_image_name = f"https://{self.full_container_name}"
         return self.full_container_name
 
+    def upload_docker_image(
+        self,
+        image_name: str,
+        registry_name: str,
+        repo_name: str,
+        tag: str,
+        use_device_code: bool = False,
+    ) -> str:
+        self.full_container_name = helpers.upload_docker_image(
+            image_name, registry_name, repo_name, tag, use_device_code
+        )
+        logger.debug("Completed package_and_upload_docker_image() function.")
+        self.container_registry_server = f"{registry_name}.azurecr.io"
+        self.registry_url = f"https://{self.container_registry_server}"
+        self.container_image_name = f"https://{self.full_container_name}"
+        return self.full_container_name
+
+
     def set_azure_container(
         self, registry_name: str, repo_name: str, tag_name: str
     ) -> str:

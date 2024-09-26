@@ -325,6 +325,78 @@ class AzureClient:
             self.mounts.append((name, rel_mount_dir))
             logger.debug(f"Added Blob container {name} to AzureClient.")
 
+    def update_scale_settings(
+        self,
+        scaling:str,
+        pool_name:str=None,
+        dedicated_nodes:int=None,
+        low_priority_nodes:int=None,
+        node_deallocation_option:int=None,
+        autoscale_formula_path:str=None,
+        evaluation_interval:str=None
+    ) -> dict | None:
+        """Updates scale mode (fixed or autoscale) and related settings for an existing Azure batch pool
+
+        Args:
+            pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
+            dedicated_nodes (int): optional, the target number of dedicated compute nodes for the pool in fixed scaling mode. Defaults to None.
+            low_priority_nodes (int): optional, the target number of spot compute nodes for the pool in fixed scaling mode. Defaults to None.
+            node_deallocation_option (str): optional, determines what to do with a node and its running tasks after it has been selected for deallocation. Defaults to None.
+            autoscale_formula_path (str): optional, path to autoscale formula file if mode is autoscale. Defaults to None.
+            evaluation_interval (str): optional, how often Batch service should adjust pool size according to its autoscale formula. Defaults to 15 minutes. 
+        """
+        if pool_name:
+            p_name = pool_name
+        elif self.pool_name:
+            p_name = self.pool_name
+        else:
+            logger.error("Please specify a pool and try again.")
+            return None
+        scale_settings = {}
+        self.scaling = scaling
+        if scaling == "autoscale":
+            # Autoscaling configuration
+            validation_errors = helpers.check_autoscale_parameters(mode=scaling, dedicated_nodes=dedicated_nodes, low_priority_nodes=low_priority_nodes, node_deallocation_option=node_deallocation_option)
+            if validation_errors:
+                logger.error(validation_errors)
+                return None
+            autoScalingParameters = {}
+            if autoscale_formula_path:
+                self.autoscale_formula_path = autoscale_formula_path
+                formula = helpers.get_autoscale_formula(filepath=autoscale_formula_path)
+                if formula:
+                    autoScalingParameters['formula'] = formula
+            if evaluation_interval:
+                autoScalingParameters['evaluationInterval'] = evaluation_interval
+            scale_settings['autoScale'] = autoScalingParameters
+        else:
+            validation_errors = helpers.check_autoscale_parameters(mode=scaling, autoscale_formula_path=autoscale_formula_path, evaluation_interval=evaluation_interval)
+            if validation_errors:
+                logger.error(validation_errors)
+                return None
+            # Fixed scaling
+            fixedScalingParameters = {}
+            if dedicated_nodes:
+                fixedScalingParameters["targetDedicatedNodes"] = dedicated_nodes
+            if low_priority_nodes:
+                fixedScalingParameters["targetLowPriorityNodes"] = low_priority_nodes
+            if node_deallocation_option:
+                fixedScalingParameters["nodeDeallocationOption"] = node_deallocation_option
+            scale_settings['fixedScale'] = fixedScalingParameters
+
+        if scale_settings:
+            pool_parameters = {
+                "properties": {
+                    "scaleSettings": scale_settings
+                }
+            }
+            return helpers.update_pool(pool_name = p_name, 
+                                       pool_parameters = pool_parameters, 
+                                       batch_mgmt_client = self.batch_mgmt_client, 
+                                       account_name = self.account_name, 
+                                       resource_group_name = self.resource_group_name)
+
+
     def create_pool(self, pool_name: str) -> dict:
         """Creates the pool for Azure Batch jobs
 
@@ -666,6 +738,24 @@ class AzureClient:
         self.registry_url = f"https://{self.container_registry_server}"
         self.container_image_name = f"https://{self.full_container_name}"
         return self.full_container_name
+
+    def upload_docker_image(
+        self,
+        image_name: str,
+        registry_name: str,
+        repo_name: str,
+        tag: str,
+        use_device_code: bool = False,
+    ) -> str:
+        self.full_container_name = helpers.upload_docker_image(
+            image_name, registry_name, repo_name, tag, use_device_code
+        )
+        logger.debug("Completed package_and_upload_docker_image() function.")
+        self.container_registry_server = f"{registry_name}.azurecr.io"
+        self.registry_url = f"https://{self.container_registry_server}"
+        self.container_image_name = f"https://{self.full_container_name}"
+        return self.full_container_name
+
 
     def set_azure_container(
         self, registry_name: str, repo_name: str, tag_name: str

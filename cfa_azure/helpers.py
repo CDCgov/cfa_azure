@@ -422,6 +422,26 @@ def get_batch_pool_json(
     logger.debug("Batch pool JSON configuration is ready.")
     return batch_json
 
+def update_pool(pool_name: str, pool_parameters: dict, batch_mgmt_client: object, account_name: str, resource_group_name: str) -> dict:
+    print("Updating the pool...")
+
+    start_time = datetime.datetime.now()
+    print(f"Updating the pool '{pool_name}'...")
+    batch_mgmt_client.pool.update(
+        resource_group_name=resource_group_name,
+        account_name=account_name,
+        pool_name=pool_name,
+        parameters=pool_parameters,
+    )
+
+    end_time = datetime.datetime.now()
+    updation_time = round((end_time - start_time).total_seconds(), 2)
+    print(f"Pool update process completed in {updation_time} seconds.")
+
+    return {
+        "pool_id": pool_name,
+        "updation_time": updation_time,
+    }
 
 def create_batch_pool(batch_mgmt_client: object, batch_json: dict):
     """creates the Batch pool using the Batch Management Client and info from batch_json
@@ -1540,6 +1560,7 @@ def package_and_upload_dockerfile(
         repo_name (str): name of repo
         tag (str): tag for the Docker container
         path_to_dockerfile (str): path to Dockerfile. Default is ./Dockerfile.
+        use_device_code (bool): whether to use the device code when authenticating. Default False.
 
     Returns:
         str: full container name
@@ -1578,6 +1599,56 @@ def package_and_upload_dockerfile(
         return full_container_name
     else:
         logger.error("Dockerfile does not exist in the root of the directory.")
+
+def upload_docker_image(
+            image_name: str, 
+            registry_name: str, 
+            repo_name: str, 
+            tag: str = "latest",
+            use_device_code: bool = False
+        ):
+    """
+    Args:
+        image_name (str): name of image in local Docker
+        registry_name (str): name of Azure Container Registry
+        repo_name (str): name of repo
+        tag (str): tag for the Docker container
+        path_to_dockerfile (str): path to Dockerfile. Default is ./Dockerfile.
+        use_device_code (bool): whether to use the device code when authenticating. Default False.
+
+    Returns:
+        str: full container name
+    """
+    #check if docker image exists
+    logger.debug("Getting docker environment.")
+    docker_client = docker.from_env()
+    logger.debug("pulling list of docker images available.")
+    d_list = [image.tags for image in docker_client.images.list()]
+    logger.debug("checking if image_name exists in docker repo.")
+    status = sum([image_name in image for image in d_list])
+    if status == 0:
+        logger.error(f"Image {image_name} does not exist. Check the image name.")
+        print(f"Image {image_name} does not exist. Check the image name.")
+        return None
+    else:
+        logger.debug(f"{image_name} found in docker repo.")
+    full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
+
+    #tag the image with full_container_name
+    logger.debug(f"tagging {image_name} before pushing to ACR.")
+    sp.run(f"docker tag {image_name} {full_container_name}", shell=True)
+    # Upload container to registry
+    # upload with device login if desired
+    if use_device_code:
+        logger.debug("Logging in with device code.")
+        sp.run("az login --use-device-code", shell=True)
+    else:
+        logger.debug("Logging in to Azure.")
+        sp.run("az login", shell=True)
+    sp.run(f"az acr login --name {registry_name}", shell=True)
+    logger.debug("Pushing Docker container to ACR.")
+    sp.run(f"docker push {full_container_name}", shell=True)
+    return full_container_name
 
 
 def check_pool_exists(
@@ -1909,6 +1980,7 @@ def format_extensions(extension):
             ext.append("."+l)
     return ext
 
+
 def mark_job_completed_after_tasks_run(
     job_id: str,
     pool_id: str,
@@ -1924,3 +1996,39 @@ def mark_job_completed_after_tasks_run(
         )  
         batch_client.job.update(job_id = job_id, job_update_parameter = job_term)
         print("Job will be marked complete when all tasks finish, even if task(s) fails.")
+
+
+def check_autoscale_parameters(
+    mode:str,
+    dedicated_nodes:int=None,
+    low_priority_nodes:int=None,
+    node_deallocation_option:int=None,
+    autoscale_formula_path:str=None,
+    evaluation_interval:str=None
+) -> str | None:
+    """Checks which arguments are incompatible with the provided scale mode
+
+    Args:
+        dedicated_nodes (int): optional, the target number of dedicated compute nodes for the pool in fixed scaling mode. Defaults to None.
+        low_priority_nodes (int): optional, the target number of spot compute nodes for the pool in fixed scaling mode. Defaults to None.
+        node_deallocation_option (str): optional, determines what to do with a node and its running tasks after it has been selected for deallocation. Defaults to None.
+        autoscale_formula_path (str): optional, path to autoscale formula file if mode is autoscale. Defaults to None.
+        evaluation_interval (str): optional, how often Batch service should adjust pool size according to its autoscale formula. Defaults to 15 minutes. 
+    """
+    if mode == "autoscale":
+        disallowed_args = [ 
+            { 'arg': dedicated_nodes, 'label': "dedicated_nodes" },
+            { 'arg': low_priority_nodes, 'label': "low_priority_nodes" },
+            { 'arg': node_deallocation_option, 'label': "node_deallocation_option" }
+        ]
+    else:
+        disallowed_args = [ 
+            { 'arg': autoscale_formula_path, 'label': "autoscale_formula_path" },
+            { 'arg': evaluation_interval, 'label': "evaluation_interval" }
+        ]
+    validation_errors = [d_arg['label'] for d_arg in disallowed_args if d_arg['arg']]
+    if validation_errors:
+        invalid_fields = ", ".join(validation_errors)
+        validation_msg = f'{invalid_fields} cannot be specified with {mode} option'
+        return validation_msg
+    return None

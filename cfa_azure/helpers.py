@@ -308,6 +308,7 @@ def get_batch_pool_json(
         "virtualMachineConfiguration": {
             "nodeAgentSkuId": "batch.node.ubuntu 24.04",
             "containerConfiguration": {
+                "type": "dockerCompatible",
                 "containerImageNames": [
                     config["Container"]["container_image_name"]
                 ],
@@ -1120,6 +1121,7 @@ def get_deployment_config(
         "virtualMachineConfiguration": {
             "nodeAgentSkuId": "batch.node.ubuntu 24.04",
             "containerConfiguration": {
+                "type": "dockerCompatible",
                 "containerImageNames": [container_image_name],
                 "containerRegistries": [
                     {

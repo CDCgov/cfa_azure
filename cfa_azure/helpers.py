@@ -307,14 +307,13 @@ def get_batch_pool_json(
     deployment_config = {
         "virtualMachineConfiguration": {
             "imageReference": {
-                'publisher': 'canonical', 
-                'offer': '0001-com-ubuntu-server-jammy', 
-                'sku': '22_04-lts', 
-                'version': 'latest'
+                "publisher": "canonical",
+                "offer": "ubuntu-24_04-lts",
+                "sku": "server",
+                "version": "latest",
             },
-            "nodeAgentSkuId": "batch.node.ubuntu 22.04",
+            "nodeAgentSkuId": "batch.node.ubuntu 24.04",
             "containerConfiguration": {
-                "type": "dockercompatible",
                 "containerImageNames": [
                     config["Container"]["container_image_name"]
                 ],
@@ -1126,14 +1125,13 @@ def get_deployment_config(
     deployment_config = {
         "virtualMachineConfiguration": {
             "imageReference": {
-                'publisher': 'canonical',
-                'offer': '0001-com-ubuntu-server-jammy', 
-                'sku': '22_04-lts', 
-                'version': 'latest'
+                "publisher": "canonical",
+                "offer": "ubuntu-24_04-lts",
+                "sku": "server",
+                "version": "latest",
             },
-            "nodeAgentSkuId": "batch.node.ubuntu 22.04",
+            "nodeAgentSkuId": "batch.node.ubuntu 24.04",
             "containerConfiguration": {
-                "type": "dockercompatible",
                 "containerImageNames": [container_image_name],
                 "containerRegistries": [
                     {

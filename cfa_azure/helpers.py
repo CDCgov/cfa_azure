@@ -271,6 +271,8 @@ def get_batch_pool_json(
     output_container_name: str,
     config: dict,
     autoscale_formula_path: str,
+    autoscale_evaluation_interval: str = "PT5M",
+    fixedscale_resize_timeout: str = "PT15M"
 ):
     """creates a json output with various components needed for batch pool creation
 
@@ -386,7 +388,7 @@ def get_batch_pool_json(
                 #     "resizeTimeout": "PT15M"
                 # }
                 "autoScale": {
-                    "evaluationInterval": "PT5M",
+                    "evaluationInterval": autoscale_evaluation_interval,
                     "formula": get_autoscale_formula(
                         filepath=autoscale_formula_path
                     ),
@@ -395,7 +397,7 @@ def get_batch_pool_json(
             "resizeOperationStatus": {
                 "targetDedicatedNodes": 1,
                 "nodeDeallocationOption": "Requeue",
-                "resizeTimeout": "PT15M",
+                "resizeTimeout": fixedscale_resize_timeout,
                 "startTime": "2023-07-05T13:18:25.7572321Z",
             },
             "currentDedicatedNodes": 1,
@@ -1223,6 +1225,7 @@ def get_pool_parameters(
     config: dict,
     mount_config: list,
     autoscale_formula_path: str = None,
+    autoscale_evaluation_interval: str = 'PT5M',
     timeout: int = 60,
     dedicated_nodes: int = 1,
     low_priority_nodes: int = 0,
@@ -1253,19 +1256,21 @@ def get_pool_parameters(
     logger.debug(
         f"Setting up pool parameters in '{mode}' mode with timeout={timeout} minutes..."
     )
+    fixedscale_resize_timeout = 'PT15M'
     if mode == "fixed":
+        fixedscale_resize_timeout = f"PT{timeout}M"
         scale_settings = {
             "fixedScale": {
                 "targetDedicatedNodes": dedicated_nodes,
                 "targetLowPriorityNodes": low_priority_nodes,
-                "resizeTimeout": f"PT{timeout}M",
+                "resizeTimeout": fixedscale_resize_timeout
             }
         }
         logger.debug("Fixed mode set with scale settings.")
     elif mode == "autoscale" and use_default_autoscale_formula is False:
         scale_settings = {
             "autoScale": {
-                "evaluationInterval": "PT5M",
+                "evaluationInterval": autoscale_evaluation_interval,
                 "formula": get_autoscale_formula(
                     filepath=autoscale_formula_path
                 ),
@@ -1275,7 +1280,7 @@ def get_pool_parameters(
     elif mode == "autoscale" and use_default_autoscale_formula is True:
         scale_settings = {
             "autoScale": {
-                "evaluationInterval": "PT5M",
+                "evaluationInterval": autoscale_evaluation_interval,
                 "formula": generate_autoscale_formula(
                     max_nodes=max_autoscale_nodes
                 ),
@@ -1304,7 +1309,7 @@ def get_pool_parameters(
             "resizeOperationStatus": {
                 "targetDedicatedNodes": 1,
                 "nodeDeallocationOption": "Requeue",
-                "resizeTimeout": "PT15M",
+                "resizeTimeout": fixedscale_resize_timeout,
                 "startTime": "2023-07-05T13:18:25.7572321Z",
             },
             "currentDedicatedNodes": 1,

@@ -306,12 +306,6 @@ def get_batch_pool_json(
     # Virtual machine configuration
     deployment_config = {
         "virtualMachineConfiguration": {
-            "imageReference": {
-                "publisher": "canonical",
-                "offer": "ubuntu-24_04-lts",
-                "sku": "server",
-                "version": "latest",
-            },
             "nodeAgentSkuId": "batch.node.ubuntu 24.04",
             "containerConfiguration": {
                 "containerImageNames": [
@@ -1124,12 +1118,6 @@ def get_deployment_config(
     logger.debug("Getting deployment config.")
     deployment_config = {
         "virtualMachineConfiguration": {
-            "imageReference": {
-                "publisher": "canonical",
-                "offer": "ubuntu-24_04-lts",
-                "sku": "server",
-                "version": "latest",
-            },
             "nodeAgentSkuId": "batch.node.ubuntu 24.04",
             "containerConfiguration": {
                 "containerImageNames": [container_image_name],

@@ -307,12 +307,12 @@ def get_batch_pool_json(
     deployment_config = {
         "virtualMachineConfiguration": {
             "imageReference": {
-                "publisher": "microsoft-azure-batch",
-                "offer": "ubuntu-server-container",
-                "sku": "20-04-lts",
+                "publisher": "canonical",
+                "offer": "ubuntu-24_04-lts",
+                "sku": "server",
                 "version": "latest",
             },
-            "nodeAgentSkuId": "batch.node.ubuntu 20.04",
+            "nodeAgentSkuId": "batch.node.ubuntu 24.04",
             "containerConfiguration": {
                 "type": "dockercompatible",
                 "containerImageNames": [
@@ -1126,12 +1126,12 @@ def get_deployment_config(
     deployment_config = {
         "virtualMachineConfiguration": {
             "imageReference": {
-                "publisher": "microsoft-azure-batch",
-                "offer": "ubuntu-server-container",
-                "sku": "20-04-lts",
+                "publisher": "canonical",
+                "offer": "ubuntu-24_04-lts",
+                "sku": "server",
                 "version": "latest",
             },
-            "nodeAgentSkuId": "batch.node.ubuntu 20.04",
+            "nodeAgentSkuId": "batch.node.ubuntu 24.04",
             "containerConfiguration": {
                 "type": "dockercompatible",
                 "containerImageNames": [container_image_name],

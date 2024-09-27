@@ -60,6 +60,30 @@ export LOG_OUTPUT="stdout"
   # Switch to fixed scaling mode with 15 spot EC2 nodes and forced termination of current jobs
   client.update_scale_settings(low_priority_nodes=15, node_deallocation_option='Terminate')
   ```
+- update_containers: modifies the containers mounted on an existing Azure batch pool. It essentially recreates the pool with new mounts. 
+  Example:
+  ```
+  # First create a pool
+  client = AzureClient("./configuration.toml")
+  client.set_input_container("some-input-container")
+  client.set_output_container("some-output-container")
+  client.create_pool(pool_name="My Test pool")
+
+  # Now change the containers mounted on this pool
+  client.update_containers(
+      pool_name="My Test pool",
+      input_container_name="another-input-container",
+      output_container_name="another-output-container",
+      autoscale_formula_path="./new_autoscale_formula.txt",
+      force_update=False
+  )
+  ```
+  If all the nodes in pool were idle when update_containers() method was invoked, Azure Batch service will recreate the pool with new containers mounted to /input and /output paths respectively. However, if any nodes in pool were in Running state, then the following error shall be displayed:
+
+  There are N compute nodes actively running tasks in pool. Please wait for jobs to complete or retry withy force_update=True.
+
+  As the message suggests, you can either wait for existing jobs to complete in the pool and retry the update_containers() operation. Or you can changethe force_update parameter to True and re-run the update_containers() operation to immediately delete the pool and recreate it with new containers. 
+
  
 ### helpers
 Functions:

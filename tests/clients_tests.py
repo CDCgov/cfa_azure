@@ -261,3 +261,56 @@ class TestClients(unittest.TestCase):
         job_id = "my_job_id"
         self.azure_client.check_job_status(job_id)
         mock_logger.info.assert_called_with(f"Job {job_id} does not exist.")
+
+    @patch("cfa_azure.clients.logger")
+    @patch("cfa_azure.helpers.check_pool_exists", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.get_batch_service_client", MagicMock(return_value=FakeClient()))
+    @patch("cfa_azure.helpers.delete_pool", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.create_batch_pool", MagicMock(return_value=FAKE_BATCH_POOL))
+    def test_update_containers(self, mock_logger):
+        pool_name = self.azure_client.update_containers(
+            pool_name=FAKE_BATCH_POOL,
+            input_container_name=FAKE_INPUT_CONTAINER,
+            output_container_name=FAKE_OUTPUT_CONTAINER,
+            autoscale_formula_path=FAKE_AUTOSCALE_FORMULA,
+            force_update=False
+        )
+        mock_logger.error.assert_called_with(f"There are 2 compute nodes actively running tasks in pool {FAKE_BATCH_POOL}. Please wait for jobs to complete or retry withy force_update=True.")
+        self.assertIsNone(pool_name)
+
+    @patch("cfa_azure.clients.logger")
+    @patch("cfa_azure.helpers.check_pool_exists", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.get_batch_service_client", MagicMock(return_value=FakeClient()))
+    @patch("cfa_azure.helpers.delete_pool", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.create_batch_pool", MagicMock(return_value=FAKE_BATCH_POOL))
+    def test_update_containers_forced(self, mock_logger):
+        pool_name = self.azure_client.update_containers(
+            pool_name=FAKE_BATCH_POOL,
+            input_container_name=FAKE_INPUT_CONTAINER,
+            output_container_name=FAKE_OUTPUT_CONTAINER,
+            autoscale_formula_path=FAKE_AUTOSCALE_FORMULA,
+            force_update=True
+        )
+        self.assertEqual(pool_name, FAKE_BATCH_POOL)
+
+    @patch("cfa_azure.clients.logger")
+    @patch("cfa_azure.helpers.check_pool_exists", MagicMock(return_value=False))
+    @patch("cfa_azure.helpers.get_batch_service_client", MagicMock(return_value=FakeClient()))
+    @patch("cfa_azure.helpers.delete_pool", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.create_batch_pool", MagicMock(return_value=FAKE_BATCH_POOL))
+    def test_update_containers_new_pool(self, mock_logger):
+        pool_name = self.azure_client.update_containers(
+            pool_name=FAKE_BATCH_POOL,
+            input_container_name=FAKE_INPUT_CONTAINER,
+            output_container_name=FAKE_OUTPUT_CONTAINER,
+            autoscale_formula_path=FAKE_AUTOSCALE_FORMULA,
+            force_update=False
+        )
+        self.assertEqual(pool_name, FAKE_BATCH_POOL)
+
+    @patch("cfa_azure.helpers.check_azure_container_exists", MagicMock(return_value=FAKE_CONTAINER_IMAGE))
+    def test_set_azure_container(self):
+        container_name = self.azure_client.set_azure_container(
+            registry_name=FAKE_CONTAINER_REGISTRY, repo_name="fake repo", tag_name="latest"
+        )
+        self.assertEqual(container_name, FAKE_CONTAINER_IMAGE)

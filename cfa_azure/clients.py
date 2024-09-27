@@ -325,6 +325,49 @@ class AzureClient:
             self.mounts.append((name, rel_mount_dir))
             logger.debug(f"Added Blob container {name} to AzureClient.")
 
+
+    def update_containers(
+            self,
+            pool_name:str,
+            input_container_name:str,
+            output_container_name:str,
+            autoscale_formula_path:str,
+            force_update:bool=False
+    ) -> str | None:
+        """Changes the input and/or output containers mounted in an existing Azure batch pool
+        """
+        # Check if pool already exists
+        if helpers.check_pool_exists(self.resource_group_name, self.account_name, pool_name, self.batch_mgmt_client):
+            if not force_update:
+                # Check how many jobs are currently running in pool
+                active_nodes = helpers.list_nodes_by_pool(pool_name=pool_name, config=self.config, node_state='running')
+                if len(active_nodes) > 0:
+                    logger.error(f"There are {len(active_nodes)} compute nodes actively running tasks in pool {pool_name}. Please wait for jobs to complete or retry withy force_update=True.")
+                    return None
+
+            # Delete existing pool
+            logger.info(f"Deleting pool {pool_name}")
+            helpers.delete_pool(
+                resource_group_name=self.resource_group_name,
+                account_name=self.account_name,
+                pool_name=pool_name,
+                batch_mgmt_client=self.batch_mgmt_client,
+            )
+        else:
+            logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
+
+        # Recreate the pool
+        batch_json = helpers.get_batch_pool_json(
+            input_container_name,
+            output_container_name,
+            self.config,
+            autoscale_formula_path,
+        )
+        batch_json['pool_id'] = pool_name
+        pool_name = helpers.create_batch_pool(batch_mgmt_client=self.batch_mgmt_client, batch_json=batch_json)
+        return pool_name
+
+
     def update_scale_settings(
         self,
         scaling:str,

@@ -285,7 +285,7 @@ class TestClients(unittest.TestCase):
     @patch("cfa_azure.helpers.get_batch_service_client", MagicMock(return_value=FakeClient()))
     @patch("cfa_azure.helpers.delete_pool", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.create_batch_pool", MagicMock(return_value=FAKE_BATCH_POOL))
-    def test_update_containers_forced(self):
+    def test_update_containers_forced(self, mock_logger):
         pool_name = self.azure_client.update_containers(
             pool_name=FAKE_BATCH_POOL,
             input_container_name=FAKE_INPUT_CONTAINER,

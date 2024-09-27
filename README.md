@@ -80,9 +80,9 @@ export LOG_OUTPUT="stdout"
   ```
   If all the nodes in pool were idle when update_containers() method was invoked, Azure Batch service will recreate the pool with new containers mounted to /input and /output paths respectively. However, if any nodes in pool were in Running state, then the following error shall be displayed:
 
-  There are N compute nodes actively running tasks in pool. Please wait for jobs to complete or retry withy force_update=True.
+  *There are N compute nodes actively running tasks in pool. Please wait for jobs to complete or retry with `force_update=True`.*
 
-  As the message suggests, you can either wait for existing jobs to complete in the pool and retry the update_containers() operation. Or you can changethe force_update parameter to True and re-run the update_containers() operation to immediately delete the pool and recreate it with new containers. 
+  As the message suggests, you can either wait for existing jobs to complete in the pool and retry the `update_containers()` operation. Or you can change the `force_update` parameter to `True and re-run the `update_containers()` operation to immediately recreate the pool with new containers. 
 
  
 ### helpers

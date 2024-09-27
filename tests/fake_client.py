@@ -120,6 +120,23 @@ class FakeClient:
             return [FakeClient.FakeTask()]
 
 
+    class FakeComputeNode:
+        def __init__(self, state:str):
+            self.state = state
+
+
+    class FakeComputeNodeList:
+        def list(self, pool_id, compute_node_list_options=None) -> list:
+            if compute_node_list_options:
+                return [
+                    FakeClient.FakeComputeNode("running"), FakeClient.FakeComputeNode("running")
+                ]
+            return [
+                FakeClient.FakeComputeNode("running"), FakeClient.FakeComputeNode("idle"), 
+                FakeClient.FakeComputeNode("running"), FakeClient.FakeComputeNode("unusable") 
+            ]
+
+
     class FakeContainerClient:
         def exists(self):
             return False
@@ -184,6 +201,10 @@ class FakeClient:
     @property
     def task(self) -> FakeTask:
         return self.FakeTask()
+
+    @property
+    def compute_node(self) -> FakeComputeNodeList:
+        return self.FakeComputeNodeList()
 
     def get_container_client(self, container):
         return self.FakeContainerClient()

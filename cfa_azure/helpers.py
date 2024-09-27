@@ -16,6 +16,7 @@ import toml
 import yaml
 from azure.batch import BatchServiceClient
 from azure.batch.models import JobConstraints
+from azure.batch.models import ComputeNodeListOptions
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -710,6 +711,23 @@ def get_batch_service_client(config: dict):
     )
     logger.debug("Batch Service Client initialized successfully.")
     return batch_client
+
+
+def list_nodes_by_pool(
+    pool_name:str,
+    config: dict,
+    node_state:str=None
+):
+    batch_client = get_batch_service_client(config)
+    if node_state:
+        filter_option = f"state eq '{node_state}'"
+        nodes = batch_client.compute_node.list(
+            pool_id=pool_name,
+            compute_node_list_options=ComputeNodeListOptions(filter=filter_option)
+        )
+    else:
+        nodes = batch_client.compute_node.list(pool_id=pool_name)
+    return nodes
 
 
 def add_job(

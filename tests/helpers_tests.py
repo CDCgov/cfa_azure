@@ -1,6 +1,5 @@
 import unittest
 from unittest.mock import patch, MagicMock, call, mock_open
-from azure.core.exceptions import HttpResponseError 
 import cfa_azure.helpers
 from tests.fake_client import *
 from callee import Contains
@@ -635,3 +634,13 @@ class TestHelpers(unittest.TestCase):
         )
         self.assertEqual(blob_config['azureBlobFileSystemConfiguration']['containerName'], FAKE_INPUT_CONTAINER)
         self.assertEqual(blob_config['azureBlobFileSystemConfiguration']['blobfuseOptions'], "-o direct_io")
+
+    @patch("cfa_azure.helpers.get_batch_service_client", MagicMock(return_value=FakeClient()))
+    def test_list_nodes_by_pool(self):
+        compute_nodes = cfa_azure.helpers.list_nodes_by_pool(pool_name=FAKE_BATCH_POOL, config=FAKE_CONFIG, node_state='running')
+        self.assertEqual(len(compute_nodes), 2)
+
+    @patch("cfa_azure.helpers.get_batch_service_client", MagicMock(return_value=FakeClient()))
+    def test_list_all_nodes_by_pool(self):
+        compute_nodes = cfa_azure.helpers.list_nodes_by_pool(pool_name=FAKE_BATCH_POOL, config=FAKE_CONFIG)
+        self.assertEqual(len(compute_nodes), 4)

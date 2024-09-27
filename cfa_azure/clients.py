@@ -335,6 +335,13 @@ class AzureClient:
             force_update:bool=False
     ) -> str | None:
         """Changes the input and/or output containers mounted in an existing Azure batch pool
+
+        Args:
+            pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
+            input_container_name (str): unique identifier for the Blob storage container that will be mapped to /input path
+            output_container_name (str): unique identifier for the Blob storage container that will be mapped to /output path
+            autoscale_formula_path (str): path to autoscale formula file if mode is autoscale. Defaults to None.
+            force_update (bool): optional, deletes the existing pool without checking if it is already running any tasks 
         """
         # Check if pool already exists
         if helpers.check_pool_exists(self.resource_group_name, self.account_name, pool_name, self.batch_mgmt_client):

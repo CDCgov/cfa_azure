@@ -344,6 +344,15 @@ class AzureClient:
         # Check if pool already exists
         if not pool_name:
             pool_name = self.pool_name
+            pool_name:str,
+            input_container_name:str,
+            output_container_name:str,
+            autoscale_formula_path:str,
+            force_update:bool=False
+    ) -> str | None:
+        """Changes the input and/or output containers mounted in an existing Azure batch pool
+        """
+        # Check if pool already exists
         if helpers.check_pool_exists(self.resource_group_name, self.account_name, pool_name, self.batch_mgmt_client):
             if not force_update:
                 # Check how many jobs are currently running in pool

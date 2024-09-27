@@ -17,6 +17,7 @@ import yaml
 from azure.batch import BatchServiceClient
 from azure.batch.models import ComputeNodeListOptions
 from azure.batch.models import JobConstraints
+from azure.batch.models import ComputeNodeListOptions
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError

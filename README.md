@@ -1,7 +1,15 @@
 # cfa_azure module
 ## created by Ryan Raasch (Peraton)
-##
 
+## Version 1.0.0 WARNING
+The expected configuration.toml has changed several keys to make it easier on users to find the right information in the Azure Management Console. The following keys have changed:
+- `client_id` is now `batch_application_id`
+- `application_id` is now `sp_application_id`
+- `principal_id` is now `batch_object_id`  
+
+Refer to the example_config.toml in the examples folder, found [here](examples/example_config.toml).
+
+# Description
 The `cfa_azure` python module is intended to ease the challenge of working with Azure via multiple Azure python modules which require the correct steps and many lines of code to execute. `cfa_azure` simplifies many repeated workflows when interacting with Azure, Blob Storage, Batch, and more. For example, creating a pool in Azure may take different credentials and several clients to complete, but with `cfa_azure`, creating a pool is reduced to a single function with only a few parameters.
 
 # Components
@@ -24,12 +32,13 @@ LOG_OUTPUT: sets the output of the logs. Choices are:
 - stdout: saves log output to stdout
 - both: saves log output to both file and stdout
 
-Example:
+**Example**:  
+Run the following in the terminal in which `cfa_azure` will be run.
 ```
 export LOG_LEVEL="info"
 export LOG_OUTPUT="stdout"
 ```
-#### Functions
+### Functions
 - create_pool: creates a new Azure batch pool using default autoscale mode   
   Example:
   ```
@@ -48,7 +57,7 @@ export LOG_OUTPUT="stdout"
   )
 
   # Set the pool name property to avoid sending pool_name parameter on every call to update_scale_settings
-  client.pool_name = "My Test Pool"
+  client.pool_name = "my-test-pool"
 
   # Use default 15 minute evaluation interval
   client.update_scale_settings(autoscale_formula_path="./new_autoscale_formula.txt")

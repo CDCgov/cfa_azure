@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cfa_azure"
-version = "0.3.7"
+version = "1.0.0"
 description = "module for use with Azure and Azure Batch"
 authors = ["Ryan Raasch <xng3@cdc.gov>"]
 readme = "README.md"
@@ -19,7 +19,6 @@ pandas = "*"
 pathlib = "*"
 docker = "*"
 pyyaml = "*"
-
 
 [build-system]
 requires = ["poetry-core"]

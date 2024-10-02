@@ -104,8 +104,8 @@ class AzureClient:
         max_autoscale_nodes: int = 3,
         autoscale_formula_path: str = None,
         timeout=60,
-        dedicated_nodes=1,
-        low_priority_nodes=0,
+        dedicated_nodes=0,
+        low_priority_nodes=1,
         cache_blobfuse: bool = True,
         task_slots_per_node: int = 1
     ) -> None:

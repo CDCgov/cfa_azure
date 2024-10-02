@@ -1228,8 +1228,8 @@ def get_pool_parameters(
     autoscale_formula_path: str = None,
     autoscale_evaluation_interval: str = 'PT5M',
     timeout: int = 60,
-    dedicated_nodes: int = 1,
-    low_priority_nodes: int = 0,
+    dedicated_nodes: int = 0,
+    low_priority_nodes: int = 1,
     use_default_autoscale_formula: bool = False,
     max_autoscale_nodes: int = 3,
     task_slots_per_node: int = 1

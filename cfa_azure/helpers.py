@@ -173,7 +173,7 @@ def get_sp_credential(config: dict):
     try:
         sp_credential = ClientSecretCredential(
             tenant_id=config["Authentication"]["tenant_id"],
-            client_id=config["Authentication"]["application_id"],
+            client_id=config["Authentication"]["sp_application_id"],
             client_secret=sp_secret,
         )
         logger.debug("Service principal credentials obtained successfully.")
@@ -291,8 +291,8 @@ def get_batch_pool_json(
         "type": "UserAssigned",
         "userAssignedIdentities": {
             config["Authentication"]["user_assigned_identity"]: {
-                "clientId": config["Authentication"]["client_id"],
-                "principalId": config["Authentication"]["principal_id"],
+                "clientId": config["Authentication"]["batch_application_id"],
+                "principalId": config["Authentication"]["batch_object_id"],
             }
         },
     }
@@ -692,7 +692,7 @@ def get_batch_service_client(config: dict):
     logger.debug("Attempting to create Batch Service Client.")
     batch_client = BatchServiceClient(
         credentials=ServicePrincipalCredentials(
-            client_id=config["Authentication"]["application_id"],
+            client_id=config["Authentication"]["sp_application_id"],
             tenant=config["Authentication"]["tenant_id"],
             secret=sp_secret,
             resource="https://batch.core.windows.net/",
@@ -1101,8 +1101,8 @@ def get_user_identity(config: str):
         "type": "UserAssigned",
         "userAssignedIdentities": {
             config["Authentication"]["user_assigned_identity"]: {
-                "clientId": config["Authentication"]["client_id"],
-                "principalId": config["Authentication"]["principal_id"],
+                "clientId": config["Authentication"]["batch_application_id"],
+                "principalId": config["Authentication"]["batch_object_id"],
             }
         },
     }
@@ -1779,9 +1779,9 @@ def check_config_req(config: str):
             "Authentication.resource_group",
             "Authentication.user_assigned_identity",
             "Authentication.tenant_id",
-            "Authentication.client_id",
+            "Authentication.batch_application_id",
             "Authentication.principal_id",
-            "Authentication.application_id",
+            "Authentication.sp_application_id",
             "Authentication.vault_url",
             "Authentication.vault_sp_secret_id",
             "Authentication.subnet_id",

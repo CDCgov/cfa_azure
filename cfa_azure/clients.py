@@ -529,6 +529,7 @@ class AzureClient:
         job_id: str,
         pool_name: str | None = None,
         end_job_on_task_failure: bool = False,
+        task_retries: int = 3
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
@@ -536,6 +537,7 @@ class AzureClient:
             job_id (str): name of job
             pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
             end_job_on_task_failure (bool): whether to end the job if a task fails. Default False.
+            task_retries (int): the maximum number of retries for a task that fails. Default 3 retries.
         """
         # make sure the job_id does not have spaces
         job_id_r = job_id.replace(" ", "")
@@ -555,6 +557,7 @@ class AzureClient:
             pool_id=p_name,
             end_job_on_task_failure=end_job_on_task_failure,
             batch_client=self.batch_client,
+            task_retries=task_retries
         )
         self.jobs.add(job_id_r)
 

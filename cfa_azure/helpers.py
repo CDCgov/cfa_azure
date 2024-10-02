@@ -15,6 +15,7 @@ import pandas as pd
 import toml
 import yaml
 from azure.batch import BatchServiceClient
+from azure.batch.models import JobConstraints
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -705,6 +706,7 @@ def add_job(
     pool_id: str,
     end_job_on_task_failure: bool,
     batch_client: object,
+    task_retries: int = 3
 ):
     """takes in a job ID and config to create a job in the pool
 
@@ -726,6 +728,7 @@ def add_job(
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
         uses_task_dependencies=True,
         on_task_failure=end_job_str,
+        constraints = JobConstraints(max_task_retry_count = task_retries)
     )
     logger.debug("Attempting to add job.")
     try:

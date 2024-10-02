@@ -1,0 +1,6 @@
+startingNumberOfVMs = 1;
+maxNumberofVMs = 25;
+pendingTaskSamplePercent = $PendingTasks.GetSamplePercent(180 * TimeInterval_Second); #gets sample from last 3 minutes
+pendingTaskSamples = pendingTaskSamplePercent < 70 ? startingNumberOfVMs : avg($PendingTasks.GetSample(180 * TimeInterval_Second));
+$TargetDedicatedNodes = min(maxNumberofVMs, pendingTaskSamples);
+$NodeDeallocationOption = taskcompletion;

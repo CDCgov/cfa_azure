@@ -427,6 +427,8 @@ class AzureClient:
         logger.info(
             "Verify the size of the VM is appropriate for the use case."
         )
+        print("Verify the size of the VM is appropriate for the use case.")
+        print("**Please use smaller VMs for dev/testing.**")
         try:
             self.batch_mgmt_client.pool.create(
                 resource_group_name=self.resource_group_name,

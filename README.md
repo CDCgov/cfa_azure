@@ -1,13 +1,13 @@
 # cfa_azure module
 ## created by Ryan Raasch (Peraton)
 
-## Version 1.0.0 WARNING
+## ***Version 1.0.0 WARNING***
 The expected configuration.toml has changed several keys to make it easier on users to find the right information in the Azure Management Console. The following keys have changed:
 - `client_id` is now `batch_application_id`
 - `application_id` is now `sp_application_id`
 - `principal_id` is now `batch_object_id`  
 
-Refer to the example_config.toml in the examples folder, found [here](examples/example_config.toml).
+Refer to the example_config.toml in the examples folder, found [here](examples/example_config.toml) to view the required keys/values needed in the configuration file.
 
 # Description
 The `cfa_azure` python module is intended to ease the challenge of working with Azure via multiple Azure python modules which require the correct steps and many lines of code to execute. `cfa_azure` simplifies many repeated workflows when interacting with Azure, Blob Storage, Batch, and more. For example, creating a pool in Azure may take different credentials and several clients to complete, but with `cfa_azure`, creating a pool is reduced to a single function with only a few parameters.

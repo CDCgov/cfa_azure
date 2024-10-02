@@ -4,8 +4,8 @@
 ## ***Version 1.0.0 WARNING***
 The expected configuration.toml has changed several keys to make it easier on users to find the right information in the Azure Management Console. The following keys have changed:
 - `client_id` is now `batch_application_id`
-- `application_id` is now `sp_application_id`
-- `principal_id` is now `batch_object_id`  
+- `principal_id` is now `batch_object_id` 
+- `application_id` is now `sp_application_id` 
 
 Refer to the example_config.toml in the examples folder, found [here](examples/example_config.toml) to view the required keys/values needed in the configuration file.
 

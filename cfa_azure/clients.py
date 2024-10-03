@@ -104,8 +104,8 @@ class AzureClient:
         max_autoscale_nodes: int = 3,
         autoscale_formula_path: str = None,
         timeout=60,
-        dedicated_nodes=1,
-        low_priority_nodes=0,
+        dedicated_nodes=0,
+        low_priority_nodes=1,
         cache_blobfuse: bool = True,
         task_slots_per_node: int = 1
     ) -> None:
@@ -476,6 +476,8 @@ class AzureClient:
         logger.info(
             "Verify the size of the VM is appropriate for the use case."
         )
+        print("Verify the size of the VM is appropriate for the use case.")
+        print("**Please use smaller VMs for dev/testing.**")
         try:
             self.batch_mgmt_client.pool.create(
                 resource_group_name=self.resource_group_name,
@@ -578,6 +580,7 @@ class AzureClient:
         job_id: str,
         pool_name: str | None = None,
         end_job_on_task_failure: bool = False,
+        task_retries: int = 3
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
@@ -585,6 +588,7 @@ class AzureClient:
             job_id (str): name of job
             pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
             end_job_on_task_failure (bool): whether to end the job if a task fails. Default False.
+            task_retries (int): the maximum number of retries for a task that fails. Default 3 retries.
         """
         # make sure the job_id does not have spaces
         job_id_r = job_id.replace(" ", "")
@@ -604,6 +608,7 @@ class AzureClient:
             pool_id=p_name,
             end_job_on_task_failure=end_job_on_task_failure,
             batch_client=self.batch_client,
+            task_retries=task_retries
         )
         self.jobs.add(job_id_r)
 
@@ -697,7 +702,7 @@ class AzureClient:
         self.task_id_max += 1
         return task_ids
 
-    def monitor_job(self, job_id: str) -> None:
+    def monitor_job(self, job_id: str, timeout: str | None = None) -> None:
         """monitor the tasks running in a job
 
         Args:
@@ -707,7 +712,7 @@ class AzureClient:
         logger.debug(f"starting to monitor job {job_id}.")
         monitor = helpers.monitor_tasks(
             job_id,
-            self.timeout,
+            timeout,
             self.batch_client,
             self.resource_group_name,
             self.account_name,

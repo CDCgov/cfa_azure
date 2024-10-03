@@ -886,11 +886,7 @@ def monitor_tasks(
 
     start_time = datetime.datetime.now().replace(microsecond=0)
     if timeout is None:
-        pool_info = get_pool_full_info(
-            resource_group, account_name, pool_name, batch_mgmt_client
-        ).as_dict()
-        pool_timeout = pool_info["resize_operation_status"]["resize_timeout"]
-        timeout = get_timeout(pool_timeout)
+        timeout = 480
 
     _timeout = datetime.timedelta(minutes=timeout)
     timeout_expiration = start_time + _timeout

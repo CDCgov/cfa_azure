@@ -653,7 +653,7 @@ class AzureClient:
         self.task_id_max += 1
         return task_ids
 
-    def monitor_job(self, job_id: str) -> None:
+    def monitor_job(self, job_id: str, timeout: str | None = None) -> None:
         """monitor the tasks running in a job
 
         Args:
@@ -663,7 +663,7 @@ class AzureClient:
         logger.debug(f"starting to monitor job {job_id}.")
         monitor = helpers.monitor_tasks(
             job_id,
-            self.timeout,
+            timeout,
             self.batch_client,
             self.resource_group_name,
             self.account_name,

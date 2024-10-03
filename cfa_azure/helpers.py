@@ -1625,8 +1625,9 @@ def upload_docker_image(
     """
     #check if docker is running
     logger.debug("Trying to ping docker daemon.")
+    docker_env = docker.from_env(timeout=10)
     try:
-        docker_client = docker.from_env(timeout=10).ping()
+        docker_client = docker_env.ping()
         logger.debug("Docker is running.")
     except DockerException:
         logger.error("Could not ping Docker. Make sure Docker is running.")

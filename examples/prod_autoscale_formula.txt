@@ -1,0 +1,13 @@
+startingNumberOfVMs = 1;
+// set the maximum number of nodes to scale to
+maxNumberofVMs = 25;
+// Get pending tasks for the past 5 minutes.
+$Samples = $ActiveTasks.GetSamplePercent(TimeInterval_Minute * 5);
+// If we have less than 70% data points, we use the last sample point, otherwise we use the maximum of
+// last sample point and the history average.
+$Tasks = $Samples < 70 ? max(0,$ActiveTasks.GetSample(1)) : max( $ActiveTasks.GetSample(1), avg($ActiveTasks.GetSample(TimeInterval_Minute * 5)));
+// If number of pending tasks is not 0, set targetVM to pending tasks, otherwise half of current dedicated.
+$TargetVMs = $Tasks > 0? $Tasks:max(0, $TargetDedicated/2);
+$TargetDedicated = max(0,min($TargetVMs,maxNumberofVMs));
+// Set node deallocation mode - keep nodes active only until tasks finish
+$NodeDeallocationOption = taskcompletion;

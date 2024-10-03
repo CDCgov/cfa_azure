@@ -15,7 +15,7 @@ import pandas as pd
 import toml
 import yaml
 from azure.batch import BatchServiceClient
-from azure.batch.models import ExitOptions, JobAction, DependencyAction
+from azure.batch.models import ExitOptions, DependencyAction
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -705,6 +705,7 @@ def add_job(
     job_id: str,
     pool_id: str,
     batch_client: object,
+    task_retries: int = 3
 ):
     """takes in a job ID and config to create a job in the pool
 
@@ -885,11 +886,7 @@ def monitor_tasks(
 
     start_time = datetime.datetime.now().replace(microsecond=0)
     if timeout is None:
-        pool_info = get_pool_full_info(
-            resource_group, account_name, pool_name, batch_mgmt_client
-        ).as_dict()
-        pool_timeout = pool_info["resize_operation_status"]["resize_timeout"]
-        timeout = get_timeout(pool_timeout)
+        timeout = 480
 
     _timeout = datetime.timedelta(minutes=timeout)
     timeout_expiration = start_time + _timeout
@@ -1227,8 +1224,8 @@ def get_pool_parameters(
     autoscale_formula_path: str = None,
     autoscale_evaluation_interval: str = 'PT5M',
     timeout: int = 60,
-    dedicated_nodes: int = 1,
-    low_priority_nodes: int = 0,
+    dedicated_nodes: int = 0,
+    low_priority_nodes: int = 1,
     use_default_autoscale_formula: bool = False,
     max_autoscale_nodes: int = 3,
     task_slots_per_node: int = 1

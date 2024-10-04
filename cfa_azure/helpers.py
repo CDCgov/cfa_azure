@@ -8,16 +8,13 @@ import time
 from os import path, walk
 from pathlib import Path
 
-import azure.batch.models as batchmodels
 import docker
 import numpy as np
 import pandas as pd
 import toml
 import yaml
 from azure.batch import BatchServiceClient
-from azure.batch.models import ComputeNodeListOptions
-from azure.batch.models import JobConstraints
-from azure.batch.models import ComputeNodeListOptions
+import azure.batch.models as batchmodels
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -715,7 +712,7 @@ def list_nodes_by_pool(
         filter_option = f"state eq '{node_state}'"
         nodes = batch_client.compute_node.list(
             pool_id=pool_name,
-            compute_node_list_options=ComputeNodeListOptions(filter=filter_option)
+            compute_node_list_options=batchmodels.ComputeNodeListOptions(filter=filter_option)
         )
     else:
         nodes = batch_client.compute_node.list(pool_id=pool_name)
@@ -749,7 +746,7 @@ def add_job(
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
         uses_task_dependencies=True,
         on_task_failure=end_job_str,
-        constraints = JobConstraints(max_task_retry_count = task_retries)
+        constraints = batchmodels.JobConstraints(max_task_retry_count = task_retries)
     )
     logger.debug("Attempting to add job.")
     try:

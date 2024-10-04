@@ -47,12 +47,15 @@ def create_pool(
     print("Setting up Azure Batch management client...")
     batch_mgmt_client = helpers.get_batch_mgmt_client(sp_credential, config)
 
+    containers = [
+        {'name': input_container_name, 'relative_mount_dir': 'input'},
+        {'name': output_container_name, 'relative_mount_dir': 'output'},
+    ]
     print("Preparing batch pool configuration...")
     batch_json = helpers.get_batch_pool_json(
-        input_container_name,
-        output_container_name,
-        config,
-        autoscale_formula_path,
+        containers=containers,
+        config=config,
+        autoscale_formula_path=autoscale_formula_path
     )
 
     account_name = config["Batch"]["batch_account_name"]

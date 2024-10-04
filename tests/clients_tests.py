@@ -17,6 +17,7 @@ class TestClients(unittest.TestCase):
     def setUp(self, mock_logger):
         config_path = "some_path"
         self.azure_client = cfa_azure.clients.AzureClient(config_path)
+        self.azure_client.pool_name = FAKE_BATCH_POOL
         mock_logger.info.assert_called_with("Client initialized! Happy coding!")
 
     @patch("cfa_azure.clients.logger")
@@ -269,10 +270,8 @@ class TestClients(unittest.TestCase):
     @patch("cfa_azure.helpers.create_batch_pool", MagicMock(return_value=FAKE_BATCH_POOL))
     def test_update_containers(self, mock_logger):
         pool_name = self.azure_client.update_containers(
-            pool_name=FAKE_BATCH_POOL,
             input_container_name=FAKE_INPUT_CONTAINER,
             output_container_name=FAKE_OUTPUT_CONTAINER,
-            autoscale_formula_path=FAKE_AUTOSCALE_FORMULA,
             force_update=False
         )
         mock_logger.error.assert_called_with(f"There are 2 compute nodes actively running tasks in pool {FAKE_BATCH_POOL}. Please wait for jobs to complete or retry withy force_update=True.")
@@ -288,7 +287,6 @@ class TestClients(unittest.TestCase):
             pool_name=FAKE_BATCH_POOL,
             input_container_name=FAKE_INPUT_CONTAINER,
             output_container_name=FAKE_OUTPUT_CONTAINER,
-            autoscale_formula_path=FAKE_AUTOSCALE_FORMULA,
             force_update=True
         )
         self.assertEqual(pool_name, FAKE_BATCH_POOL)
@@ -303,7 +301,6 @@ class TestClients(unittest.TestCase):
             pool_name=FAKE_BATCH_POOL,
             input_container_name=FAKE_INPUT_CONTAINER,
             output_container_name=FAKE_OUTPUT_CONTAINER,
-            autoscale_formula_path=FAKE_AUTOSCALE_FORMULA,
             force_update=False
         )
         self.assertEqual(pool_name, FAKE_BATCH_POOL)

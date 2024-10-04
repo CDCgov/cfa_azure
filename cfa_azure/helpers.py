@@ -270,7 +270,7 @@ def get_batch_pool_json(
     input_container_name: str,
     output_container_name: str,
     config: dict,
-    autoscale_formula_path: str,
+    autoscale_formula_path:str=None,
     autoscale_evaluation_interval: str = "PT5M",
     fixedscale_resize_timeout: str = "PT15M"
 ):
@@ -310,12 +310,12 @@ def get_batch_pool_json(
     deployment_config = {
         "virtualMachineConfiguration": {
             "imageReference": {
-                "publisher": "microsoft-azure-batch",
-                "offer": "ubuntu-server-container",
-                "sku": "20-04-lts",
+                "publisher": "microsoft-dsvm",
+                "offer": "ubuntu-hpc",
+                "sku": "2204",
                 "version": "latest",
             },
-            "nodeAgentSkuId": "batch.node.ubuntu 20.04",
+            "nodeAgentSkuId": "batch.node.ubuntu 22.04",
             "containerConfiguration": {
                 "type": "dockercompatible",
                 "containerImageNames": [
@@ -381,19 +381,6 @@ def get_batch_pool_json(
             "taskSchedulingPolicy": {"nodeFillType": "Spread"},
             "deploymentConfiguration": deployment_config,
             "networkConfiguration": network_config,
-            "scaleSettings": {
-                # "fixedScale": {
-                #     "targetDedicatedNodes": 1,
-                #     "targetLowPriorityNodes": 0,
-                #     "resizeTimeout": "PT15M"
-                # }
-                "autoScale": {
-                    "evaluationInterval": autoscale_evaluation_interval,
-                    "formula": get_autoscale_formula(
-                        filepath=autoscale_formula_path
-                    ),
-                }
-            },
             "resizeOperationStatus": {
                 "targetDedicatedNodes": 1,
                 "nodeDeallocationOption": "Requeue",
@@ -407,6 +394,21 @@ def get_batch_pool_json(
             "mountConfiguration": mount_config,
         },
     }
+    if autoscale_formula_path:
+        pool_parameters['properties']['scaleSettings'] = {
+            # "fixedScale": {
+            #     "targetDedicatedNodes": 1,
+            #     "targetLowPriorityNodes": 0,
+            #     "resizeTimeout": "PT15M"
+            # }
+            "autoScale": {
+                "evaluationInterval": autoscale_evaluation_interval,
+                "formula": get_autoscale_formula(
+                    filepath=autoscale_formula_path
+                )
+            }
+        }
+
     logger.debug("Batch pool parameters assembled.")
 
     pool_id = config["Batch"]["pool_id"]
@@ -1146,12 +1148,12 @@ def get_deployment_config(
     deployment_config = {
         "virtualMachineConfiguration": {
             "imageReference": {
-                "publisher": "microsoft-azure-batch",
-                "offer": "ubuntu-server-container",
-                "sku": "20-04-lts",
+                "publisher": "microsoft-dsvm",
+                "offer": "ubuntu-hpc",
+                "sku": "2204",
                 "version": "latest",
             },
-            "nodeAgentSkuId": "batch.node.ubuntu 20.04",
+            "nodeAgentSkuId": "batch.node.ubuntu 22.04",
             "containerConfiguration": {
                 "type": "dockercompatible",
                 "containerImageNames": [container_image_name],

@@ -83,6 +83,10 @@ class TestHelpers(unittest.TestCase):
             }
         )
 
+    def test_get_batch_pool_json_no_autoscale(self):
+        batch_json = cfa_azure.helpers.get_batch_pool_json(FAKE_INPUT_CONTAINER, FAKE_OUTPUT_CONTAINER, FAKE_CONFIG)
+        self.assertFalse('autoScale' in batch_json['pool_parameters']['properties'])
+
     def test_get_batch_pool_json_custominterval(self):
         batch_json = cfa_azure.helpers.get_batch_pool_json(
             input_container_name=FAKE_INPUT_CONTAINER,

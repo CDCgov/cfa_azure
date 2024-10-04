@@ -328,10 +328,9 @@ class AzureClient:
 
     def update_containers(
             self,
-            pool_name:str,
             input_container_name:str,
             output_container_name:str,
-            autoscale_formula_path:str,
+            pool_name:str=None,
             force_update:bool=False
     ) -> str | None:
         """Changes the input and/or output containers mounted in an existing Azure batch pool
@@ -340,10 +339,11 @@ class AzureClient:
             pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
             input_container_name (str): unique identifier for the Blob storage container that will be mapped to /input path
             output_container_name (str): unique identifier for the Blob storage container that will be mapped to /output path
-            autoscale_formula_path (str): path to autoscale formula file if mode is autoscale. Defaults to None.
             force_update (bool): optional, deletes the existing pool without checking if it is already running any tasks 
         """
         # Check if pool already exists
+        if not pool_name:
+            pool_name = self.pool_name
         if helpers.check_pool_exists(self.resource_group_name, self.account_name, pool_name, self.batch_mgmt_client):
             if not force_update:
                 # Check how many jobs are currently running in pool
@@ -365,10 +365,9 @@ class AzureClient:
 
         # Recreate the pool
         batch_json = helpers.get_batch_pool_json(
-            input_container_name,
-            output_container_name,
-            self.config,
-            autoscale_formula_path,
+            input_container_name=input_container_name,
+            output_container_name=output_container_name,
+            config=self.config
         )
         batch_json['pool_id'] = pool_name
         pool_name = helpers.create_batch_pool(batch_mgmt_client=self.batch_mgmt_client, batch_json=batch_json)

@@ -28,6 +28,8 @@ FAKE_YAML_CONTENT       = {
 FAKE_CONFIG = {
     'Authentication': {
         'application_id': 'Test Application ID',
+        'batch_application_id': 'Test Batch Application ID',
+        'batch_object_id': 'Test Batch Object ID',
         'client_id': 'Test Client ID',
         'principal_id': 'Test Principal ID',
         'resource_group': FAKE_RESOURCE_GROUP,

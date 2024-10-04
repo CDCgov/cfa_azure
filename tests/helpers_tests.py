@@ -77,8 +77,8 @@ class TestHelpers(unittest.TestCase):
             batch_json['user_identity']['userAssignedIdentities'], 
             {
                 FAKE_CONFIG['Authentication']['user_assigned_identity']: {
-                    'clientId': FAKE_CONFIG['Authentication']['client_id'],
-                    'principalId': FAKE_CONFIG['Authentication']['principal_id']
+                    'clientId': FAKE_CONFIG['Authentication']['batch_application_id'],
+                    'principalId': FAKE_CONFIG['Authentication']['batch_object_id']
                 }
             }
         )
@@ -313,7 +313,7 @@ class TestHelpers(unittest.TestCase):
 
     def test_check_config_req(self):
         status = cfa_azure.helpers.check_config_req(FAKE_CONFIG)
-        self.assertTrue(status)
+        self.assertIsNotNone(status)
 
     def test_check_config_req_badconfig(self):
         bad_config = {

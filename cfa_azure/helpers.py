@@ -1596,7 +1596,7 @@ def package_and_upload_dockerfile(
         logger.error("Could not ping Docker. Make sure Docker is running.")
         logger.warning("Container not packaged/uploaded.")
         logger.warning("Try again when Docker is running.")
-        return None
+        raise DockerException("Make sure Docker is running.")
 
     if os.path.exists(path_to_dockerfile) and d:
         full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
@@ -1641,11 +1641,20 @@ def upload_docker_image(
     Returns:
         str: full container name
     """
-    #check if docker image exists
-    logger.debug("Getting docker environment.")
-    docker_client = docker.from_env()
+    #check if docker is running
+    logger.debug("Trying to ping docker daemon.")
+    try:
+        docker_env = docker.from_env(timeout=8)
+        docker_env.ping()
+        logger.debug("Docker is running.")
+    except DockerException:
+        logger.error("Could not ping Docker. Make sure Docker is running.")
+        logger.warning("Container not uploaded.")
+        logger.warning("Try again when Docker is running.")
+        raise DockerException("Make sure Docker is running.")
+
     logger.debug("pulling list of docker images available.")
-    d_list = [image.tags for image in docker_client.images.list()]
+    d_list = [image.tags for image in docker_env.images.list()]
     logger.debug("checking if image_name exists in docker repo.")
     status = sum([image_name in image for image in d_list])
     if status == 0:

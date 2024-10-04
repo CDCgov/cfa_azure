@@ -1627,7 +1627,7 @@ def upload_docker_image(
     logger.debug("Trying to ping docker daemon.")
     docker_env = docker.from_env(timeout=10)
     try:
-        docker_client = docker_env.ping()
+        docker_env.ping()
         logger.debug("Docker is running.")
     except DockerException:
         logger.error("Could not ping Docker. Make sure Docker is running.")
@@ -1636,7 +1636,7 @@ def upload_docker_image(
         raise DockerException("Make sure Docker is running.")
 
     logger.debug("pulling list of docker images available.")
-    d_list = [image.tags for image in docker_client.images.list()]
+    d_list = [image.tags for image in docker_env.images.list()]
     logger.debug("checking if image_name exists in docker repo.")
     status = sum([image_name in image for image in d_list])
     if status == 0:

@@ -45,11 +45,12 @@ class AzureClient:
         try:
             self.account_name = self.config["Batch"]["batch_account_name"]
             logger.debug("account name read in from config")
-        except Exception:
+        except Exception as e:
             logger.warning("Batch account name not found in config.")
             logger.warning(
                 "Please add the batch_account_name in the Batch section of the config."
             )
+            raise e
 
         try:
             self.resource_group_name = self.config["Authentication"][
@@ -58,6 +59,7 @@ class AzureClient:
             logger.debug("resource group name read in from config")
         except Exception as e:
             logger.warning(e)
+            raise e
 
         # get credentials
         self.sp_secret = helpers.get_sp_secret(self.config)
@@ -401,7 +403,7 @@ class AzureClient:
             p_name = self.pool_name
         else:
             logger.error("Please specify a pool and try again.")
-            return None
+            raise Exception("Please specify a pool and try again.") from None
         scale_settings = {}
         self.scaling = scaling
         if scaling == "autoscale":
@@ -409,7 +411,7 @@ class AzureClient:
             validation_errors = helpers.check_autoscale_parameters(mode=scaling, dedicated_nodes=dedicated_nodes, low_priority_nodes=low_priority_nodes, node_deallocation_option=node_deallocation_option)
             if validation_errors:
                 logger.error(validation_errors)
-                return None
+                raise Exception(validation_errors) from None
             autoScalingParameters = {}
             if autoscale_formula_path:
                 self.autoscale_formula_path = autoscale_formula_path
@@ -423,7 +425,7 @@ class AzureClient:
             validation_errors = helpers.check_autoscale_parameters(mode=scaling, autoscale_formula_path=autoscale_formula_path, evaluation_interval=evaluation_interval)
             if validation_errors:
                 logger.error(validation_errors)
-                return None
+                raise Exception(validation_errors) from None
             # Fixed scaling
             fixedScalingParameters = {}
             if dedicated_nodes:
@@ -463,6 +465,7 @@ class AzureClient:
             logger.exception(
                 "No pool information given. Please use `set_pool_info()` before running `create_pool()`."
             )
+            raise Exception("No pool information given. Please use `set_pool_info()` before running `create_pool()`.") from None
 
         start_time = datetime.datetime.now()
         self.pool_name = pool_name
@@ -522,7 +525,7 @@ class AzureClient:
             logger.error(
                 f"Blob container {container_name} does not exist. Please try again with an existing Blob container."
             )
-            return None
+            raise Exception(f"Blob container {container_name} does not exist. Please try again with an existing Blob container.") from None
 
         for file_name in files:
             helpers.upload_blob_file(
@@ -601,7 +604,7 @@ class AzureClient:
             p_name = self.pool_name
         else:
             logger.error("Please specify a pool for the job and try again.")
-            return None
+            raise Exception("Please specify a pool for the job and try again.")
         # add the job to the pool
         logger.debug(f"Attempting to add job {job_id_r}.")
         helpers.add_job(

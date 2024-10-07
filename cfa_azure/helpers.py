@@ -51,13 +51,13 @@ def read_config(config_path: str = "./configuration.toml"):
             "Configuration file not found. Make sure the location (path) is correct."
         )
         logger.exception(e)
-        raise FileNotFoundError(f"could not find file {config_path}")
+        raise FileNotFoundError(f"could not find file {config_path}") from None
     except Exception as e:
         logger.warning(
             "Error occurred while loading the configuration file. Check file format and contents."
         )
         logger.exception(e)
-        raise Exception("Error occurred while loading the configuration file. Check file format and contents.")
+        raise Exception("Error occurred while loading the configuration file. Check file format and contents.") from None
 
 
 def create_container(container_name: str, blob_service_client: object):
@@ -113,7 +113,7 @@ def get_autoscale_formula(filepath: str = None, text_input: str = None):
             logger.error(
                 f"Error reading autoscale formula from {filepath}. Check file path and permissions."
             )
-            raise Exception(f"Error reading autoscale formula from {filepath}. Check file path and permissions.")
+            raise Exception(f"Error reading autoscale formula from {filepath}. Check file path and permissions.") from None
     elif text_input is not None:
         logger.debug("Autoscale formula provided via text input.")
         return text_input
@@ -616,7 +616,7 @@ def upload_files_in_folder(
         exclude_extensions = format_extensions(exclude_extensions)
     if include_extensions is not None and exclude_extensions is not None:
         logger.error("Use included_extensions or exclude_extensions, not both.")
-        raise Exception("Use included_extensions or exclude_extensions, not both.")
+        raise Exception("Use included_extensions or exclude_extensions, not both.") from None
     # check container exists
     logger.debug(f"Checking Blob container {container_name} exists.")
     #create container client
@@ -628,7 +628,7 @@ def upload_files_in_folder(
         logger.error(
             f"Blob container {container_name} does not exist. Please try again with an existing Blob container."
         )
-        raise Exception(f"Blob container {container_name} does not exist. Please try again with an existing Blob container.")
+        raise Exception(f"Blob container {container_name} does not exist. Please try again with an existing Blob container.") from None
     # check number of files if force_upload False
     logger.debug(f"Blob container {container_name} found. Uploading files...")
     #check if files should be force uploaded
@@ -1447,7 +1447,7 @@ def download_directory(
     if include_extensions is not None and exclude_extensions is not None:
         logger.error("Use included_extensions or exclude_extensions, not both.")
         print("Use included_extensions or exclude_extensions, not both.")
-        raise Exception("Use included_extensions or exclude_extensions, not both.")
+        raise Exception("Use included_extensions or exclude_extensions, not both.") from None
     # check container exists
     logger.debug(f"Checking Blob container {container_name} exists.")
     #create container client
@@ -1589,7 +1589,7 @@ def package_and_upload_dockerfile(
         logger.error("Could not ping Docker. Make sure Docker is running.")
         logger.warning("Container not packaged/uploaded.")
         logger.warning("Try again when Docker is running.")
-        raise DockerException("Make sure Docker is running.")
+        raise DockerException("Make sure Docker is running.") from None
 
     if os.path.exists(path_to_dockerfile) and d:
         full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
@@ -1614,7 +1614,7 @@ def package_and_upload_dockerfile(
         return full_container_name
     else:
         logger.error("Dockerfile does not exist in the root of the directory.")
-        raise Exception("Dockerfile does not exist in the root of the directory.")
+        raise Exception("Dockerfile does not exist in the root of the directory.") from None
 
 def upload_docker_image(
             image_name: str, 
@@ -1645,7 +1645,7 @@ def upload_docker_image(
         logger.error("Could not ping Docker. Make sure Docker is running.")
         logger.warning("Container not uploaded.")
         logger.warning("Try again when Docker is running.")
-        raise DockerException("Make sure Docker is running.")
+        raise DockerException("Make sure Docker is running.") from None
 
     logger.debug("pulling list of docker images available.")
     d_list = [image.tags for image in docker_env.images.list()]
@@ -1654,7 +1654,7 @@ def upload_docker_image(
     if status == 0:
         logger.error(f"Image {image_name} does not exist. Check the image name.")
         print(f"Image {image_name} does not exist. Check the image name.")
-        raise Exception(f"Image {image_name} does not exist. Check the image name.")
+        raise Exception(f"Image {image_name} does not exist. Check the image name.") from None
     else:
         logger.debug(f"{image_name} found in docker repo.")
     full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"

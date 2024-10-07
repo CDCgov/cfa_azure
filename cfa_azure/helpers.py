@@ -51,11 +51,13 @@ def read_config(config_path: str = "./configuration.toml"):
             "Configuration file not found. Make sure the location (path) is correct."
         )
         logger.exception(e)
+        raise FileNotFoundError(f"could not find file {config_path}") from None
     except Exception as e:
         logger.warning(
             "Error occurred while loading the configuration file. Check file format and contents."
         )
         logger.exception(e)
+        raise Exception("Error occurred while loading the configuration file. Check file format and contents.") from None
 
 
 def create_container(container_name: str, blob_service_client: object):
@@ -111,6 +113,7 @@ def get_autoscale_formula(filepath: str = None, text_input: str = None):
             logger.error(
                 f"Error reading autoscale formula from {filepath}. Check file path and permissions."
             )
+            raise Exception(f"Error reading autoscale formula from {filepath}. Check file path and permissions.") from None
     elif text_input is not None:
         logger.debug("Autoscale formula provided via text input.")
         return text_input
@@ -134,6 +137,7 @@ def get_sp_secret(config: dict):
         logger.debug("Credential obtained.")
     except Exception as e:
         logger.error("Error obtaining credential:", e)
+        raise e
 
     logger.debug("Attempting to establish secret client.")
     try:
@@ -144,6 +148,7 @@ def get_sp_secret(config: dict):
         logger.debug("Secret client initialized.")
     except KeyError as e:
         logger.error("Error:", e, "Key not found in configuration.")
+        raise e
 
     logger.debug("Attempting to retrieve Service Principal secret.")
     try:
@@ -157,6 +162,7 @@ def get_sp_secret(config: dict):
         logger.warning(
             "Check that vault_uri and vault_sp_secret_id are correctly configured in the config file."
         )
+        raise e
 
 
 def get_sp_credential(config: dict):
@@ -182,6 +188,7 @@ def get_sp_credential(config: dict):
         logger.error(
             f"Configuration error: '{e}' does not exist in the config file. Please add it in the Authentication section.",
         )
+        raise e
 
 
 def get_blob_service_client(config: dict):
@@ -206,6 +213,7 @@ def get_blob_service_client(config: dict):
         logger.error(
             f"Configuration error: '{e}' does not exist in the config file. Please add it in the Storage section.",
         )
+        raise e
 
 
 def get_batch_mgmt_client(config: dict):
@@ -230,6 +238,7 @@ def get_batch_mgmt_client(config: dict):
         logger.error(
             f"Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section.",
         )
+        raise e
 
 
 def create_blob_containers(
@@ -481,6 +490,7 @@ def create_batch_pool(batch_mgmt_client: object, batch_json: dict):
             logger.error(
                 f"Pool {pool_id!r} already exists. No further action taken."
             )
+            raise error
         else:
             logger.error(f"Error creating pool {pool_id!r}: {error}")
             raise
@@ -606,6 +616,7 @@ def upload_files_in_folder(
         exclude_extensions = format_extensions(exclude_extensions)
     if include_extensions is not None and exclude_extensions is not None:
         logger.error("Use included_extensions or exclude_extensions, not both.")
+        raise Exception("Use included_extensions or exclude_extensions, not both.") from None
     # check container exists
     logger.debug(f"Checking Blob container {container_name} exists.")
     #create container client
@@ -617,7 +628,7 @@ def upload_files_in_folder(
         logger.error(
             f"Blob container {container_name} does not exist. Please try again with an existing Blob container."
         )
-        return None
+        raise Exception(f"Blob container {container_name} does not exist. Please try again with an existing Blob container.") from None
     # check number of files if force_upload False
     logger.debug(f"Blob container {container_name} found. Uploading files...")
     #check if files should be force uploaded
@@ -1000,7 +1011,7 @@ def list_files_in_container(
         return files
     except Exception as e:
         logger.error(f"Error connecting to container '{container_name}': {e}")
-        return None
+        raise e
 
 
 def df_to_yaml(df: pd.DataFrame):
@@ -1357,7 +1368,7 @@ def check_virtual_directory_existence(
         return True
     except StopIteration as e:
         logger.error(repr(e))
-        return False
+        raise e
 
 
 def download_file(
@@ -1436,7 +1447,7 @@ def download_directory(
     if include_extensions is not None and exclude_extensions is not None:
         logger.error("Use included_extensions or exclude_extensions, not both.")
         print("Use included_extensions or exclude_extensions, not both.")
-        return None
+        raise Exception("Use included_extensions or exclude_extensions, not both.") from None
     # check container exists
     logger.debug(f"Checking Blob container {container_name} exists.")
     #create container client
@@ -1578,7 +1589,7 @@ def package_and_upload_dockerfile(
         logger.error("Could not ping Docker. Make sure Docker is running.")
         logger.warning("Container not packaged/uploaded.")
         logger.warning("Try again when Docker is running.")
-        raise DockerException("Make sure Docker is running.")
+        raise DockerException("Make sure Docker is running.") from None
 
     if os.path.exists(path_to_dockerfile) and d:
         full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
@@ -1603,6 +1614,7 @@ def package_and_upload_dockerfile(
         return full_container_name
     else:
         logger.error("Dockerfile does not exist in the root of the directory.")
+        raise Exception("Dockerfile does not exist in the root of the directory.") from None
 
 def upload_docker_image(
             image_name: str, 
@@ -1633,7 +1645,7 @@ def upload_docker_image(
         logger.error("Could not ping Docker. Make sure Docker is running.")
         logger.warning("Container not uploaded.")
         logger.warning("Try again when Docker is running.")
-        raise DockerException("Make sure Docker is running.")
+        raise DockerException("Make sure Docker is running.") from None
 
     logger.debug("pulling list of docker images available.")
     d_list = [image.tags for image in docker_env.images.list()]
@@ -1642,7 +1654,7 @@ def upload_docker_image(
     if status == 0:
         logger.error(f"Image {image_name} does not exist. Check the image name.")
         print(f"Image {image_name} does not exist. Check the image name.")
-        return None
+        raise Exception(f"Image {image_name} does not exist. Check the image name.") from None
     else:
         logger.debug(f"{image_name} found in docker repo.")
     full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
@@ -1827,7 +1839,7 @@ def check_azure_container_exists(
             f"Registry [{registry_name}] or repo [{repo_name}] does not exist"
         )
         logger.exception(e)
-        raise Exception
+        raise e
     tag_list = []
     logger.debug("Checking tag exists.")
     for tag in cr_client.list_tag_properties(repo_name):

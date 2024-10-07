@@ -570,6 +570,7 @@ class AzureClient:
         self,
         job_id: str,
         docker_cmd: list[str],
+        name_suffix: str = "",
         use_uploaded_files: bool = False,
         input_files: list[str] | None = None,
         depends_on: list[str] | None = None,
@@ -583,6 +584,7 @@ class AzureClient:
         Args:
             job_id (str): job id
             docker_cmd (list[str]): docker command to run
+            name_suffix (str): suffix to add to task name for task identification. Default is an empty string.
             use_uploaded_files (bool): whether to use uploaded files with the docker command. This will append the docker command with the names of the input files
                 and create a task for each input file uploaded or specified in input_files. Default is False.
             input_files (list[str]): a list of file names. Each file will be assigned its own task and executed against the docker command provided. Default is [].
@@ -646,6 +648,7 @@ class AzureClient:
             job_id=job_id,
             task_id_base=job_id,
             docker_command=docker_cmd,
+            name_suffix = name_suffix,
             input_files=in_files,
             mounts=self.mounts,
             depends_on=depends_on,

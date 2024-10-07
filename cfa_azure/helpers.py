@@ -760,6 +760,7 @@ def add_task_to_job(
     job_id: str,
     task_id_base: str,
     docker_command: str,
+    name_suffix: str = "",
     input_files: list[str] | None = None,
     mounts: list | None = None,
     depends_on: str | list[str] | None = None,
@@ -773,6 +774,7 @@ def add_task_to_job(
         job_id (str): name given to job
         task_id_base (str): the name given to the task_id as a base
         docker_command (str): the docker command to execute for the task
+        name_suffix (str): suffix to append to task name. Default is empty string.
         input_files (list[str]): a  list of input files
         mounts (list[tuple]): a list of tuples in the form (container_name, relative_mount_directory)
         depends_on (str | list[str]): list of tasks this task depends on
@@ -847,7 +849,7 @@ def add_task_to_job(
             print(f"Task '{id}' added to job '{job_id}'.")
         return tasks
     else:
-        task_id = f"{task_id_base}-{str(task_id_max + 1)}"
+        task_id = f"{task_id_base}-{name_suffix}-{str(task_id_max + 1)}"
         command_line = d_cmd_str
         logger.debug(f"Adding task {task_id}")
         task = batchmodels.TaskAddParameter(

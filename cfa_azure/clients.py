@@ -353,7 +353,7 @@ class AzureClient:
         if helpers.check_pool_exists(self.resource_group_name, self.account_name, pool_name, self.batch_mgmt_client):
             if not force_update:
                 # Check how many jobs are currently running in pool
-                active_nodes = helpers.list_nodes_by_pool(pool_name=pool_name, config=self.config, node_state='running')
+                active_nodes = list(helpers.list_nodes_by_pool(pool_name=pool_name, config=self.config, node_state='running'))
                 if len(active_nodes) > 0:
                     logger.error(f"There are {len(active_nodes)} compute nodes actively running tasks in pool {pool_name}. Please wait for jobs to complete or retry withy force_update=True.")
                     return None

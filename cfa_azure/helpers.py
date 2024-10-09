@@ -276,10 +276,11 @@ def create_blob_containers(
 
 def get_batch_pool_json(
     containers:list[dict],
-    config: dict,
+    config:dict,
     autoscale_formula_path:str=None,
-    autoscale_evaluation_interval: str = "PT5M",
-    fixedscale_resize_timeout: str = "PT15M"
+    autoscale_evaluation_interval:str = "PT5M",
+    fixedscale_resize_timeout:str = "PT15M",
+    container_image_name:str=None
 ):
     """creates a json output with various components needed for batch pool creation
 
@@ -322,28 +323,29 @@ def get_batch_pool_json(
                 "sku": "20-04-lts",
                 "version": "latest",
             },
-            "nodeAgentSkuId": "batch.node.ubuntu 20.04",
-            "containerConfiguration": {
-                "type": "dockercompatible",
-                "containerImageNames": [
-                    config["Container"]["container_image_name"]
-                ],
-                "containerRegistries": [
-                    {
-                        "registryServer": config["Container"][
-                            "container_registry_url"
-                        ],
-                        "userName": config["Container"][
-                            "container_registry_username"
-                        ],
-                        "password": config["Container"][
-                            "container_registry_password"
-                        ],
-                    }
-                ],
-            },
+            "nodeAgentSkuId": "batch.node.ubuntu 20.04"
         }
     }
+    if container_image_name:
+        container_configuration = {
+            "type": "dockercompatible",
+            "containerImageNames": [container_image_name],
+            "containerRegistries": [
+                {
+                    "registryServer": config["Container"][
+                        "container_registry_url"
+                    ],
+                    "userName": config["Container"][
+                        "container_registry_username"
+                    ],
+                    "password": config["Container"][
+                        "container_registry_password"
+                    ]
+                }
+            ]
+        }
+        deployment_config['virtualMachineConfiguration']['containerConfiguration'] = container_configuration
+
     logger.debug("VM and container configurations prepared.")
 
     # Mount configuration
@@ -387,7 +389,7 @@ def get_batch_pool_json(
             "targetNodeCommunicationMode": "Simplified",
             "currentNodeCommunicationMode": "Simplified",
             "mountConfiguration": mount_config,
-        },
+        }
     }
     if autoscale_formula_path:
         pool_parameters['properties']['scaleSettings'] = {
@@ -1742,7 +1744,6 @@ def get_pool_info(
         "task_slots_per_node": result.task_slots_per_node,
     }
     return json.dumps(j)
-
 
 def get_pool_full_info(
     resource_group_name: str,

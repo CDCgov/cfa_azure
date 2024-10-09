@@ -550,6 +550,7 @@ class AzureClient:
 
         if pool_name:
             p_name = pool_name
+            self.pool_name = pool_name
         elif self.pool_name:
             p_name = self.pool_name
         else:
@@ -570,6 +571,7 @@ class AzureClient:
         self,
         job_id: str,
         docker_cmd: list[str],
+        save_logs_to_blob: str | None = None,
         name_suffix: str = "",
         use_uploaded_files: bool = False,
         input_files: list[str] | None = None,
@@ -584,6 +586,7 @@ class AzureClient:
         Args:
             job_id (str): job id
             docker_cmd (list[str]): docker command to run
+            save_logs_to_blob (str): the name of the blob container. Must be mounted to the pool. Default None for no saving.
             name_suffix (str): suffix to add to task name for task identification. Default is an empty string.
             use_uploaded_files (bool): whether to use uploaded files with the docker command. This will append the docker command with the names of the input files
                 and create a task for each input file uploaded or specified in input_files. Default is False.
@@ -642,12 +645,18 @@ class AzureClient:
                 container_name = self.full_container_name
                 logger.debug(f"Container name set to {container_name}.")
 
+        if save_logs_to_blob:
+            rel_mnt_path = helpers.get_rel_mnt_path(blob_name = save_logs_to_blob, pool_name = self.pool_name, resource_group_name=self.resource_group_name,
+                                     account_name=self.account_name, batch_mgmt_client=self.batch_mgmt_client)
+            if rel_mnt_path != "ERROR!":
+                rel_mnt_path = helpers.format_rel_path(rel_path=rel_mnt_path)
         # run tasks for input files
         logger.debug("Adding tasks to job.")
         task_ids = helpers.add_task_to_job(
             job_id=job_id,
             task_id_base=job_id,
             docker_command=docker_cmd,
+            save_logs_rel_path = rel_mnt_path,
             name_suffix = name_suffix,
             input_files=in_files,
             mounts=self.mounts,
@@ -973,3 +982,6 @@ class AzureClient:
         pool_id = self.pool_name,
         batch_client = self.batch_client,
         mark_complete = mark_complete)
+
+
+    

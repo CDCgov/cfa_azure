@@ -278,7 +278,7 @@ def create_blob_containers(
 
 def get_batch_pool_json(
     containers:list[dict],
-    config: dict,
+    config:dict,
     autoscale_formula_path:str=None,
     autoscale_evaluation_interval: str = "PT5M",
     fixedscale_resize_timeout: str = "PT15M",
@@ -390,7 +390,7 @@ def get_batch_pool_json(
             "targetNodeCommunicationMode": "Simplified",
             "currentNodeCommunicationMode": "Simplified",
             "mountConfiguration": mount_config,
-        },
+        }
     }
     if autoscale_formula_path:
         pool_parameters['properties']['scaleSettings'] = {
@@ -1774,7 +1774,6 @@ def get_pool_info(
         "task_slots_per_node": result.task_slots_per_node,
     }
     return json.dumps(j)
-
 
 def get_pool_full_info(
     resource_group_name: str,

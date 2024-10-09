@@ -358,6 +358,8 @@ class AzureClient:
                     logger.error(f"There are {len(active_nodes)} compute nodes actively running tasks in pool {pool_name}. Please wait for jobs to complete or retry withy force_update=True.")
                     return None
 
+            container_image_name = self.get_container_image_name(pool_name)
+
             # Delete existing pool
             logger.info(f"Deleting pool {pool_name}")
             helpers.delete_pool(
@@ -368,15 +370,20 @@ class AzureClient:
             )
         else:
             logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
+            container_image_name = self.config["Container"]["container_image_name"]
 
         containers = [
             {'name': input_container_name, 'relative_mount_dir': 'input'},
             {'name': output_container_name, 'relative_mount_dir': 'output'},
         ]
+        if not 'pool_id' in self.config['Batch']:
+            self.config['Batch']['pool_id'] = pool_name
+
         # Recreate the pool
         batch_json = helpers.get_batch_pool_json(
             containers=containers,
-            config=self.config
+            config=self.config,
+            container_image_name=container_image_name
         )
         batch_json['pool_id'] = pool_name
         pool_name = helpers.create_batch_pool(batch_mgmt_client=self.batch_mgmt_client, batch_json=batch_json)
@@ -430,6 +437,7 @@ class AzureClient:
 
         else:
             logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
+            container_image_name = self.config["Container"]["container_image_name"]
 
         if not 'pool_id' in self.config['Batch']:
             self.config['Batch']['pool_id'] = pool_name

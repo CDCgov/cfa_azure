@@ -327,6 +327,116 @@ class AzureClient:
             self.mounts.append((name, rel_mount_dir))
             logger.debug(f"Added Blob container {name} to AzureClient.")
 
+    def update_containers(
+            self,
+            input_container_name:str,
+            output_container_name:str,
+            pool_name:str=None,
+            force_update:bool=False
+    ) -> str | None:
+        """Changes the input and/or output containers mounted in an existing Azure batch pool
+
+        Args:
+            pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
+            input_container_name (str): unique identifier for the Blob storage container that will be mapped to /input path
+            output_container_name (str): unique identifier for the Blob storage container that will be mapped to /output path
+            force_update (bool): optional, deletes the existing pool without checking if it is already running any tasks 
+        """
+        # Check if pool already exists
+        if not pool_name:
+            pool_name = self.pool_name
+        if helpers.check_pool_exists(self.resource_group_name, self.account_name, pool_name, self.batch_mgmt_client):
+            if not force_update:
+                # Check how many jobs are currently running in pool
+                active_nodes = list(helpers.list_nodes_by_pool(pool_name=pool_name, config=self.config, node_state='running'))
+                if len(active_nodes) > 0:
+                    logger.error(f"There are {len(active_nodes)} compute nodes actively running tasks in pool {pool_name}. Please wait for jobs to complete or retry withy force_update=True.")
+                    return None
+
+            container_image_name = self.get_container_image_name(pool_name)
+
+            # Delete existing pool
+            logger.info(f"Deleting pool {pool_name}")
+            helpers.delete_pool(
+                resource_group_name=self.resource_group_name,
+                account_name=self.account_name,
+                pool_name=pool_name,
+                batch_mgmt_client=self.batch_mgmt_client,
+            )
+        else:
+            logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
+            container_image_name = self.config["Container"]["container_image_name"]
+
+        containers = [
+            {'name': input_container_name, 'relative_mount_dir': 'input'},
+            {'name': output_container_name, 'relative_mount_dir': 'output'},
+        ]
+        if not 'pool_id' in self.config['Batch']:
+            self.config['Batch']['pool_id'] = pool_name
+
+        # Recreate the pool
+        batch_json = helpers.get_batch_pool_json(
+            containers=containers,
+            config=self.config,
+            container_image_name=container_image_name
+        )
+        batch_json['pool_id'] = pool_name
+        pool_name = helpers.create_batch_pool(batch_mgmt_client=self.batch_mgmt_client, batch_json=batch_json)
+        return pool_name
+
+    def update_container_set(
+            self,
+            containers:list[dict],
+            pool_name:str=None,
+            force_update:bool=False
+    ) -> str | None:
+        """Changes the input and/or output containers mounted in an existing Azure batch pool
+
+        Args:
+            pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
+            input_container_name (str): unique identifier for the Blob storage container that will be mapped to /input path
+            output_container_name (str): unique identifier for the Blob storage container that will be mapped to /output path
+            force_update (bool): optional, deletes the existing pool without checking if it is already running any tasks 
+        """
+        # Check if pool already exists
+        if not pool_name:
+            pool_name = self.pool_name
+        # Check if pool already exists
+        if helpers.check_pool_exists(self.resource_group_name, self.account_name, pool_name, self.batch_mgmt_client):
+            if not force_update:
+                # Check how many jobs are currently running in pool
+                active_nodes = helpers.list_nodes_by_pool(pool_name=pool_name, config=self.config, node_state='running')
+                if len(active_nodes) > 0:
+                    logger.error(f"There are {len(active_nodes)} compute nodes actively running tasks in pool {pool_name}. Please wait for jobs to complete or retry withy force_update=True.")
+                    return None
+
+            container_image_name = self.get_container_image_name(pool_name)
+
+            # Delete existing pool
+            logger.info(f"Deleting pool {pool_name}")
+            helpers.delete_pool(
+                resource_group_name=self.resource_group_name,
+                account_name=self.account_name,
+                pool_name=pool_name,
+                batch_mgmt_client=self.batch_mgmt_client,
+            )
+        else:
+            logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
+            container_image_name = self.config["Container"]["container_image_name"]
+
+        for container in containers:
+            self.set_blob_container(container['name'], container['relative_mount_dir'])
+        # Recreate the pool
+        batch_json = helpers.get_batch_pool_json(
+            containers=containers,
+            config=self.config,
+            container_image_name=container_image_name
+        )
+        batch_json['pool_id'] = pool_name
+        pool_name = helpers.create_batch_pool(batch_mgmt_client=self.batch_mgmt_client, batch_json=batch_json)
+        return pool_name
+
+
     def update_scale_settings(
         self,
         scaling:str,
@@ -898,20 +1008,29 @@ class AzureClient:
         )
         return pool_info
 
-    def get_pool_full_info(self) -> dict:
+    def get_pool_full_info(self, pool_name:str=None) -> dict:
         """Retrieve full information about pool used by client.
 
         Returns:
         - dict: instance of batch_mgmt_client.pool.get()
 
         """
+        if not pool_name:
+            pool_name = self.pool_name
         pool_info = helpers.get_pool_full_info(
             self.resource_group_name,
             self.account_name,
-            self.pool_name,
+            pool_name,
             self.batch_mgmt_client,
         )
         return pool_info
+
+    def get_container_image_name(self, pool_name:str) -> str:
+        pool_info = self.get_pool_full_info(pool_name)
+        vm_config = (pool_info.deployment_configuration.virtual_machine_configuration)
+        pool_container = (vm_config.container_configuration.container_image_names)
+        container_image_name = pool_container[0].split("://")[-1]
+        return container_image_name
 
     def delete_pool(self, pool_name: str) -> None:
         """Delete the specified pool from Azure Batch.

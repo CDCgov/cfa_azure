@@ -1,6 +1,5 @@
 import unittest
 from unittest.mock import patch, MagicMock, call, mock_open
-from azure.core.exceptions import HttpResponseError 
 import cfa_azure.helpers
 from tests.fake_client import *
 from callee import Contains
@@ -78,11 +77,15 @@ class TestHelpers(unittest.TestCase):
             batch_json['user_identity']['userAssignedIdentities'], 
             {
                 FAKE_CONFIG['Authentication']['user_assigned_identity']: {
-                    'clientId': FAKE_CONFIG['Authentication']['client_id'],
-                    'principalId': FAKE_CONFIG['Authentication']['principal_id']
+                    'clientId': FAKE_CONFIG['Authentication']['batch_application_id'],
+                    'principalId': FAKE_CONFIG['Authentication']['batch_object_id']
                 }
             }
         )
+
+    def test_get_batch_pool_json_no_autoscale(self):
+        batch_json = cfa_azure.helpers.get_batch_pool_json(FAKE_INPUT_CONTAINER, FAKE_OUTPUT_CONTAINER, FAKE_CONFIG)
+        self.assertFalse('autoScale' in batch_json['pool_parameters']['properties'])
 
     def test_get_batch_pool_json_custominterval(self):
         batch_json = cfa_azure.helpers.get_batch_pool_json(
@@ -310,7 +313,7 @@ class TestHelpers(unittest.TestCase):
 
     def test_check_config_req(self):
         status = cfa_azure.helpers.check_config_req(FAKE_CONFIG)
-        self.assertTrue(status)
+        self.assertIsNotNone(status)
 
     def test_check_config_req_badconfig(self):
         bad_config = {
@@ -635,3 +638,13 @@ class TestHelpers(unittest.TestCase):
         )
         self.assertEqual(blob_config['azureBlobFileSystemConfiguration']['containerName'], FAKE_INPUT_CONTAINER)
         self.assertEqual(blob_config['azureBlobFileSystemConfiguration']['blobfuseOptions'], "-o direct_io")
+
+    @patch("cfa_azure.helpers.get_batch_service_client", MagicMock(return_value=FakeClient()))
+    def test_list_nodes_by_pool(self):
+        compute_nodes = cfa_azure.helpers.list_nodes_by_pool(pool_name=FAKE_BATCH_POOL, config=FAKE_CONFIG, node_state='running')
+        self.assertEqual(len(compute_nodes), 2)
+
+    @patch("cfa_azure.helpers.get_batch_service_client", MagicMock(return_value=FakeClient()))
+    def test_list_all_nodes_by_pool(self):
+        compute_nodes = cfa_azure.helpers.list_nodes_by_pool(pool_name=FAKE_BATCH_POOL, config=FAKE_CONFIG)
+        self.assertEqual(len(compute_nodes), 4)

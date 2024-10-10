@@ -841,7 +841,7 @@ def add_task_to_job(
             _file = f"{save_logs_rel_path}/stdout_stderr/{job_id}/{task_id}_{s_time}"
             sout = f"{_file}_stdout.txt"
             serr = f"{_file}_stderr.txt"
-            full_cmd = d_cmd_str + f" > {sout}" + f" 2> {serr}"
+            full_cmd = f"""/bin/bash -c "{d_cmd_str} > {sout} 2> {serr}" """
     else:
         full_cmd = d_cmd_str
 

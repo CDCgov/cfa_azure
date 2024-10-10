@@ -838,9 +838,9 @@ def add_task_to_job(
             s_time = t.strftime("%Y%m%d_%H%M%S")
             if not save_logs_rel_path.startswith("/"):
                 save_logs_rel_path = "/" + save_logs_rel_path
-            _file = f"{save_logs_rel_path}/stdout_stderr/{job_id}/{task_id}_{s_time}"
-            sout = f"{_file}_stdout.txt"
-            serr = f"{_file}_stderr.txt"
+            _file = f"{save_logs_rel_path}/stdout_stderr/{job_id}/"
+            sout = f"{_file}stdout_{s_time}.txt"
+            serr = f"{_file}stderr_{s_time}.txt"
             full_cmd = f"""/bin/bash -c "{d_cmd_str} > {sout} 2> {serr}" """
     else:
         full_cmd = d_cmd_str

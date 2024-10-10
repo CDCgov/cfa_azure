@@ -836,6 +836,8 @@ def add_task_to_job(
             logger.debug("using rel path to save logs")
             t = dt.now(zi("America/New_York"))
             s_time = t.strftime("%Y%m%d_%H%M%S")
+            if not save_logs_rel_path.startswith("/"):
+                save_logs_rel_path = "/" + save_logs_rel_path
             _file = f"{save_logs_rel_path}/stdout_stderr/{job_id}/{task_id}_{s_time}"
             sout = f"{_file}_stdout.txt"
             serr = f"{_file}_stderr.txt"

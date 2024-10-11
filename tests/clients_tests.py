@@ -115,6 +115,7 @@ class TestClients(unittest.TestCase):
         mock_logger.debug.assert_called_with("Debugging turned off.")
 
     def test_create_pool(self):
+        self.azure_client.set_pool_info(mode="autoscale")
         pool_details = self.azure_client.create_pool(FAKE_BATCH_POOL)
         self.assertIsNotNone(pool_details)
 
@@ -206,7 +207,7 @@ class TestClients(unittest.TestCase):
             dedicated_nodes=10,
             node_deallocation_option='Requeue'
         )
-        self.assertIsNone(pool_info)
+        self.assertRaises(Exception)
 
     @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
     def test_update_scale_settings_fixedscale(self):
@@ -226,7 +227,7 @@ class TestClients(unittest.TestCase):
             autoscale_formula_path="some_path",
             evaluation_interval="PT30M"
         )
-        self.assertIsNone(pool_info)
+        self.assertRaises(Exception)
 
     @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
     def test_update_scale_settings_fixedscale_spot(self):

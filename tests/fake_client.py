@@ -106,7 +106,7 @@ class FakeClient:
         def state(self):
             return batchmodels.TaskState.completed
 
-        def add(self, job_id, task):
+        def add(self, job_id, task, exit_conditions):
             return True
 
         def as_dict(self):

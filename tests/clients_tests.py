@@ -117,6 +117,7 @@ class TestClients(unittest.TestCase):
         mock_logger.debug.assert_called_with("Debugging turned off.")
 
     def test_create_pool(self):
+        self.azure_client.set_pool_info(mode="autoscale")
         pool_details = self.azure_client.create_pool(FAKE_BATCH_POOL)
         self.assertIsNotNone(pool_details)
 

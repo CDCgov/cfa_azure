@@ -373,13 +373,46 @@ class AzureClient:
             self.config['Batch']['pool_id'] = pool_name
 
         # Recreate the pool
-        batch_json = helpers.get_batch_pool_json(
-            input_container_name=input_container_name,
-            output_container_name=output_container_name,
+        mount_config = [
+            {
+                "azureBlobFileSystemConfiguration": {
+                    "accountName": self.config["Storage"]["storage_account_name"],
+                    "identityReference": {
+                        "resourceId": self.config["Authentication"][
+                            "user_assigned_identity"
+                        ]
+                    },
+                    "containerName": input_container_name,
+                    "blobfuseOptions": "",
+                    "relativeMountPath": "input",
+                }
+            },
+            {
+                "azureBlobFileSystemConfiguration": {
+                    "accountName": self.config["Storage"]["storage_account_name"],
+                    "identityReference": {
+                        "resourceId": self.config["Authentication"][
+                            "user_assigned_identity"
+                        ]
+                    },
+                    "containerName": output_container_name,
+                    "blobfuseOptions": "",
+                    "relativeMountPath": "output",
+                }
+            }
+        ]
+        pool_parameters = helpers.get_pool_parameters(
+            mode=self.scaling,
+            container_image_name=container_image_name,
+            container_registry_url=self.registry_url,
+            container_registry_server=self.container_registry_server,
             config=self.config,
-            container_image_name=container_image_name
+            mount_config=mount_config
         )
-        batch_json['pool_id'] = pool_name
+        batch_json = {
+            'pool_id': pool_name,
+            'pool_parameters': pool_parameters
+        }
         pool_name = helpers.create_batch_pool(batch_mgmt_client=self.batch_mgmt_client, batch_json=batch_json)
         return pool_name
 

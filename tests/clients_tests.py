@@ -18,6 +18,7 @@ class TestClients(unittest.TestCase):
         config_path = "some_path"
         self.azure_client = cfa_azure.clients.AzureClient(config_path)
         self.azure_client.pool_name = FAKE_BATCH_POOL
+        self.azure_client.pool_parameters = FAKE_POOL_INFO
         mock_logger.info.assert_called_with("Client initialized! Happy coding!")
 
     @patch("cfa_azure.clients.logger")
@@ -183,12 +184,13 @@ class TestClients(unittest.TestCase):
     @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
     def test_update_scale_settings_autoscaling_badparams(self):
         self.azure_client.pool_name = FAKE_BATCH_POOL
-        pool_info = self.azure_client.update_scale_settings(
-            scaling="autoscale",
-            dedicated_nodes=10,
-            node_deallocation_option='Requeue'
-        )
-        self.assertIsNone(pool_info)
+        with self.assertRaises(Exception) as exc:
+            self.azure_client.update_scale_settings(
+                scaling="autoscale",
+                dedicated_nodes=10,
+                node_deallocation_option='Requeue'
+            )
+        self.assertEqual('dedicated_nodes, node_deallocation_option cannot be specified with autoscale option', str(exc.exception))
 
     @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
     def test_update_scale_settings_fixedscale(self):
@@ -202,13 +204,14 @@ class TestClients(unittest.TestCase):
 
     @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
     def test_update_scale_settings_fixedscale_badparams(self):
-        pool_info = self.azure_client.update_scale_settings(
-            scaling="fixed",
-            pool_name=FAKE_BATCH_POOL,
-            autoscale_formula_path="some_path",
-            evaluation_interval="PT30M"
-        )
-        self.assertIsNone(pool_info)
+        with self.assertRaises(Exception) as exc:
+            self.azure_client.update_scale_settings(
+                scaling="fixed",
+                pool_name=FAKE_BATCH_POOL,
+                autoscale_formula_path="some_path",
+                evaluation_interval="PT30M"
+            )
+        self.assertEqual('autoscale_formula_path, evaluation_interval cannot be specified with fixed option', str(exc.exception))
 
     @patch("cfa_azure.helpers.update_pool", MagicMock(return_value={"pool_id": FAKE_BATCH_POOL, "updation_time": "09/01/2024 10:00:00"}))
     def test_update_scale_settings_fixedscale_spot(self):
@@ -277,12 +280,12 @@ class TestClients(unittest.TestCase):
         mock_logger.error.assert_called_with(f"There are 2 compute nodes actively running tasks in pool {FAKE_BATCH_POOL}. Please wait for jobs to complete or retry withy force_update=True.")
         self.assertIsNone(pool_name)
 
-    @patch("cfa_azure.clients.logger")
+    @patch("cfa_azure.clients.AzureClient.get_container_image_name", MagicMock(return_value=FAKE_CONTAINER_IMAGE))
     @patch("cfa_azure.helpers.check_pool_exists", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.get_batch_service_client", MagicMock(return_value=FakeClient()))
     @patch("cfa_azure.helpers.delete_pool", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.create_batch_pool", MagicMock(return_value=FAKE_BATCH_POOL))
-    def test_update_containers_forced(self, mock_logger):
+    def test_update_containers_forced(self):
         pool_name = self.azure_client.update_containers(
             pool_name=FAKE_BATCH_POOL,
             input_container_name=FAKE_INPUT_CONTAINER,

@@ -168,8 +168,17 @@ class FakeClient:
 
     class FakePool:
         class FakePoolInfo:
+            class FakeDeploymentConfig:
+                @property
+                def virtual_machine_configuration(self):
+                    return { 'container_image_names': [FAKE_CONTAINER_IMAGE]}
+
             def get_past_time(self, elapsed_minutes:int):
                 return (datetime.now() - timedelta(minutes=elapsed_minutes)).strftime("%d/%m/%y %H:%M")
+            
+            @property
+            def deployment_configuration(self):
+                return self.FakeDeploymentConfig()
             
             @property
             def creation_time(self):

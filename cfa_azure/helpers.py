@@ -1802,7 +1802,6 @@ def check_config_req(config: str):
             "Authentication.tenant_id",
             "Authentication.batch_application_id",
             "Authentication.batch_object_id",
-            "Authentication.principal_id",
             "Authentication.sp_application_id",
             "Authentication.vault_url",
             "Authentication.vault_sp_secret_id",

@@ -28,6 +28,8 @@ FAKE_YAML_CONTENT       = {
 FAKE_CONFIG = {
     'Authentication': {
         'application_id': 'Test Application ID',
+        'batch_application_id': 'Test Batch Application ID',
+        'batch_object_id': 'Test Batch Object ID',
         'client_id': 'Test Client ID',
         'principal_id': 'Test Principal ID',
         'resource_group': FAKE_RESOURCE_GROUP,
@@ -120,6 +122,23 @@ class FakeClient:
             return [FakeClient.FakeTask()]
 
 
+    class FakeComputeNode:
+        def __init__(self, state:str):
+            self.state = state
+
+
+    class FakeComputeNodeList:
+        def list(self, pool_id, compute_node_list_options=None) -> list:
+            if compute_node_list_options:
+                return [
+                    FakeClient.FakeComputeNode("running"), FakeClient.FakeComputeNode("running")
+                ]
+            return [
+                FakeClient.FakeComputeNode("running"), FakeClient.FakeComputeNode("idle"), 
+                FakeClient.FakeComputeNode("running"), FakeClient.FakeComputeNode("unusable") 
+            ]
+
+
     class FakeContainerClient:
         def exists(self):
             return False
@@ -149,8 +168,17 @@ class FakeClient:
 
     class FakePool:
         class FakePoolInfo:
+            class FakeDeploymentConfig:
+                @property
+                def virtual_machine_configuration(self):
+                    return { 'container_image_names': [FAKE_CONTAINER_IMAGE]}
+
             def get_past_time(self, elapsed_minutes:int):
                 return (datetime.now() - timedelta(minutes=elapsed_minutes)).strftime("%d/%m/%y %H:%M")
+            
+            @property
+            def deployment_configuration(self):
+                return self.FakeDeploymentConfig()
             
             @property
             def creation_time(self):
@@ -184,6 +212,10 @@ class FakeClient:
     @property
     def task(self) -> FakeTask:
         return self.FakeTask()
+
+    @property
+    def compute_node(self) -> FakeComputeNodeList:
+        return self.FakeComputeNodeList()
 
     def get_container_client(self, container):
         return self.FakeContainerClient()

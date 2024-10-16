@@ -112,6 +112,24 @@ client.set_pool_info(
   As the message suggests, you can either wait for existing jobs to complete in the pool and retry the `update_containers()` operation. Or you can change the `force_update` parameter to `True and re-run the `update_containers()` operation to immediately recreate the pool with new containers. 
 
  
+ - add_task: adds task to existing job in pool. You can also specify which task it depends on.    
+  Example:
+  ```
+  task1 = client.add_task(
+      "test_job_id", 
+      docker_cmd=["some", "docker", "command"],  # replace with actual command
+      use_uploaded_files=False, 
+      input_files=["test_file_1.sh"]
+  )
+  task_2 = client.add_task(
+      "test_job_id", 
+      docker_cmd=["some", "other", "docker", "command"], # replace with actual command
+      use_uploaded_files=False,
+      depends_on=[task_1], 
+      input_files=["test_file_2.sh"]
+  )
+  ```
+
 ### helpers
 Functions:
 - read_config: reads in a configuration toml file to a python object

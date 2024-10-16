@@ -410,8 +410,10 @@ class AzureClient:
             mount_config=mount_config
         )
         batch_json = {
+            'account_name': self.account_name,
             'pool_id': pool_name,
-            'pool_parameters': pool_parameters
+            'pool_parameters': pool_parameters,
+            'resource_group_name': self.resource_group_name
         }
         pool_name = helpers.create_batch_pool(batch_mgmt_client=self.batch_mgmt_client, batch_json=batch_json)
         return pool_name

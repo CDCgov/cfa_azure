@@ -59,7 +59,6 @@ class TestBatch(unittest.TestCase):
         )
         mock_print.assert_called_with('No pool created since it already exists. Exiting the process.')
 
-
     @patch("builtins.print")
     @patch("toml.load", MagicMock(return_value=FAKE_CONFIG))
     @patch("cfa_azure.helpers.get_sp_secret", MagicMock(return_value=True))
@@ -78,7 +77,6 @@ class TestBatch(unittest.TestCase):
             FAKE_OUTPUT_CONTAINER
         )
         mock_print.assert_called_with('Job complete. Time to debug. Job not deleted.')
-
 
     @patch("builtins.print")
     @patch("toml.load", MagicMock(return_value=FAKE_CONFIG))

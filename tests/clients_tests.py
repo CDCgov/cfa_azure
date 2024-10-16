@@ -246,8 +246,7 @@ class TestClients(unittest.TestCase):
     def test_add_job(self):
         self.azure_client.add_job(
             job_id = "fake_job_id",
-            pool_name = FAKE_BATCH_POOL,
-            end_job_on_task_failure = False
+            pool_name = FAKE_BATCH_POOL
         )
         self.assertEqual(len(self.azure_client.jobs), 1)
 
@@ -255,8 +254,7 @@ class TestClients(unittest.TestCase):
     def test_add_job_default(self):
         self.azure_client.pool_name = FAKE_BATCH_POOL
         self.azure_client.add_job(
-            job_id = "fake_job_id",
-            end_job_on_task_failure = False
+            job_id = "fake_job_id"
         )
         self.assertEqual(len(self.azure_client.jobs), 1)
 

@@ -69,7 +69,24 @@ export LOG_OUTPUT="stdout"
   # Switch to fixed scaling mode with 15 spot EC2 nodes and forced termination of current jobs
   client.update_scale_settings(low_priority_nodes=15, node_deallocation_option='Terminate')
   ```
- 
+ - add_task: adds task to existing job in pool. You can also specify which task it depends on.    
+  Example:
+  ```
+  task1 = client.add_task(
+      "test_job_id", 
+      docker_cmd=["some", "docker", "command"],  # replace with actual command
+      use_uploaded_files=False, 
+      input_files=["test_file_1.sh"]
+  )
+  task_2 = client.add_task(
+      "test_job_id", 
+      docker_cmd=["some", "other", "docker", "command"], # replace with actual command
+      use_uploaded_files=False,
+      depends_on=[task_1], 
+      input_files=["test_file_2.sh"]
+  )
+  ```
+
 ### helpers
 Functions:
 - read_config: reads in a configuration toml file to a python object

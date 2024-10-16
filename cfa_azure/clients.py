@@ -654,6 +654,8 @@ class AzureClient:
                                      account_name=self.account_name, batch_mgmt_client=self.batch_mgmt_client)
             if rel_mnt_path != "ERROR!":
                 rel_mnt_path = "/"+helpers.format_rel_path(rel_path=rel_mnt_path)
+        else:
+            rel_mnt_path = None
         # run tasks for input files
         logger.debug("Adding tasks to job.")
         task_ids = helpers.add_task_to_job(

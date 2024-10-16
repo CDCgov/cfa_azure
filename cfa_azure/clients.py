@@ -556,8 +556,7 @@ class AzureClient:
         helpers.add_job(
             job_id=job_id_r,
             pool_id=p_name,
-            batch_client=self.batch_client,
-            task_retries=task_retries
+            batch_client=self.batch_client
         )
         self.jobs.add(job_id_r)
 

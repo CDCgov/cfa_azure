@@ -59,7 +59,6 @@ class TestBatch(unittest.TestCase):
         )
         mock_print.assert_called_with('No pool created since it already exists. Exiting the process.')
 
-
     @patch("builtins.print")
     @patch("toml.load", MagicMock(return_value=FAKE_CONFIG))
     @patch("cfa_azure.helpers.get_sp_secret", MagicMock(return_value=True))
@@ -68,6 +67,7 @@ class TestBatch(unittest.TestCase):
     @patch("cfa_azure.helpers.add_job", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.add_task_to_job", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.monitor_tasks", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.list_files_in_container", MagicMock(return_value=FAKE_FOLDER_CONTENTS))
     def test_run_job(self, mock_print):
         cfa_azure.batch.run_job(
             'test_job_id', 
@@ -78,7 +78,6 @@ class TestBatch(unittest.TestCase):
         )
         mock_print.assert_called_with('Job complete. Time to debug. Job not deleted.')
 
-
     @patch("builtins.print")
     @patch("toml.load", MagicMock(return_value=FAKE_CONFIG))
     @patch("cfa_azure.helpers.get_sp_secret", MagicMock(return_value=True))
@@ -87,6 +86,7 @@ class TestBatch(unittest.TestCase):
     @patch("cfa_azure.helpers.add_job", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.add_task_to_job", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.monitor_tasks", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.list_files_in_container", MagicMock(return_value=FAKE_FOLDER_CONTENTS))
     def test_run_job_no_debugging(self, mock_print):
         cfa_azure.batch.run_job(
             'test_job_id', 

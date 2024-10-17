@@ -2100,3 +2100,24 @@ def get_rel_mnt_path(blob_name: str, pool_name: str, resource_group_name: str,
     logger.error(f"could not find blob {blob_name} mounted to pool.")
     print(f"could not find blob {blob_name} mounted to pool.")
     return "ERROR!"
+
+def get_pool_mounts(pool_name: str, resource_group_name: str,
+        account_name: str,
+        batch_mgmt_client: object):
+    try:
+        pool_info = get_pool_full_info(resource_group_name=resource_group_name,
+                       account_name=account_name,
+                       pool_name=pool_name,
+                       batch_mgmt_client=batch_mgmt_client)
+    except Exception:
+        logger.error("could not retrieve pool information.")
+        print(f"could not retrieve pool info for {pool_name}.")
+        return None
+    mounts = []
+    mc = pool_info.as_dict()['mount_configuration']
+    for m in mc:
+        mounts.append(
+            (m['azure_blob_file_system_configuration']['container_name'],
+            m['azure_blob_file_system_configuration']['relative_mount_path'])
+            )
+    return mounts

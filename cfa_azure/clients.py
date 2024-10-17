@@ -656,6 +656,12 @@ class AzureClient:
                 rel_mnt_path = "/"+helpers.format_rel_path(rel_path=rel_mnt_path)
         else:
             rel_mnt_path = None
+
+        #get all mounts from pool info
+        self.mounts = helpers.get_pool_mounts(self.pool_name, self.resource_group_name,
+            self.account_name,
+            self.batch_mgmt_client)
+        
         # run tasks for input files
         logger.debug("Adding tasks to job.")
         task_ids = helpers.add_task_to_job(

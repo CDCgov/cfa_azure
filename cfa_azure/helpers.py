@@ -830,15 +830,15 @@ def add_task_to_job(
     task_id = f"{task_id_base}-{name_suffix}-{str(task_id_max + 1)}"
     if save_logs_rel_path is not None:
         if save_logs_rel_path == "ERROR!":
-            logger.error("could not find rel path")
-            raise Exception("could not find rel path")
+            logger.warning("could not find rel path")
+            print("could not find rel path. Stdout and stderr will not be saved to blob storage.")
         else:
             logger.debug("using rel path to save logs")
             t = dt.now(zi("America/New_York"))
             s_time = t.strftime("%Y%m%d_%H%M%S")
             if not save_logs_rel_path.startswith("/"):
                 save_logs_rel_path = "/" + save_logs_rel_path
-            _folder = f"{save_logs_rel_path}/stdout_stderr/{job_id}"
+            _folder = f"{save_logs_rel_path}/stdout_stderr/{job_id}/{task_id}"
             sout = f"{_folder}/stdout_{s_time}.txt"
             serr = f"{_folder}/stderr_{s_time}.txt"
             full_cmd = f"""/bin/bash -c "mkdir -p {_folder}; {d_cmd_str} > {sout} 2> {serr}" """

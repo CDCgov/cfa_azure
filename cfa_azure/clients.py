@@ -33,7 +33,8 @@ class AzureClient:
         self.mount_container_clients = []
         self.pool_parameters = None
         self.timeout = None
-
+        self.save_logs_to_blob = None
+        
         logger.debug("Attributes initialized in client.")
 
         # load config
@@ -534,6 +535,7 @@ class AzureClient:
         job_id: str,
         pool_name: str | None = None,
         end_job_on_task_failure: bool = False,
+        save_logs_to_blob: str | None = None,
         task_retries: int = 3
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
@@ -542,6 +544,7 @@ class AzureClient:
             job_id (str): name of job
             pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
             end_job_on_task_failure (bool): whether to end the job if a task fails. Default False.
+            save_logs_to_blob (str): the name of the blob container. Must be mounted to the pool. Default None for no saving.
             task_retries (int): the maximum number of retries for a task that fails. Default 3 retries.
         """
         # make sure the job_id does not have spaces
@@ -550,11 +553,15 @@ class AzureClient:
 
         if pool_name:
             p_name = pool_name
+            self.pool_name = pool_name
         elif self.pool_name:
             p_name = self.pool_name
         else:
             logger.error("Please specify a pool for the job and try again.")
             raise Exception("Please specify a pool for the job and try again.")
+
+        self.save_logs_to_blob = save_logs_to_blob
+        
         # add the job to the pool
         logger.debug(f"Attempting to add job {job_id_r}.")
         helpers.add_job(
@@ -642,12 +649,26 @@ class AzureClient:
                 container_name = self.full_container_name
                 logger.debug(f"Container name set to {container_name}.")
 
+        if self.save_logs_to_blob:
+            rel_mnt_path = helpers.get_rel_mnt_path(blob_name = self.save_logs_to_blob, pool_name = self.pool_name, resource_group_name=self.resource_group_name,
+                                     account_name=self.account_name, batch_mgmt_client=self.batch_mgmt_client)
+            if rel_mnt_path != "ERROR!":
+                rel_mnt_path = "/"+helpers.format_rel_path(rel_path=rel_mnt_path)
+        else:
+            rel_mnt_path = None
+
+        #get all mounts from pool info
+        self.mounts = helpers.get_pool_mounts(self.pool_name, self.resource_group_name,
+            self.account_name,
+            self.batch_mgmt_client)
+        
         # run tasks for input files
         logger.debug("Adding tasks to job.")
         task_ids = helpers.add_task_to_job(
             job_id=job_id,
             task_id_base=job_id,
             docker_command=docker_cmd,
+            save_logs_rel_path = rel_mnt_path,
             name_suffix = name_suffix,
             input_files=in_files,
             mounts=self.mounts,
@@ -973,3 +994,6 @@ class AzureClient:
         pool_id = self.pool_name,
         batch_client = self.batch_client,
         mark_complete = mark_complete)
+
+
+    

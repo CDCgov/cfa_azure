@@ -38,6 +38,14 @@ Run the following in the terminal in which `cfa_azure` will be run.
 export LOG_LEVEL="info"
 export LOG_OUTPUT="stdout"
 ```
+
+**Persisting stdout and stderr to Blob Storage**  
+In certain situations, it is beneficial to save the stdout and stderr from each task to Blob Storage (like when using autoscale pools). It is possible to persist these to Blob Storage by specifying the blob container name in the `save_logs_to_blob` parameter when using `client.add_job()`. *Note that the blob container specified must be mounted to the pool being used for the job.  
+For example, if we would like to persist stdout and stderr to the blob container "input-test" for a job named "persisting_test", we would use the following code:
+```
+client.add_job("persisting_test", save_logs_to_blob = "input-test")
+```
+
 ### Functions
 - create_pool: creates a new Azure batch pool using default autoscale mode   
   Example:

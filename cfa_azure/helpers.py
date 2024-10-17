@@ -7,6 +7,8 @@ import subprocess as sp
 import time
 from os import path, walk
 from pathlib import Path
+from datetime import datetime as dt
+from zoneinfo import ZoneInfo as zi
 
 import docker
 import numpy as np
@@ -779,6 +781,7 @@ def add_task_to_job(
     job_id: str,
     task_id_base: str,
     docker_command: str,
+    save_logs_rel_path: str | None = None,
     name_suffix: str = "",
     input_files: list[str] | None = None,
     mounts: list | None = None,
@@ -793,6 +796,7 @@ def add_task_to_job(
         job_id (str): name given to job
         task_id_base (str): the name given to the task_id as a base
         docker_command (str): the docker command to execute for the task
+        save_logs_rel_path (str): relative path to blob where logs should be stored. Default None for not saving logs.
         name_suffix (str): suffix to append to task name. Default is empty string.
         input_files (list[str]): a  list of input files
         mounts (list[tuple]): a list of tuples in the form (container_name, relative_mount_directory)
@@ -842,6 +846,24 @@ def add_task_to_job(
                 + az_mount_dir
                 + f"/{mount[1]},target=/{mount[1]} "
             )
+    task_id = f"{task_id_base}-{name_suffix}-{str(task_id_max + 1)}"
+    if save_logs_rel_path is not None:
+        if save_logs_rel_path == "ERROR!":
+            logger.warning("could not find rel path")
+            print("could not find rel path. Stdout and stderr will not be saved to blob storage.")
+            full_cmd = d_cmd_str
+        else:
+            logger.debug("using rel path to save logs")
+            t = dt.now(zi("America/New_York"))
+            s_time = t.strftime("%Y%m%d_%H%M%S")
+            if not save_logs_rel_path.startswith("/"):
+                save_logs_rel_path = "/" + save_logs_rel_path
+            _folder = f"{save_logs_rel_path}/stdout_stderr/{job_id}/{task_id}"
+            sout = f"{_folder}/stdout_{s_time}.txt"
+            serr = f"{_folder}/stderr_{s_time}.txt"
+            full_cmd = f"""/bin/bash -c "mkdir -p {_folder}; {d_cmd_str} > {sout} 2> {serr}" """
+    else:
+        full_cmd = d_cmd_str
 
     if input_files:
         tasks = []
@@ -868,8 +890,7 @@ def add_task_to_job(
             print(f"Task '{id}' added to job '{job_id}'.")
         return tasks
     else:
-        task_id = f"{task_id_base}-{name_suffix}-{str(task_id_max + 1)}"
-        command_line = d_cmd_str
+        command_line = full_cmd
         logger.debug(f"Adding task {task_id}")
         task = batchmodels.TaskAddParameter(
             id=task_id,
@@ -2078,3 +2099,44 @@ def check_autoscale_parameters(
         validation_msg = f'{invalid_fields} cannot be specified with {mode} option'
         return validation_msg
     return None
+
+def get_rel_mnt_path(blob_name: str, pool_name: str, resource_group_name: str,
+        account_name: str,
+        batch_mgmt_client: object):
+    try:
+        pool_info = get_pool_full_info(resource_group_name=resource_group_name,
+                       account_name=account_name,
+                       pool_name=pool_name,
+                       batch_mgmt_client=batch_mgmt_client)
+    except Exception:
+        logger.error("could not retrieve pool information.")
+        return "ERROR!"
+    mc = pool_info.as_dict()['mount_configuration']
+    for m in mc:
+        if m['azure_blob_file_system_configuration']['container_name'] == blob_name:
+            rel_mnt_path = m['azure_blob_file_system_configuration']['relative_mount_path']
+            return rel_mnt_path
+    logger.error(f"could not find blob {blob_name} mounted to pool.")
+    print(f"could not find blob {blob_name} mounted to pool.")
+    return "ERROR!"
+
+def get_pool_mounts(pool_name: str, resource_group_name: str,
+        account_name: str,
+        batch_mgmt_client: object):
+    try:
+        pool_info = get_pool_full_info(resource_group_name=resource_group_name,
+                       account_name=account_name,
+                       pool_name=pool_name,
+                       batch_mgmt_client=batch_mgmt_client)
+    except Exception:
+        logger.error("could not retrieve pool information.")
+        print(f"could not retrieve pool info for {pool_name}.")
+        return None
+    mounts = []
+    mc = pool_info.as_dict()['mount_configuration']
+    for m in mc:
+        mounts.append(
+            (m['azure_blob_file_system_configuration']['container_name'],
+            m['azure_blob_file_system_configuration']['relative_mount_path'])
+            )
+    return mounts

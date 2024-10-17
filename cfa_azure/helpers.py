@@ -832,7 +832,7 @@ def add_task_to_job(
         if save_logs_rel_path == "ERROR!":
             logger.warning("could not find rel path")
             print("could not find rel path. Stdout and stderr will not be saved to blob storage.")
-            full_cmd = d_cdm_str
+            full_cmd = d_cmd_str
         else:
             logger.debug("using rel path to save logs")
             t = dt.now(zi("America/New_York"))

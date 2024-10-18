@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+from time import sleep 
 
 from azure.core.exceptions import HttpResponseError
 
@@ -360,12 +361,15 @@ class AzureClient:
 
             # Delete existing pool
             logger.info(f"Deleting pool {pool_name}")
-            helpers.delete_pool(
+            poller = helpers.delete_pool(
                 resource_group_name=self.resource_group_name,
                 account_name=self.account_name,
                 pool_name=pool_name,
                 batch_mgmt_client=self.batch_mgmt_client,
             )
+            while not poller.done():
+                sleep(5.0)
+
         else:
             logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
             container_image_name = self.config["Container"]["container_image_name"]

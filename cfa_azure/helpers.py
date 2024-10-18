@@ -482,12 +482,13 @@ def create_batch_pool(batch_mgmt_client: object, batch_json: dict):
         logger.info(
             f"Creating pool: {pool_id} in the account: {account_name}..."
         )
-        batch_mgmt_client.pool.create(
+        new_pool = batch_mgmt_client.pool.create(
             resource_group_name=resource_group_name,
             account_name=account_name,
             pool_name=pool_id,
             parameters=parameters,
         )
+        pool_id = new_pool.name
         logger.info(f"Pool {pool_id!r} created successfully.")
     except HttpResponseError as error:
         if "PropertyCannotBeUpdated" in error.message:
@@ -516,12 +517,13 @@ def delete_pool(
         batch_mgmt_client (object): instance of BatchManagementClient
     """
     logger.debug(f"Attempting to delete {pool_name}...")
-    batch_mgmt_client.pool.begin_delete(
+    poller = batch_mgmt_client.pool.begin_delete(
         resource_group_name=resource_group_name,
         account_name=account_name,
         pool_name=pool_name,
     )
     logger.info(f"Pool {pool_name} deleted.")
+    return poller
 
 
 def list_containers(blob_service_client: object):

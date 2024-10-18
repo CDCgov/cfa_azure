@@ -71,7 +71,8 @@ FAKE_POOL_INFO = {
     "resize_operation_status": {
         "resize_timeout": 10
     },
-    "vm_size": 20
+    "vm_size": 20,
+    "mount_configuration": {}
 }
 
 class FakeClient:
@@ -169,13 +170,26 @@ class FakeClient:
     class FakePool:
         class FakePoolInfo:
             class FakeDeploymentConfig:
+                class VMConfiguration:
+                    class ContainerConfig:
+                        @property
+                        def container_image_names(self): 
+                            return [FAKE_CONTAINER_IMAGE]
+
+                    @property
+                    def container_configuration(self):
+                        return self.ContainerConfig()
+
                 @property
                 def virtual_machine_configuration(self):
-                    return { 'container_image_names': [FAKE_CONTAINER_IMAGE]}
+                    return self.VMConfiguration()
 
             def get_past_time(self, elapsed_minutes:int):
                 return (datetime.now() - timedelta(minutes=elapsed_minutes)).strftime("%d/%m/%y %H:%M")
-            
+
+            def as_dict(self): 
+                return FAKE_POOL_INFO
+
             @property
             def deployment_configuration(self):
                 return self.FakeDeploymentConfig()
@@ -195,12 +209,13 @@ class FakeClient:
             def get(self):
                 return True
             
+        
         def get(self, resource_group_name, account_name, pool_name):
             return self.FakePoolInfo()
         
         def create(self, resource_group_name, account_name, pool_name, parameters):
-            return True
-        
+            return dict2obj({'name': pool_name})
+    
     @property
     def job(self) -> FakeBatchJob:
         return self.FakeBatchJob()
@@ -224,6 +239,9 @@ class FakeClient:
         return self.FakeBlob("blob_name")
 
     def ping(self):
+        return True
+    
+    def done(self):
         return True
 
 class FakeContainerRegistryClient:

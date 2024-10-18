@@ -68,6 +68,7 @@ class TestBatch(unittest.TestCase):
     @patch("cfa_azure.helpers.add_job", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.add_task_to_job", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.monitor_tasks", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.list_files_in_container", MagicMock(return_value=FAKE_FOLDER_CONTENTS))
     def test_run_job(self, mock_print):
         cfa_azure.batch.run_job(
             'test_job_id', 
@@ -87,6 +88,7 @@ class TestBatch(unittest.TestCase):
     @patch("cfa_azure.helpers.add_job", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.add_task_to_job", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.monitor_tasks", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.list_files_in_container", MagicMock(return_value=FAKE_FOLDER_CONTENTS))
     def test_run_job_no_debugging(self, mock_print):
         cfa_azure.batch.run_job(
             'test_job_id', 

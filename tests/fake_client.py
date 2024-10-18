@@ -28,6 +28,8 @@ FAKE_YAML_CONTENT       = {
 FAKE_CONFIG = {
     'Authentication': {
         'application_id': 'Test Application ID',
+        'batch_application_id': 'Test Batch Application ID',
+        'batch_object_id': 'Test Batch Object ID',
         'client_id': 'Test Client ID',
         'principal_id': 'Test Principal ID',
         'resource_group': FAKE_RESOURCE_GROUP,
@@ -69,7 +71,8 @@ FAKE_POOL_INFO = {
     "resize_operation_status": {
         "resize_timeout": 10
     },
-    "vm_size": 20
+    "vm_size": 20,
+    "mount_configuration": {}
 }
 
 class FakeClient:
@@ -120,6 +123,23 @@ class FakeClient:
             return [FakeClient.FakeTask()]
 
 
+    class FakeComputeNode:
+        def __init__(self, state:str):
+            self.state = state
+
+
+    class FakeComputeNodeList:
+        def list(self, pool_id, compute_node_list_options=None) -> list:
+            if compute_node_list_options:
+                return [
+                    FakeClient.FakeComputeNode("running"), FakeClient.FakeComputeNode("running")
+                ]
+            return [
+                FakeClient.FakeComputeNode("running"), FakeClient.FakeComputeNode("idle"), 
+                FakeClient.FakeComputeNode("running"), FakeClient.FakeComputeNode("unusable") 
+            ]
+
+
     class FakeContainerClient:
         def exists(self):
             return False
@@ -149,8 +169,30 @@ class FakeClient:
 
     class FakePool:
         class FakePoolInfo:
+            class FakeDeploymentConfig:
+                class VMConfiguration:
+                    class ContainerConfig:
+                        @property
+                        def container_image_names(self): 
+                            return [FAKE_CONTAINER_IMAGE]
+
+                    @property
+                    def container_configuration(self):
+                        return self.ContainerConfig()
+
+                @property
+                def virtual_machine_configuration(self):
+                    return self.VMConfiguration()
+
             def get_past_time(self, elapsed_minutes:int):
                 return (datetime.now() - timedelta(minutes=elapsed_minutes)).strftime("%d/%m/%y %H:%M")
+
+            def as_dict(self): 
+                return FAKE_POOL_INFO
+
+            @property
+            def deployment_configuration(self):
+                return self.FakeDeploymentConfig()
             
             @property
             def creation_time(self):
@@ -167,12 +209,13 @@ class FakeClient:
             def get(self):
                 return True
             
+        
         def get(self, resource_group_name, account_name, pool_name):
             return self.FakePoolInfo()
         
         def create(self, resource_group_name, account_name, pool_name, parameters):
-            return True
-        
+            return dict2obj({'name': pool_name})
+    
     @property
     def job(self) -> FakeBatchJob:
         return self.FakeBatchJob()
@@ -185,6 +228,10 @@ class FakeClient:
     def task(self) -> FakeTask:
         return self.FakeTask()
 
+    @property
+    def compute_node(self) -> FakeComputeNodeList:
+        return self.FakeComputeNodeList()
+
     def get_container_client(self, container):
         return self.FakeContainerClient()
 
@@ -192,6 +239,9 @@ class FakeClient:
         return self.FakeBlob("blob_name")
 
     def ping(self):
+        return True
+    
+    def done(self):
         return True
 
 class FakeContainerRegistryClient:

@@ -1819,9 +1819,7 @@ def check_config_req(config: str):
             "Batch.batch_service_url",
             "Batch.pool_vm_size",
             "Storage.storage_account_name",
-            "Storage.storage_account_url",
-            "Container.container_registry_username",
-            "Container.container_registry_password",
+            "Storage.storage_account_url"
         ]
     )
     logger.debug("Loading config info as a set.")

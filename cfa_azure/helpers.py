@@ -334,15 +334,12 @@ def get_batch_pool_json(
                 ],
                 "containerRegistries": [
                     {
-                        "registryServer": config["Container"][
-                            "container_registry_url"
+                        "registryUrl": container_registry_url,
+                        "userName": config["Authentication"][
+                            "sp_application_id"
                         ],
-                        "userName": config["Container"][
-                            "container_registry_username"
-                        ],
-                        "password": config["Container"][
-                            "container_registry_password"
-                        ],
+                        "password": get_sp_secret(config),
+                        "registryServer": container_registry_server,
                     }
                 ],
             },

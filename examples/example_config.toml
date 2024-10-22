@@ -18,7 +18,3 @@ pool_vm_size="STANDARD_A2_V2"  # VM Type/Size
 [Storage]
 storage_account_name="storage_account_name"
 storage_account_url="storage_account_url"
-
-[Container]
-container_registry_username="registry_username"
-container_registry_password="registry_password"

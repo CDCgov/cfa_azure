@@ -334,15 +334,12 @@ def get_batch_pool_json(
                 ],
                 "containerRegistries": [
                     {
-                        "registryServer": config["Container"][
-                            "container_registry_url"
+                        "registryUrl": container_registry_url,
+                        "userName": config["Authentication"][
+                            "sp_application_id"
                         ],
-                        "userName": config["Container"][
-                            "container_registry_username"
-                        ],
-                        "password": config["Container"][
-                            "container_registry_password"
-                        ],
+                        "password": get_sp_secret(config),
+                        "registryServer": container_registry_server,
                     }
                 ],
             },
@@ -1183,12 +1180,10 @@ def get_deployment_config(
                 "containerRegistries": [
                     {
                         "registryUrl": container_registry_url,
-                        "userName": config["Container"][
-                            "container_registry_username"
+                        "userName": config["Authentication"][
+                            "sp_application_id"
                         ],
-                        "password": config["Container"][
-                            "container_registry_password"
-                        ],
+                        "password": get_sp_secret(config),
                         "registryServer": container_registry_server,
                     }
                 ],
@@ -1824,9 +1819,7 @@ def check_config_req(config: str):
             "Batch.batch_service_url",
             "Batch.pool_vm_size",
             "Storage.storage_account_name",
-            "Storage.storage_account_url",
-            "Container.container_registry_username",
-            "Container.container_registry_password",
+            "Storage.storage_account_url"
         ]
     )
     logger.debug("Loading config info as a set.")

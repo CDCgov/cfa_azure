@@ -508,6 +508,12 @@ class AzureClient:
             )
             raise Exception("No pool information given. Please use `set_pool_info()` before running `create_pool()`.") from None
 
+        if 'properties' not in self.pool_parameters or 'deploymentConfiguration' not in self.pool_parameters['properties']:
+            logger.exception(
+                "No deployment configuration provided. Please specify a container_image_name, container_registry_url, container_registry_server, container_registry_username and container_registry_password before running `create_pool()`."
+            )
+            raise Exception("No deployment configuration provided. Please specify a container_image_name, container_registry_url, container_registry_server, container_registry_username and container_registry_password before running `create_pool()`.") from None
+
         start_time = datetime.datetime.now()
         self.pool_name = pool_name
 

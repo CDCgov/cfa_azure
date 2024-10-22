@@ -1183,12 +1183,10 @@ def get_deployment_config(
                 "containerRegistries": [
                     {
                         "registryUrl": container_registry_url,
-                        "userName": config["Container"][
-                            "container_registry_username"
+                        "userName": config["Authentication"][
+                            "sp_application_id"
                         ],
-                        "password": config["Container"][
-                            "container_registry_password"
-                        ],
+                        "password": get_sp_secret(config),
                         "registryServer": container_registry_server,
                     }
                 ],

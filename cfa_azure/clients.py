@@ -406,7 +406,7 @@ class AzureClient:
                 }
             }
         ]
-        pool_parameters = helpers.get_pool_parameters(
+        self.pool_parameters = helpers.get_pool_parameters(
             mode=self.scaling,
             container_image_name=container_image_name,
             container_registry_url=self.registry_url,
@@ -414,13 +414,7 @@ class AzureClient:
             config=self.config,
             mount_config=mount_config
         )
-        batch_json = {
-            'account_name': self.account_name,
-            'pool_id': pool_name,
-            'pool_parameters': pool_parameters,
-            'resource_group_name': self.resource_group_name
-        }
-        pool_name = helpers.create_batch_pool(batch_mgmt_client=self.batch_mgmt_client, batch_json=batch_json)
+        self.create_pool(pool_name)
         return pool_name
 
 

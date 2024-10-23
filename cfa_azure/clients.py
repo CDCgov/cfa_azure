@@ -357,7 +357,14 @@ class AzureClient:
                     logger.error(f"There are {len(active_nodes)} compute nodes actively running tasks in pool {pool_name}. Please wait for jobs to complete or retry withy force_update=True.")
                     return None
 
-            container_image_name = self.get_container_image_name(pool_name)
+            vm_configuration =  self.get_virtual_machine_configuration(pool_name)
+            container_image_name = vm_configuration['container_image_name']
+            self.scaling = vm_configuration["scaling"]
+            self.registry_url = None
+            self.container_registry_server = vm_configuration['registry_server']
+            if "Container" not in self.config:
+                self.config['Container'] = {}
+            self.config["Container"]["container_registry_username"] = vm_configuration['user_name']
 
             # Delete existing pool
             logger.info(f"Deleting pool {pool_name}")
@@ -507,12 +514,6 @@ class AzureClient:
                 "No pool information given. Please use `set_pool_info()` before running `create_pool()`."
             )
             raise Exception("No pool information given. Please use `set_pool_info()` before running `create_pool()`.") from None
-
-        if 'properties' not in self.pool_parameters or 'deploymentConfiguration' not in self.pool_parameters['properties']:
-            logger.exception(
-                "No deployment configuration provided. Please specify a container_image_name, container_registry_url, container_registry_server, container_registry_username and container_registry_password before running `create_pool()`."
-            )
-            raise Exception("No deployment configuration provided. Please specify a container_image_name, container_registry_url, container_registry_server, container_registry_username and container_registry_password before running `create_pool()`.") from None
 
         start_time = datetime.datetime.now()
         self.pool_name = pool_name
@@ -1032,13 +1033,22 @@ class AzureClient:
         )
         return pool_info
 
-    def get_container_image_name(self, pool_name:str) -> str:
+    def get_virtual_machine_configuration(self, pool_name:str) -> dict:
         pool_info = self.get_pool_full_info(pool_name)
+        scale_settings = pool_info.scale_settings
+        scaling = "autoscale" if scale_settings.auto_scale else "fixed"
         vm_config = (pool_info.deployment_configuration.virtual_machine_configuration)
         pool_container = (vm_config.container_configuration.container_image_names)
         container_image_name = pool_container[0].split("://")[-1]
-        return container_image_name
-
+        container_registry = (vm_config.container_configuration.container_registries[0])
+        return {
+            'container_image_name': container_image_name,
+            'registry_server': container_registry.registry_server,
+            'user_name': container_registry.user_name,
+            'password': container_registry.password,
+            'scaling': scaling
+        }
+    
     def delete_pool(self, pool_name: str) -> None:
         """Delete the specified pool from Azure Batch.
 

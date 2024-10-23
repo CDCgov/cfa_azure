@@ -676,7 +676,6 @@ def upload_files_in_folder(
     for file in flist:
         # get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders
         drop_folder = path.dirname(file).replace(folder, "", 1)
-        print(drop_folder)
         if drop_folder.startswith("/"):
             drop_folder = drop_folder[
                 1:

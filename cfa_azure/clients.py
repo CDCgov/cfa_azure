@@ -766,7 +766,12 @@ class AzureClient:
             str: full container name that was uploaded
         """
         self.full_container_name = helpers.package_and_upload_dockerfile(
-            registry_name, repo_name, tag, path_to_dockerfile, use_device_code
+            registry_name=registry_name,
+            repo_name = repo_name,
+            tag=tag,
+            config = self.config,
+            path_to_dockerfile = path_to_dockerfile,
+            use_device_code = use_device_code
         )
         logger.debug("Completed package_and_upload_dockerfile() function.")
         self.container_registry_server = f"{registry_name}.azurecr.io"
@@ -783,7 +788,12 @@ class AzureClient:
         use_device_code: bool = False,
     ) -> str:
         self.full_container_name = helpers.upload_docker_image(
-            image_name, registry_name, repo_name, tag, use_device_code
+            image_name = image_name,
+            registry_name = registry_name, 
+            repo_name = repo_name,
+            tag = tag, 
+            config = self.config,
+            use_device_code = use_device_code
         )
         logger.debug("Completed package_and_upload_docker_image() function.")
         self.container_registry_server = f"{registry_name}.azurecr.io"

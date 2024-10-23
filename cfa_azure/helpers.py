@@ -1592,6 +1592,7 @@ def package_and_upload_dockerfile(
     registry_name: str,
     repo_name: str,
     tag: str,
+    config: dict,
     path_to_dockerfile: str = "./Dockerfile",
     use_device_code: bool = False,
 ):
@@ -1602,6 +1603,7 @@ def package_and_upload_dockerfile(
         registry_name (str): name of Azure Container Registry
         repo_name (str): name of repo
         tag (str): tag for the Docker container
+        config (dict): config dict
         path_to_dockerfile (str): path to Dockerfile. Default is ./Dockerfile.
         use_device_code (bool): whether to use the device code when authenticating. Default False.
 
@@ -1635,7 +1637,10 @@ def package_and_upload_dockerfile(
             sp.run("az login --use-device-code", shell=True)
         else:
             logger.debug("Logging in to Azure.")
-            sp.run("az login", shell=True)
+            uname = config['Authentication']['sp_application_id']
+            pwd = get_sp_secret(config)
+            tenant = config["Authentication"]['tenant_id']
+            sp.run(f"az login --username {uname} --tenant {tenant} --password {pwd}", shell=True)
         sp.run(f"az acr login --name {registry_name}", shell=True)
         logger.debug("Pushing Docker container to ACR.")
         sp.run(f"docker push {full_container_name}", shell=True)
@@ -1649,6 +1654,7 @@ def upload_docker_image(
             registry_name: str, 
             repo_name: str, 
             tag: str = "latest",
+            config: dict = None,
             use_device_code: bool = False
         ):
     """
@@ -1658,6 +1664,7 @@ def upload_docker_image(
         repo_name (str): name of repo
         tag (str): tag for the Docker container
         path_to_dockerfile (str): path to Dockerfile. Default is ./Dockerfile.
+        config (dict): config dict
         use_device_code (bool): whether to use the device code when authenticating. Default False.
 
     Returns:
@@ -1697,7 +1704,10 @@ def upload_docker_image(
         sp.run("az login --use-device-code", shell=True)
     else:
         logger.debug("Logging in to Azure.")
-        sp.run("az login", shell=True)
+        uname = config['Authentication']['sp_application_id']
+        pwd = get_sp_secret(config)
+        tenant = config["Authentication"]['tenant_id']
+        sp.run(f"az login --username {uname} --tenant {tenant} --password {pwd}", shell=True)
     sp.run(f"az acr login --name {registry_name}", shell=True)
     logger.debug("Pushing Docker container to ACR.")
     sp.run(f"docker push {full_container_name}", shell=True)

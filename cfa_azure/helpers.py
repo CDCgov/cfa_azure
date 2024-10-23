@@ -1166,6 +1166,7 @@ def get_deployment_config(
     container_registry_url: str,
     container_registry_server: str,
     config: str,
+    availability_zones: bool = False
 ):
     """gets the deployment config based on the config information
 
@@ -1178,6 +1179,12 @@ def get_deployment_config(
     Returns:
         dict: dictionary containing info for container deployment. Uses ubuntu server with info obtained from config file.
     """
+    logger.debug("setting availability zone info")
+    if availability_zones:
+        policy = "Zonal"
+    else:
+        policy = "Regional"
+
     logger.debug("Getting deployment config.")
     deployment_config = {
         "virtualMachineConfiguration": {
@@ -1187,6 +1194,9 @@ def get_deployment_config(
                 "sku": "20-04-lts",
                 "version": "latest",
             },
+            "nodePlacementConfiguration": {
+                "policy": policy
+            },
             "nodeAgentSkuId": "batch.node.ubuntu 20.04",
             "containerConfiguration": {
                 "type": "dockercompatible",
@@ -1194,12 +1204,10 @@ def get_deployment_config(
                 "containerRegistries": [
                     {
                         "registryUrl": container_registry_url,
-                        "userName": config["Container"][
-                            "container_registry_username"
+                        "userName": config["Authentication"][
+                            "sp_application_id"
                         ],
-                        "password": config["Container"][
-                            "container_registry_password"
-                        ],
+                        "password": get_sp_secret(config),
                         "registryServer": container_registry_server,
                     }
                 ],
@@ -1283,7 +1291,8 @@ def get_pool_parameters(
     low_priority_nodes: int = 1,
     use_default_autoscale_formula: bool = False,
     max_autoscale_nodes: int = 3,
-    task_slots_per_node: int = 1
+    task_slots_per_node: int = 1,
+    availability_zones: bool = False
 ):
     """creates a pool parameter dictionary to be used with pool creation.
 
@@ -1355,6 +1364,7 @@ def get_pool_parameters(
                 container_registry_url,
                 container_registry_server,
                 config,
+                availability_zones
             ),
             "networkConfiguration": get_network_config(config),
             "scaleSettings": scale_settings,
@@ -1833,9 +1843,7 @@ def check_config_req(config: str):
             "Batch.batch_service_url",
             "Batch.pool_vm_size",
             "Storage.storage_account_name",
-            "Storage.storage_account_url",
-            "Container.container_registry_username",
-            "Container.container_registry_password",
+            "Storage.storage_account_url"
         ]
     )
     logger.debug("Loading config info as a set.")

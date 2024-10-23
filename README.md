@@ -46,6 +46,17 @@ For example, if we would like to persist stdout and stderr to the blob container
 client.add_job("persisting_test", save_logs_to_blob = "input-test")
 ```
 
+**Availability Zones**  
+To make use of Azure's availability zone functionality there is a parameter available in the `set_pool_info()` method called `availability_zones`. To use availability zones when building a pool, set this parameter to True. If you want to stick with the default Regional configuration, this parameter can be left out or set to False. Turn availability zone on like the following:
+```
+client.set_pool_info(
+  ...
+  availability_zones = True,
+  ...
+)
+```
+
+
 ### Functions
 - create_pool: creates a new Azure batch pool using default autoscale mode   
   Example:

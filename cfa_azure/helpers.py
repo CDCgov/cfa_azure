@@ -673,7 +673,6 @@ def upload_files_in_folder(
     for file in flist:
         # get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders
         drop_folder = path.dirname(file).replace(folder, "", 1)
-        print(drop_folder)
         if drop_folder.startswith("/"):
             drop_folder = drop_folder[
                 1:
@@ -836,10 +835,9 @@ def add_task_to_job(
             s_time = t.strftime("%Y%m%d_%H%M%S")
             if not save_logs_rel_path.startswith("/"):
                 save_logs_rel_path = "/" + save_logs_rel_path
-            _folder = f"{save_logs_rel_path}/stdout_stderr/{job_id}/{task_id}"
-            sout = f"{_folder}/stdout_{s_time}.txt"
-            serr = f"{_folder}/stderr_{s_time}.txt"
-            full_cmd = f"""/bin/bash -c "mkdir -p {_folder}; {d_cmd_str} > {sout} 2> {serr}" """
+            _folder = f"{save_logs_rel_path}/stdout_stderr/"
+            sout = f"{_folder}/stdout_{job_id}_{task_id}_{s_time}.txt"
+            full_cmd = f"""/bin/bash -c "mkdir -p {_folder}; {d_cmd_str} 2>&1 | tee {sout}" """
     else:
         full_cmd = d_cmd_str
 

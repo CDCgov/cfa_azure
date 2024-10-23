@@ -1048,7 +1048,6 @@ class AzureClient:
             'container_image_name': container_image_name,
             'registry_server': container_registry.registry_server,
             'user_name': container_registry.user_name,
-            'password': container_registry.password,
             'scaling': scaling
         }
     

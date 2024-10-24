@@ -350,6 +350,7 @@ class AzureClient:
         # Check if pool already exists
         if not pool_name:
             pool_name = self.pool_name
+        # Check if pool already exists
         if helpers.check_pool_exists(self.resource_group_name, self.account_name, pool_name, self.batch_mgmt_client):
             if not force_update:
                 # Check how many jobs are currently running in pool
@@ -358,36 +359,72 @@ class AzureClient:
                     logger.error(f"There are {len(active_nodes)} compute nodes actively running tasks in pool {pool_name}. Please wait for jobs to complete or retry withy force_update=True.")
                     return None
 
-            container_image_name = self.get_container_image_name(pool_name)
+            vm_configuration =  self.get_virtual_machine_configuration(pool_name)
+            container_image_name = vm_configuration['container_image_name']
+            self.scaling = vm_configuration["scaling"]
+            self.registry_url = None
+            self.container_registry_server = vm_configuration['registry_server']
+            if "Container" not in self.config:
+                self.config['Container'] = {}
+            self.config["Container"]["container_registry_username"] = vm_configuration['user_name']
 
             # Delete existing pool
             logger.info(f"Deleting pool {pool_name}")
-            helpers.delete_pool(
+            poller = helpers.delete_pool(
                 resource_group_name=self.resource_group_name,
                 account_name=self.account_name,
                 pool_name=pool_name,
                 batch_mgmt_client=self.batch_mgmt_client,
             )
+            while not poller.done():
+                sleep(5.0)
+
         else:
             logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
-            container_image_name = self.config["Container"]["container_image_name"]
 
-        containers = [
-            {'name': input_container_name, 'relative_mount_dir': 'input'},
-            {'name': output_container_name, 'relative_mount_dir': 'output'},
-        ]
         if not 'pool_id' in self.config['Batch']:
             self.config['Batch']['pool_id'] = pool_name
 
         # Recreate the pool
-        batch_json = helpers.get_batch_pool_json(
-            containers=containers,
+        mount_config = [
+            {
+                "azureBlobFileSystemConfiguration": {
+                    "accountName": self.config["Storage"]["storage_account_name"],
+                    "identityReference": {
+                        "resourceId": self.config["Authentication"][
+                            "user_assigned_identity"
+                        ]
+                    },
+                    "containerName": input_container_name,
+                    "blobfuseOptions": "",
+                    "relativeMountPath": "input",
+                }
+            },
+            {
+                "azureBlobFileSystemConfiguration": {
+                    "accountName": self.config["Storage"]["storage_account_name"],
+                    "identityReference": {
+                        "resourceId": self.config["Authentication"][
+                            "user_assigned_identity"
+                        ]
+                    },
+                    "containerName": output_container_name,
+                    "blobfuseOptions": "",
+                    "relativeMountPath": "output",
+                }
+            }
+        ]
+        self.pool_parameters = helpers.get_pool_parameters(
+            mode=self.scaling,
+            container_image_name=container_image_name,
+            container_registry_url=self.registry_url,
+            container_registry_server=self.container_registry_server,
             config=self.config,
-            container_image_name=container_image_name
+            mount_config=mount_config
         )
-        batch_json['pool_id'] = pool_name
-        pool_name = helpers.create_batch_pool(batch_mgmt_client=self.batch_mgmt_client, batch_json=batch_json)
+        self.create_pool(pool_name)
         return pool_name
+
 
     def update_container_set(
             self,
@@ -437,42 +474,26 @@ class AzureClient:
 
         else:
             logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
-            container_image_name = self.config["Container"]["container_image_name"]
 
         if not 'pool_id' in self.config['Batch']:
             self.config['Batch']['pool_id'] = pool_name
 
         # Recreate the pool
-        mount_config = [
-            {
-                "azureBlobFileSystemConfiguration": {
-                    "accountName": self.config["Storage"]["storage_account_name"],
-                    "identityReference": {
-                        "resourceId": self.config["Authentication"][
-                            "user_assigned_identity"
-                        ]
-                    },
-                    "containerName": input_container_name,
-                    "blobfuseOptions": "",
-                    "relativeMountPath": "input",
-                }
-            },
-            {
-                "azureBlobFileSystemConfiguration": {
-                    "accountName": self.config["Storage"]["storage_account_name"],
-                    "identityReference": {
-                        "resourceId": self.config["Authentication"][
-                            "user_assigned_identity"
-                        ]
-                    },
-                    "containerName": output_container_name,
-                    "blobfuseOptions": "",
-                    "relativeMountPath": "output",
-                }
-            }
-        ]
+        mount_config = []
         for container in containers:
             self.set_blob_container(container['name'], container['relative_mount_dir'])
+            mount_config.append({
+                "azureBlobFileSystemConfiguration": {
+                    "accountName": self.config["Storage"]["storage_account_name"],
+                    "identityReference": {
+                        "resourceId": self.config["Authentication"]["user_assigned_identity"]
+                    },
+                    "containerName": container["name"],
+                    "blobfuseOptions": "",
+                    "relativeMountPath": container["relative_mount_dir"]
+                }
+            })
+  
         self.pool_parameters = helpers.get_pool_parameters(
             mode=self.scaling,
             container_image_name=container_image_name,
@@ -481,7 +502,6 @@ class AzureClient:
             config=self.config,
             mount_config=mount_config
         )
-        self.create_pool(pool_name)
         return pool_name
 
 

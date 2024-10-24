@@ -502,6 +502,7 @@ class AzureClient:
             config=self.config,
             mount_config=mount_config
         )
+        self.create_pool(pool_name)
         return pool_name
 
 

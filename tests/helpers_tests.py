@@ -77,11 +77,7 @@ class TestHelpers(unittest.TestCase):
 
     @patch("cfa_azure.helpers.get_autoscale_formula", MagicMock(return_value=FAKE_AUTOSCALE_FORMULA))
     def test_get_batch_pool_json(self):
-        containers = [
-            {'name': FAKE_INPUT_CONTAINER, 'relative_mount_dir': 'input'},
-            {'name': FAKE_OUTPUT_CONTAINER, 'relative_mount_dir': 'output'},
-        ]
-        batch_json = cfa_azure.helpers.get_batch_pool_json(containers=containers, config=FAKE_CONFIG, autoscale_formula_path=FAKE_AUTOSCALE_FORMULA)
+        batch_json = cfa_azure.helpers.get_batch_pool_json(FAKE_INPUT_CONTAINER, FAKE_OUTPUT_CONTAINER, FAKE_CONFIG, FAKE_AUTOSCALE_FORMULA)
         self.assertEqual(
             batch_json['user_identity']['userAssignedIdentities'], 
             {
@@ -93,21 +89,14 @@ class TestHelpers(unittest.TestCase):
         )
 
     def test_get_batch_pool_json_no_autoscale(self):
-        containers = [
-            {'name': FAKE_INPUT_CONTAINER, 'relative_mount_dir': 'input'},
-            {'name': FAKE_OUTPUT_CONTAINER, 'relative_mount_dir': 'output'},
-        ]
-        batch_json = cfa_azure.helpers.get_batch_pool_json(containers=containers, config=FAKE_CONFIG)
+        batch_json = cfa_azure.helpers.get_batch_pool_json(FAKE_INPUT_CONTAINER, FAKE_OUTPUT_CONTAINER, FAKE_CONFIG)
         self.assertFalse('autoScale' in batch_json['pool_parameters']['properties'])
 
     @patch("cfa_azure.helpers.get_autoscale_formula", MagicMock(return_value=FAKE_AUTOSCALE_FORMULA))
     def test_get_batch_pool_json_custominterval(self):
-        containers = [
-            {'name': FAKE_INPUT_CONTAINER, 'relative_mount_dir': 'input'},
-            {'name': FAKE_OUTPUT_CONTAINER, 'relative_mount_dir': 'output'},
-        ]
         batch_json = cfa_azure.helpers.get_batch_pool_json(
-            containers=containers,
+            input_container_name=FAKE_INPUT_CONTAINER,
+            output_container_name=FAKE_OUTPUT_CONTAINER,
             config=FAKE_CONFIG,
             autoscale_formula_path=FAKE_AUTOSCALE_FORMULA,
             autoscale_evaluation_interval="PT35M",

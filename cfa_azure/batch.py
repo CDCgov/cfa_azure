@@ -47,30 +47,16 @@ def create_pool(
     print("Setting up Azure Batch management client...")
     batch_mgmt_client = helpers.get_batch_mgmt_client(sp_credential, config)
 
-    account_name = config["Batch"]["batch_account_name"]
-    resource_group_name = config["Authentication"]["resource_group"]
-
-    pool_info = helpers.get_pool_full_info(
-        resource_group_name=resource_group_name,
-        account_name=account_name,
-        pool_name=pool_id,
-        batch_mgmt_client=batch_mgmt_client
-    )
-    vm_config = (pool_info.deployment_configuration.virtual_machine_configuration)
-    pool_container = (vm_config.container_configuration.container_image_names)
-    container_image_name = pool_container[0].split("://")[-1]
-
-    containers = [
-        {'name': input_container_name, 'relative_mount_dir': 'input'},
-        {'name': output_container_name, 'relative_mount_dir': 'output'},
-    ]
     print("Preparing batch pool configuration...")
     batch_json = helpers.get_batch_pool_json(
-        containers=containers,
-        config=config,
-        autoscale_formula_path=autoscale_formula_path,
-        container_image_name=container_image_name
+        input_container_name,
+        output_container_name,
+        config,
+        autoscale_formula_path,
     )
+
+    account_name = config["Batch"]["batch_account_name"]
+    resource_group_name = config["Authentication"]["resource_group"]
 
     ####updates
     # take in pool-id

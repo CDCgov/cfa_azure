@@ -277,8 +277,9 @@ def create_blob_containers(
 
 
 def get_batch_pool_json(
-    containers:list[dict],
-    config:dict,
+    input_container_name: str,
+    output_container_name: str,
+    config: dict,
     autoscale_formula_path:str=None,
     autoscale_evaluation_interval: str = "PT5M",
     fixedscale_resize_timeout: str = "PT15M",
@@ -350,9 +351,8 @@ def get_batch_pool_json(
     logger.debug("VM and container configurations prepared.")
 
     # Mount configuration
-    mount_config = []
-    for container in containers:
-        mount_config.append({
+    mount_config = [
+        {
             "azureBlobFileSystemConfiguration": {
                 "accountName": config["Storage"]["storage_account_name"],
                 "identityReference": {
@@ -360,12 +360,25 @@ def get_batch_pool_json(
                         "user_assigned_identity"
                     ]
                 },
-                "containerName": container["name"],
+                "containerName": input_container_name,
                 "blobfuseOptions": "",
-                "relativeMountPath": container["relative_mount_dir"]
+                "relativeMountPath": "input",
             }
-        })
-
+        },
+        {
+            "azureBlobFileSystemConfiguration": {
+                "accountName": config["Storage"]["storage_account_name"],
+                "identityReference": {
+                    "resourceId": config["Authentication"][
+                        "user_assigned_identity"
+                    ]
+                },
+                "containerName": output_container_name,
+                "blobfuseOptions": "",
+                "relativeMountPath": "output",
+            }
+        },
+    ]
     logger.debug("Mount configuration prepared.")
 
     # Assemble the pool parameters JSON
@@ -390,7 +403,7 @@ def get_batch_pool_json(
             "targetNodeCommunicationMode": "Simplified",
             "currentNodeCommunicationMode": "Simplified",
             "mountConfiguration": mount_config,
-        }
+        },
     }
     if autoscale_formula_path:
         pool_parameters['properties']['scaleSettings'] = {
@@ -424,6 +437,7 @@ def get_batch_pool_json(
     }
     logger.debug("Batch pool JSON configuration is ready.")
     return batch_json
+
 
 def update_pool(pool_name: str, pool_parameters: dict, batch_mgmt_client: object, account_name: str, resource_group_name: str) -> dict:
     print("Updating the pool...")

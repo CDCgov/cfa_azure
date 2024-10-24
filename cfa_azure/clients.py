@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+from time import sleep 
 
 from azure.core.exceptions import HttpResponseError
 
@@ -330,6 +331,101 @@ class AzureClient:
         else:
             self.mounts.append((name, rel_mount_dir))
             logger.debug(f"Added Blob container {name} to AzureClient.")
+
+
+    def update_containers(
+            self,
+            input_container_name:str,
+            output_container_name:str,
+            pool_name:str=None,
+            force_update:bool=False
+    ) -> str | None:
+        """Changes the input and/or output containers mounted in an existing Azure batch pool
+
+        Args:
+            pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
+            input_container_name (str): unique identifier for the Blob storage container that will be mapped to /input path
+            output_container_name (str): unique identifier for the Blob storage container that will be mapped to /output path
+            force_update (bool): optional, deletes the existing pool without checking if it is already running any tasks 
+        """
+        # Check if pool already exists
+        if not pool_name:
+            pool_name = self.pool_name
+        # Check if pool already exists
+        if helpers.check_pool_exists(self.resource_group_name, self.account_name, pool_name, self.batch_mgmt_client):
+            if not force_update:
+                # Check how many jobs are currently running in pool
+                active_nodes = list(helpers.list_nodes_by_pool(pool_name=pool_name, config=self.config, node_state='running'))
+                if len(active_nodes) > 0:
+                    logger.error(f"There are {len(active_nodes)} compute nodes actively running tasks in pool {pool_name}. Please wait for jobs to complete or retry withy force_update=True.")
+                    return None
+
+            vm_configuration =  self.get_virtual_machine_configuration(pool_name)
+            container_image_name = vm_configuration['container_image_name']
+            self.scaling = vm_configuration["scaling"]
+            self.registry_url = None
+            self.container_registry_server = vm_configuration['registry_server']
+            if "Container" not in self.config:
+                self.config['Container'] = {}
+            self.config["Container"]["container_registry_username"] = vm_configuration['user_name']
+
+            # Delete existing pool
+            logger.info(f"Deleting pool {pool_name}")
+            poller = helpers.delete_pool(
+                resource_group_name=self.resource_group_name,
+                account_name=self.account_name,
+                pool_name=pool_name,
+                batch_mgmt_client=self.batch_mgmt_client,
+            )
+            while not poller.done():
+                sleep(5.0)
+
+        else:
+            logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
+
+        if not 'pool_id' in self.config['Batch']:
+            self.config['Batch']['pool_id'] = pool_name
+
+        # Recreate the pool
+        mount_config = [
+            {
+                "azureBlobFileSystemConfiguration": {
+                    "accountName": self.config["Storage"]["storage_account_name"],
+                    "identityReference": {
+                        "resourceId": self.config["Authentication"][
+                            "user_assigned_identity"
+                        ]
+                    },
+                    "containerName": input_container_name,
+                    "blobfuseOptions": "",
+                    "relativeMountPath": "input",
+                }
+            },
+            {
+                "azureBlobFileSystemConfiguration": {
+                    "accountName": self.config["Storage"]["storage_account_name"],
+                    "identityReference": {
+                        "resourceId": self.config["Authentication"][
+                            "user_assigned_identity"
+                        ]
+                    },
+                    "containerName": output_container_name,
+                    "blobfuseOptions": "",
+                    "relativeMountPath": "output",
+                }
+            }
+        ]
+        self.pool_parameters = helpers.get_pool_parameters(
+            mode=self.scaling,
+            container_image_name=container_image_name,
+            container_registry_url=self.registry_url,
+            container_registry_server=self.container_registry_server,
+            config=self.config,
+            mount_config=mount_config
+        )
+        self.create_pool(pool_name)
+        return pool_name
+
 
     def update_scale_settings(
         self,
@@ -922,21 +1018,38 @@ class AzureClient:
         )
         return pool_info
 
-    def get_pool_full_info(self) -> dict:
+    def get_pool_full_info(self, pool_name:str=None) -> dict:
         """Retrieve full information about pool used by client.
 
         Returns:
         - dict: instance of batch_mgmt_client.pool.get()
 
         """
+        if not pool_name:
+            pool_name = self.pool_name
         pool_info = helpers.get_pool_full_info(
             self.resource_group_name,
             self.account_name,
-            self.pool_name,
+            pool_name,
             self.batch_mgmt_client,
         )
         return pool_info
 
+    def get_virtual_machine_configuration(self, pool_name:str) -> dict:
+        pool_info = self.get_pool_full_info(pool_name)
+        scale_settings = pool_info.scale_settings
+        scaling = "autoscale" if scale_settings.auto_scale else "fixed"
+        vm_config = (pool_info.deployment_configuration.virtual_machine_configuration)
+        pool_container = (vm_config.container_configuration.container_image_names)
+        container_image_name = pool_container[0].split("://")[-1]
+        container_registry = (vm_config.container_configuration.container_registries[0])
+        return {
+            'container_image_name': container_image_name,
+            'registry_server': container_registry.registry_server,
+            'user_name': container_registry.user_name,
+            'scaling': scaling
+        }
+    
     def delete_pool(self, pool_name: str) -> None:
         """Delete the specified pool from Azure Batch.
 

@@ -10,14 +10,13 @@ from pathlib import Path
 from datetime import datetime as dt
 from zoneinfo import ZoneInfo as zi
 
-import azure.batch.models as batchmodels
 import docker
 import numpy as np
 import pandas as pd
 import toml
 import yaml
 from azure.batch import BatchServiceClient
-from azure.batch.models import JobConstraints
+import azure.batch.models as batchmodels
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -281,9 +280,10 @@ def get_batch_pool_json(
     input_container_name: str,
     output_container_name: str,
     config: dict,
-    autoscale_formula_path: str,
+    autoscale_formula_path:str=None,
     autoscale_evaluation_interval: str = "PT5M",
-    fixedscale_resize_timeout: str = "PT15M"
+    fixedscale_resize_timeout: str = "PT15M",
+    container_image_name:str=None
 ):
     """creates a json output with various components needed for batch pool creation
 
@@ -326,25 +326,28 @@ def get_batch_pool_json(
                 "sku": "20-04-lts",
                 "version": "latest",
             },
-            "nodeAgentSkuId": "batch.node.ubuntu 20.04",
-            "containerConfiguration": {
-                "type": "dockercompatible",
-                "containerImageNames": [
-                    config["Container"]["container_image_name"]
-                ],
-                "containerRegistries": [
-                    {
-                        "registryUrl": container_registry_url,
-                        "userName": config["Authentication"][
-                            "sp_application_id"
-                        ],
-                        "password": get_sp_secret(config),
-                        "registryServer": container_registry_server,
-                    }
-                ],
-            },
+            "nodeAgentSkuId": "batch.node.ubuntu 20.04"
         }
     }
+    if container_image_name:
+        container_configuration = {
+            "type": "dockercompatible",
+            "containerImageNames": [container_image_name],
+            "containerRegistries": [
+                {
+                    "registryServer": config["Container"][
+                        "container_registry_url"
+                    ],
+                    "userName": config["Container"][
+                        "container_registry_username"
+                    ],
+                    "password": config["Container"][
+                        "container_registry_password"
+                    ]
+                }
+            ]
+        }
+        deployment_config['virtualMachineConfiguration']['containerConfiguration'] = container_configuration
     logger.debug("VM and container configurations prepared.")
 
     # Mount configuration
@@ -389,19 +392,6 @@ def get_batch_pool_json(
             "taskSchedulingPolicy": {"nodeFillType": "Spread"},
             "deploymentConfiguration": deployment_config,
             "networkConfiguration": network_config,
-            "scaleSettings": {
-                # "fixedScale": {
-                #     "targetDedicatedNodes": 1,
-                #     "targetLowPriorityNodes": 0,
-                #     "resizeTimeout": "PT15M"
-                # }
-                "autoScale": {
-                    "evaluationInterval": autoscale_evaluation_interval,
-                    "formula": get_autoscale_formula(
-                        filepath=autoscale_formula_path
-                    ),
-                }
-            },
             "resizeOperationStatus": {
                 "targetDedicatedNodes": 1,
                 "nodeDeallocationOption": "Requeue",
@@ -415,6 +405,21 @@ def get_batch_pool_json(
             "mountConfiguration": mount_config,
         },
     }
+    if autoscale_formula_path:
+        pool_parameters['properties']['scaleSettings'] = {
+            # "fixedScale": {
+            #     "targetDedicatedNodes": 1,
+            #     "targetLowPriorityNodes": 0,
+            #     "resizeTimeout": "PT15M"
+            # }
+            "autoScale": {
+                "evaluationInterval": autoscale_evaluation_interval,
+                "formula": get_autoscale_formula(
+                    filepath=autoscale_formula_path
+                )
+            }
+        }
+
     logger.debug("Batch pool parameters assembled.")
 
     pool_id = config["Batch"]["pool_id"]
@@ -477,12 +482,13 @@ def create_batch_pool(batch_mgmt_client: object, batch_json: dict):
         logger.info(
             f"Creating pool: {pool_id} in the account: {account_name}..."
         )
-        batch_mgmt_client.pool.create(
+        new_pool = batch_mgmt_client.pool.create(
             resource_group_name=resource_group_name,
             account_name=account_name,
             pool_name=pool_id,
             parameters=parameters,
         )
+        pool_id = new_pool.name
         logger.info(f"Pool {pool_id!r} created successfully.")
     except HttpResponseError as error:
         if "PropertyCannotBeUpdated" in error.message:
@@ -511,12 +517,13 @@ def delete_pool(
         batch_mgmt_client (object): instance of BatchManagementClient
     """
     logger.debug(f"Attempting to delete {pool_name}...")
-    batch_mgmt_client.pool.begin_delete(
+    poller = batch_mgmt_client.pool.begin_delete(
         resource_group_name=resource_group_name,
         account_name=account_name,
         pool_name=pool_name,
     )
     logger.info(f"Pool {pool_name} deleted.")
+    return poller
 
 
 def list_containers(blob_service_client: object):
@@ -710,6 +717,23 @@ def get_batch_service_client(config: dict):
     return batch_client
 
 
+def list_nodes_by_pool(
+    pool_name:str,
+    config: dict,
+    node_state:str=None
+):
+    batch_client = get_batch_service_client(config)
+    if node_state:
+        filter_option = f"state eq '{node_state}'"
+        nodes = batch_client.compute_node.list(
+            pool_id=pool_name,
+            compute_node_list_options=batchmodels.ComputeNodeListOptions(filter=filter_option)
+        )
+    else:
+        nodes = batch_client.compute_node.list(pool_id=pool_name)
+    return nodes
+
+
 def add_job(
     job_id: str,
     pool_id: str,
@@ -737,7 +761,7 @@ def add_job(
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
         uses_task_dependencies=True,
         on_task_failure=end_job_str,
-        constraints = JobConstraints(max_task_retry_count = task_retries)
+        constraints = batchmodels.JobConstraints(max_task_retry_count = task_retries)
     )
     logger.debug("Attempting to add job.")
     try:

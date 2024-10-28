@@ -438,6 +438,7 @@ def get_batch_pool_json(
     logger.debug("Batch pool JSON configuration is ready.")
     return batch_json
 
+
 def update_pool(pool_name: str, pool_parameters: dict, batch_mgmt_client: object, account_name: str, resource_group_name: str) -> dict:
     print("Updating the pool...")
 
@@ -1787,7 +1788,6 @@ def get_pool_info(
         "task_slots_per_node": result.task_slots_per_node,
     }
     return json.dumps(j)
-
 
 def get_pool_full_info(
     resource_group_name: str,

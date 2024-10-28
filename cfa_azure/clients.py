@@ -481,7 +481,7 @@ class AzureClient:
         # Recreate the pool
         mount_config = []
         for container in containers:
-            self.set_blob_container(container['name'], container['relative_mount_dir'])
+            self.set_blob_container(container['name'], helpers.format_rel_path(container['relative_mount_dir']))
             mount_config.append({
                 "azureBlobFileSystemConfiguration": {
                     "accountName": self.config["Storage"]["storage_account_name"],
@@ -490,7 +490,7 @@ class AzureClient:
                     },
                     "containerName": container["name"],
                     "blobfuseOptions": "",
-                    "relativeMountPath": container["relative_mount_dir"]
+                    "relativeMountPath": helpers.format_rel_path(container["relative_mount_dir"])
                 }
             })
   

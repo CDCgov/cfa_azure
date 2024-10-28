@@ -330,23 +330,19 @@ def get_batch_pool_json(
         }
     }
     if container_image_name:
+        container_registry = {
+            "registryServer": config["Container"][ "container_registry_url"]
+        }
+        if config["Container"]["container_registry_username"]:
+            container_registry['userName'] = config["Container"]["container_registry_username"]
+        if config["Container"]["container_registry_password"]:
+            container_registry['password'] = config["Container"]["container_registry_password"]
         container_configuration = {
             "type": "dockercompatible",
             "containerImageNames": [container_image_name],
-            "containerRegistries": [
-                {
-                    "registryServer": config["Container"][
-                        "container_registry_url"
-                    ],
-                    "userName": config["Container"][
-                        "container_registry_username"
-                    ],
-                    "password": config["Container"][
-                        "container_registry_password"
-                    ]
-                }
-            ]
+            "containerRegistries": [container_registry]
         }
+        print(container_configuration)
         deployment_config['virtualMachineConfiguration']['containerConfiguration'] = container_configuration
     logger.debug("VM and container configurations prepared.")
 

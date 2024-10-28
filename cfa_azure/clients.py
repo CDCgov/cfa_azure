@@ -967,6 +967,34 @@ class AzureClient:
         return self.full_container_name
 
 
+    def set_container(self,
+        container_image_name:str,
+        registry_url:str,
+        container_registry_server:str,
+        access_token:str=None
+    ):
+        """specify the container in ACR to use without packaging and uploading the docker container from local.
+
+        Args:
+            registry_name (str): the name of the registry in Azure Container Registry
+            repo_name (str): the name of the repo
+            tag_name (str): the tag name
+
+        Returns:
+            str: full name of container
+        """
+        self.container_image_name = container_image_name
+        self.registry_url = registry_url
+        self.container_registry_server= container_registry_server
+        self.container_registry_access_token=access_token
+        if access_token:
+            self.config["Container"]["container_registry_password"] = access_token
+            self.config["Container"]["container_registry_username"] = None
+        else:
+            self.config["Container"]["container_registry_password"] = None
+            self.config["Container"]["container_registry_username"] = None
+
+
     def set_azure_container(
         self, registry_name: str, repo_name: str, tag_name: str
     ) -> str:

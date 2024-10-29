@@ -1,7 +1,9 @@
 import datetime
 import json
 import logging
-from time import sleep 
+from time import sleep
+
+from azure.identity import ManagedIdentityCredential, ServicePrincipalCredentials, DeviceCodeCredential, DefaultAzureCredential, EnvironmentCredential
 
 from azure.core.exceptions import HttpResponseError
 
@@ -85,17 +87,20 @@ class AzureClient:
         logger.debug("generated SP secret.")
 
         if 'identity' in self.credential_method.lower():
-		    self.cred = ManagedIdentityCredential()
-	    elif 'sp' in self.credential_method.lower():
-		    self.cred = ServicePrincipalCredentials(client_id, client_secret)
-	    elif 'user' in self.credential_method.lower():
-		    if device_code:
-			    self.cred = DeviceCodeCredential()
-		    else:
-			    self.cred = DefaultAzureCredential()
-    	elif 'env' in self.credential_method.lower():
-	    	self.cred = EnvironmentCredential()
-	    else:
+            self.cred = ManagedIdentityCredential()
+        elif 'sp' in self.credential_method.lower():
+            sp_secret = helpers.get_sp_secret(self.config)
+            self.cred = ServicePrincipalCredentials(
+                self.config['Authentication']['sp_application_id'],
+                sp_secret)
+        elif 'user' in self.credential_method.lower():
+            if device_code:
+                self.cred = DeviceCodeCredential()
+            else:
+                self.cred = DefaultAzureCredential()
+        elif 'env' in self.credential_method.lower():
+            self.cred = EnvironmentCredential()
+        else:
             raise Exception("please choose a credential_method from 'identity', 'sp', 'ext_user', 'env' and try again.")
 
     

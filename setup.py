@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="cfa_azure",
-    version="1.0.9",
+    version="1.1.0",
     description="module for use with Azure and Azure Batch",
     packages=find_packages(exclude=["tests", "venv"]),
     author="Ryan Raasch",

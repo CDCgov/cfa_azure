@@ -11,12 +11,28 @@ logger = logging.getLogger(__name__)
 
 
 class AzureClient:
-    def __init__(self, config_path: str):
+    def __init__(self, config_path: str,
+                 credential_method: str = 'identity',
+                 device_code: bool = False):
         """Azure Client for interacting with Azure Batch, Container Registries and Blob Storage
 
         Args:
             config_path (str): path to configuration toml file
+            credential_method (str): how to authenticate to Azure. Choices are 'identity', 'sp', 'ext_user', and 'env'. Default 'identity'
+            device_code (bool): whether to use device code flow if credential method set to 'ext_user'. Default False.
+
+            credential_method details:
+		        - 'identity' uses managed identity linked to VM
+		        - 'sp' uses service principal from config/env 
+		        - 'ext_user' uses interactive browser
+		        - 'env' uses environment credential based on env variables
+
+        Returns:
+            AzureClient object
         """
+        self.config_path = config_path
+        self.credential_method = credential_method
+        self.device_code = device_code
         self.debug = None
         self.scaling = None
         self.input_container_name = None
@@ -42,6 +58,7 @@ class AzureClient:
         self.config = helpers.read_config(config_path)
         logger.debug("config loaded")
 
+
         helpers.check_config_req(self.config)
         # extract info from config
         try:
@@ -66,9 +83,25 @@ class AzureClient:
         # get credentials
         self.sp_secret = helpers.get_sp_secret(self.config)
         logger.debug("generated SP secret.")
-        self.sp_credential = helpers.get_sp_credential(self.config)
-        logger.debug("generated SP credential.")
+
+        if 'identity' in self.credential_method.lower():
+		    self.cred = ManagedIdentityCredential()
+	    elif 'sp' in self.credential_method.lower():
+		    self.cred = ServicePrincipalCredentials(client_id, client_secret)
+	    elif 'user' in self.credential_method.lower():
+		    if device_code:
+			    self.cred = DeviceCodeCredential()
+		    else:
+			    self.cred = DefaultAzureCredential()
+    	elif 'env' in self.credential_method.lower():
+	    	self.cred = EnvironmentCredential()
+	    else:
+            raise Exception("please choose a credential_method from 'identity', 'sp', 'ext_user', 'env' and try again.")
+
+    
+        logger.debug(f"generated credentials from {credential_method}.")
         # create blob service account
+        
         self.blob_service_client = helpers.get_blob_service_client(self.config)
         logger.debug("generated Blob Service Client.")
 

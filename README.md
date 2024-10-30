@@ -113,6 +113,7 @@ client.set_pool_info(
 
  
  - add_task: adds task to existing job in pool. You can also specify which task it depends on.  By default, dependent tasks will only run if the parent task suceeds. However, this behavior can be overridden by specifing `run_dependent_tasks_on_fail=True` on the parent task. When this property is set to True, any runtime failures in parent task will be ignored. However, execution of dependent tasks will only begin after completion (regardless of success or failure) of the parent task. 
+ 
   Example: Run tasks in parallel without any dependencies. 
   ```
   task_1 = client.add_task(

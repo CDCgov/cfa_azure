@@ -2,8 +2,8 @@ import datetime
 import json
 import logging
 from time import sleep
-
-from azure.identity import ManagedIdentityCredential, ServicePrincipalCredentials, DeviceCodeCredential, DefaultAzureCredential, EnvironmentCredential
+from azure.common.credentials import ServicePrincipalCredentials
+from azure.identity import ManagedIdentityCredential, DeviceCodeCredential, DefaultAzureCredential, EnvironmentCredential
 
 from azure.core.exceptions import HttpResponseError
 
@@ -83,9 +83,6 @@ class AzureClient:
             raise e
 
         # get credentials
-        self.sp_secret = helpers.get_sp_secret(self.config)
-        logger.debug("generated SP secret.")
-
         if 'identity' in self.credential_method.lower():
             self.cred = ManagedIdentityCredential()
         elif 'sp' in self.credential_method.lower():
@@ -99,10 +96,13 @@ class AzureClient:
             else:
                 self.cred = DefaultAzureCredential()
         elif 'env' in self.credential_method.lower():
-            self.cred = EnvironmentCredential()
+            if os.environ['AZURE_TENANT_ID'] is None or os.environ['AZURE_CLIENT_ID'] is None or os.environ['AZURE_CLIENT_SECRET'] is None:
+                logger.error("Could not find AZURE_TENANT_ID, AZURE_CLIENT_ID or AZURE_CLIENT_SECRET environment variables.")
+                raise Exception("Could not find AZURE_TENANT_ID, AZURE_CLIENT_ID or AZURE_CLIENT_SECRET environment variables.")
+            else:
+                self.cred = EnvironmentCredential()
         else:
             raise Exception("please choose a credential_method from 'identity', 'sp', 'ext_user', 'env' and try again.")
-
     
         logger.debug(f"generated credentials from {credential_method}.")
         # create blob service account

@@ -781,7 +781,7 @@ def add_task_to_job(
     input_files: list[str] | None = None,
     mounts: list | None = None,
     depends_on: str | list[str] | None = None,
-    run_on_dep_task_fail: bool = False,
+    run_dependent_tasks_on_fail: bool = False,
     batch_client: object | None = None,
     full_container_name: str | None = None,
     task_id_max: int = 0,
@@ -797,7 +797,7 @@ def add_task_to_job(
         input_files (list[str]): a  list of input files
         mounts (list[tuple]): a list of tuples in the form (container_name, relative_mount_directory)
         depends_on (str | list[str]): list of tasks this task depends on
-        run_on_dep_task_fail (bool): whether to run dependent tasks if the parent task fails. Default is False.
+        run_dependent_tasks_on_fail (bool): whether to run dependent tasks if the parent task fails. Default is False.
         batch_client (object): batch client object
         full_container_name (str): name ACR container to run task on
         task_id_max (int): current max task id in use by Batch
@@ -830,7 +830,7 @@ def add_task_to_job(
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
 
     no_exit_options = ExitOptions(dependency_action = DependencyAction.satisfy, job_action=JobAction.none)
-    if run_on_dep_task_fail:
+    if run_dependent_tasks_on_fail:
         exit_conditions = ExitConditions(
             exit_codes=[
                 ExitCodeMapping(

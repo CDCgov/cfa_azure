@@ -112,20 +112,76 @@ client.set_pool_info(
   As the message suggests, you can either wait for existing jobs to complete in the pool and retry the `update_containers()` operation. Or you can change the `force_update` parameter to `True and re-run the `update_containers()` operation to immediately recreate the pool with new containers. 
 
  
- - add_task: adds task to existing job in pool. You can also specify which task it depends on.    
-  Example:
+ - add_task: adds task to existing job in pool. You can also specify which task it depends on.  By default, dependent tasks will only run if the parent task suceeds. However, this behavior can be overridden by specifing `run_dependent_tasks_on_fail=True` on the parent task. When this property is set to True, any runtime failures in parent task will be ignored. However, execution of dependent tasks will only begin after completion (regardless of success or failure) of the parent task. 
+  Example: Run tasks in parallel without any dependencies. 
   ```
-  task1 = client.add_task(
+  task_1 = client.add_task(
       "test_job_id", 
       docker_cmd=["some", "docker", "command"],  # replace with actual command
-      use_uploaded_files=False, 
       input_files=["test_file_1.sh"]
   )
   task_2 = client.add_task(
       "test_job_id", 
       docker_cmd=["some", "other", "docker", "command"], # replace with actual command
       use_uploaded_files=False,
-      depends_on=[task_1], 
+      input_files=["test_file_2.sh"]
+  )
+  ```
+ Example: Run tasks sequentially and terminate the job if parent task fails
+  ```
+  parent_task = client.add_task(
+      "test_job_id", 
+      docker_cmd=["some", "docker", "command"],  # replace with actual command
+      use_uploaded_files=False,
+      input_files=["test_file_1.sh"]
+  )
+  child_task = client.add_task(
+      "test_job_id", 
+      docker_cmd=["some", "other", "docker", "command"], # replace with actual command
+      use_uploaded_files=False,
+      depends_on=parent_task, 
+      input_files=["test_file_2.sh"]
+  )
+  ```
+ Example: Run tasks sequentially with 1-to-many dependency. Run the child tasks even if parent task fails. 
+  ```
+  parent_task = client.add_task(
+      "test_job_id", 
+      docker_cmd=["some", "docker", "command"],  # replace with actual command
+      use_uploaded_files=False,
+      run_dependent_tasks_on_fail=True,
+      input_files=["test_file_1.sh"]
+  )
+  child_task_1 = client.add_task(
+      "test_job_id", 
+      docker_cmd=["some", "other", "docker", "command"], # replace with actual command
+      depends_on=parent_task, 
+      input_files=["test_file_2.sh"]
+  )
+  child_task_2 = client.add_task(
+      "test_job_id", 
+      docker_cmd=["another", "docker", "command"], # replace with actual command
+      depends_on=parent_task, 
+      input_files=["test_file_3.sh"]
+  )
+  ```
+ Example: Create many-to-1 dependency with 2 parent tasks that run before child task. Second parent task is optional: job should not terminate if it fails.  
+  ```
+  parent_task_1 = client.add_task(
+      "test_job_id", 
+      docker_cmd=["some", "docker", "command"],  # replace with actual command
+      input_files=["test_file_1.sh"]
+  )
+  parent_task_2 = client.add_task(
+      "test_job_id", 
+      docker_cmd=["some", "other", "docker", "command"],  # replace with actual command
+      run_dependent_tasks_on_fail=True,
+      input_files=["test_file_2.sh"]
+  )
+  child_task = client.add_task(
+      "test_job_id", 
+      docker_cmd=["another", "docker", "command"], # replace with actual command
+      depends_on=(parent_task_1 + parent_task_2)
       input_files=["test_file_2.sh"]
   )
   ```

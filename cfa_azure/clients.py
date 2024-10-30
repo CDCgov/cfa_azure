@@ -747,7 +747,7 @@ class AzureClient:
         use_uploaded_files: bool = False,
         input_files: list[str] | None = None,
         depends_on: list[str] | None = None,
-        run_on_dep_task_fail: bool = False,
+        run_dependent_tasks_on_fail: bool = False,
         container: str = None,
     ) -> list[str]:
         """adds task to existing job.
@@ -763,7 +763,7 @@ class AzureClient:
                 and create a task for each input file uploaded or specified in input_files. Default is False.
             input_files (list[str]): a list of file names. Each file will be assigned its own task and executed against the docker command provided. Default is [].
             depends_on (list[str]): a list of tasks this task depends on. Default is None.
-            run_on_dep_task_fail (bool): whether to run the dependent tasks if parent task fails. Default is False.
+            run_dependent_tasks_on_fail (bool): whether to run the dependent tasks if parent task fails. Default is False.
             container (str): name of ACR container in form "registry_name/repo_name:tag_name". Default is None to use container attached to client.
 
 
@@ -841,7 +841,7 @@ class AzureClient:
             input_files=in_files,
             mounts=self.mounts,
             depends_on=depends_on,
-            run_on_dep_task_fail = run_on_dep_task_fail,
+            run_dependent_tasks_on_fail = run_dependent_tasks_on_fail,
             batch_client=self.batch_client,
             full_container_name=container_name,
             task_id_max=self.task_id_max,

@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import os
 from time import sleep
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.identity import ManagedIdentityCredential, DeviceCodeCredential, DefaultAzureCredential, EnvironmentCredential

@@ -77,7 +77,8 @@ client.set_pool_info(
   )
   client.create_pool(pool_name)
   ```
-- update_scale_settings: modifies the scaling mode (fixed or autoscale) for an existing pool
+- update_scale_settings: modifies the scaling mode (fixed or autoscale) for an existing pool.
+
   Example:
   ```
   # Specify new autoscale formula that will be evaluated every 30 minutes

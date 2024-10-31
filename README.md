@@ -75,7 +75,7 @@ client.set_pool_info(
     container_registry_server="ghcr.io",                                          # Server where registry is hosted
     access_token="SOME_TOKEN_OR_PASSWORD"                                         # Optional password or personal token (Otherwise omit this argument)
   )
-  client.create_pool(pool_name)
+  client.create_pool(("My Test Pool")
   ```
 - update_scale_settings: modifies the scaling mode (fixed or autoscale) for an existing pool.
 

@@ -64,7 +64,8 @@ client.set_pool_info(
   client = AzureClient("./configuration.toml")
   client.create_pool("My Test Pool")
   ```
-- set_container: configures the Azure batch job to use generic Docker container that may be hosted in any public or private repository (e.g. Docker Hub, Github Container Registry, etc.). The repository must be accessible from the virtual network and subnet where the batch pool is deployed at runtime. 
+- set_container: configures the Azure batch job to use generic Docker container that may be hosted in any public or private repository (e.g. Docker Hub, Github Container Registry, etc.). The repository must be accessible from the virtual network and subnet where the batch pool is deployed at runtime.
+
   Example:
   ```
   client = AzureClient("./configuration.toml")

@@ -86,7 +86,7 @@ class AzureClient:
         if 'identity' in self.credential_method.lower():
             self.cred = ManagedIdentityCredential()
         elif 'sp' in self.credential_method.lower():
-            sp_secret = helpers.get_sp_secret(self.config)
+            sp_secret = helpers.get_sp_secret(self.config, self.cred)
             self.cred = ServicePrincipalCredentials(
                 self.config['Authentication']['sp_application_id'],
                 sp_secret)

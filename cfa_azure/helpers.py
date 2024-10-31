@@ -17,7 +17,6 @@ import toml
 import yaml
 from azure.batch import BatchServiceClient
 import azure.batch.models as batchmodels
-from azure.common.credentials import ServicePrincipalCredentials
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
 from azure.identity import ManagedIdentityCredential, DeviceCodeCredential, DefaultAzureCredential, EnvironmentCredential, ClientSecretCredential

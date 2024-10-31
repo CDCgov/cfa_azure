@@ -3,8 +3,7 @@ import json
 import logging
 import os
 from time import sleep
-from azure.common.credentials import ServicePrincipalCredentials
-from azure.identity import ManagedIdentityCredential, DeviceCodeCredential, DefaultAzureCredential, EnvironmentCredential
+from azure.identity import ManagedIdentityCredential, DeviceCodeCredential, DefaultAzureCredential, EnvironmentCredential, ClientSecretCredential
 
 from azure.core.exceptions import HttpResponseError
 
@@ -86,16 +85,14 @@ class AzureClient:
         if 'identity' in self.credential_method.lower():
             self.cred = ManagedIdentityCredential()
         elif 'sp' in self.credential_method.lower():
-            if 'sp_secrets' in self.config['Authentication'].keys(): 
-                self.cred = ServicePrincipalCredentials(
-                    self.config['Authentication']['sp_application_id'],
-                    sp_secret)
-            else: 
+            if 'sp_secrets' not in self.config['Authentication'].keys(): 
                 sp_secret = helpers.get_sp_secret(self.config,
                                                   DefaultAzureCredential())
-                self.cred = ServicePrincipalCredentials(
-                    self.config['Authentication']['sp_application_id'],
-                    sp_secret)
+            self.cred = ClientSecretCredential(
+                    tenant_id=self.config["Authentication"]["tenant_id"],
+                    client_id=self.config["Authentication"]["sp_application_id"],
+                    client_secret=sp_secret,
+                    )
         elif 'user' in self.credential_method.lower():
             if device_code:
                 self.cred = DeviceCodeCredential()

@@ -102,7 +102,8 @@ class AzureClient:
             else:
                 self.cred = DefaultAzureCredential()
         elif 'env' in self.credential_method.lower():
-            if os.environ['AZURE_TENANT_ID'] is None or os.environ['AZURE_CLIENT_ID'] is None or os.environ['AZURE_CLIENT_SECRET'] is None:
+            keys = os.environ.keys()
+            if 'AZURE_TENANT_ID' not in keys or 'AZURE_CLIENT_ID' not in keys or 'AZURE_CLIENT_SECRET' not in keys:
                 logger.error("Could not find AZURE_TENANT_ID, AZURE_CLIENT_ID or AZURE_CLIENT_SECRET environment variables.")
                 raise Exception("Could not find AZURE_TENANT_ID, AZURE_CLIENT_ID or AZURE_CLIENT_SECRET environment variables.")
             else:

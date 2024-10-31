@@ -160,33 +160,6 @@ def get_sp_secret(config: dict, credential: object):
         raise e
 
 
-def get_sp_credential(config: dict, credential: object):
-    """gets the user's credentials based on their secret and config file
-
-    Args:
-        config (dict): contains configuration info
-        credential (object): credential object from azure.identity
-
-    Returns:
-        class: client credential for Azure Blob Service Client
-    """
-    logger.debug("Attempting to obtain service principal credentials...")
-    sp_secret = get_sp_secret(config, credential)
-    try:
-        sp_credential = ClientSecretCredential(
-            tenant_id=config["Authentication"]["tenant_id"],
-            client_id=config["Authentication"]["sp_application_id"],
-            client_secret=sp_secret,
-        )
-        logger.debug("Service principal credentials obtained successfully.")
-        return sp_credential
-    except KeyError as e:
-        logger.error(
-            f"Configuration error: '{e}' does not exist in the config file. Please add it in the Authentication section.",
-        )
-        raise e
-
-
 def get_blob_service_client(config: dict, credential: object):
     """establishes Blob Service Client using credentials
 
@@ -1151,6 +1124,7 @@ def get_deployment_config(
     container_registry_url: str,
     container_registry_server: str,
     config: str,
+    credential: object,
     availability_zones: bool = False
 ):
     """gets the deployment config based on the config information
@@ -1192,7 +1166,7 @@ def get_deployment_config(
                         "userName": config["Authentication"][
                             "sp_application_id"
                         ],
-                        "password": get_sp_secret(config),
+                        "password": get_sp_secret(config, credential),
                         "registryServer": container_registry_server,
                     }
                 ],

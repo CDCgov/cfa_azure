@@ -12,7 +12,6 @@ from cfa_azure import helpers
 
 logger = logging.getLogger(__name__)
 
-
 class AzureClient:
     def __init__(self, config_path: str,
                  credential_method: str = 'identity',
@@ -108,15 +107,15 @@ class AzureClient:
         logger.debug(f"generated credentials from {credential_method}.")
         # create blob service account
         
-        self.blob_service_client = helpers.get_blob_service_client(self.config)
+        self.blob_service_client = helpers.get_blob_service_client(self.config, self.cred)
         logger.debug("generated Blob Service Client.")
 
         # create batch mgmt client
-        self.batch_mgmt_client = helpers.get_batch_mgmt_client(self.config)
+        self.batch_mgmt_client = helpers.get_batch_mgmt_client(self.config, self.cred)
         logger.debug("generated Batch Management Client.")
 
         # create batch service client
-        self.batch_client = helpers.get_batch_service_client(self.config)
+        self.batch_client = helpers.get_batch_service_client(self.config, self.cred)
         logger.info("Client initialized! Happy coding!")
 
     def set_debugging(self, debug: bool) -> None:

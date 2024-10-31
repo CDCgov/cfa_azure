@@ -17,6 +17,7 @@ import toml
 import yaml
 from azure.batch import BatchServiceClient
 import azure.batch.models as batchmodels
+from azure.batch.models import ExitOptions, ExitCodeMapping, JobAction, DependencyAction, ExitConditions, OnTaskFailure
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -738,7 +739,6 @@ def list_nodes_by_pool(
 def add_job(
     job_id: str,
     pool_id: str,
-    end_job_on_task_failure: bool,
     batch_client: object,
     task_retries: int = 3
 ):
@@ -746,23 +746,16 @@ def add_job(
 
     Args:
         job_id (str): name of the job to run
-        end_job_on_task_failure (bool): whether to end a running job if a task fails
+        pool_id (str): name of pool
         batch_client (object): batch client object
     """
     logger.debug(f"Attempting to create job '{job_id}'...")
-    if end_job_on_task_failure:
-        end_job_str = "performExitOptionsJobAction"
-        logger.debug("Setting parameter to end job on task failure.")
-    else:
-        end_job_str = "noAction"
-        logger.debug("No action set for job ending.")
     logger.debug("Adding job parameters to job.")
     job = batchmodels.JobAddParameter(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
         uses_task_dependencies=True,
-        on_task_failure=end_job_str,
-        constraints = batchmodels.JobConstraints(max_task_retry_count = task_retries)
+        on_task_failure = OnTaskFailure.perform_exit_options_job_action
     )
     logger.debug("Attempting to add job.")
     try:
@@ -788,6 +781,7 @@ def add_task_to_job(
     input_files: list[str] | None = None,
     mounts: list | None = None,
     depends_on: str | list[str] | None = None,
+    run_dependent_tasks_on_fail: bool = False,
     batch_client: object | None = None,
     full_container_name: str | None = None,
     task_id_max: int = 0,
@@ -803,6 +797,7 @@ def add_task_to_job(
         input_files (list[str]): a  list of input files
         mounts (list[tuple]): a list of tuples in the form (container_name, relative_mount_directory)
         depends_on (str | list[str]): list of tasks this task depends on
+        run_dependent_tasks_on_fail (bool): whether to run dependent tasks if the parent task fails. Default is False.
         batch_client (object): batch client object
         full_container_name (str): name ACR container to run task on
         task_id_max (int): current max task id in use by Batch
@@ -833,6 +828,42 @@ def add_task_to_job(
             depends_on = [depends_on]
             logger.debug("Adding task dependency.")
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
+
+    no_exit_options = ExitOptions(dependency_action = DependencyAction.satisfy, job_action=JobAction.none)
+    if run_dependent_tasks_on_fail:
+        exit_conditions = ExitConditions(
+            exit_codes=[
+                ExitCodeMapping(
+                    code=0,
+                    exit_options=no_exit_options
+                ),
+                ExitCodeMapping(
+                    code=1,
+                    exit_options=no_exit_options
+                )
+            ],
+            pre_processing_error=no_exit_options,
+            file_upload_error=no_exit_options,
+            default=no_exit_options
+        )
+    else:
+        terminate_exit_options = ExitOptions(dependency_action = DependencyAction.block, job_action=JobAction.terminate)
+        exit_conditions = ExitConditions(
+            exit_codes=[
+                ExitCodeMapping(
+                    code=0,
+                    exit_options=no_exit_options
+                ),
+                ExitCodeMapping(
+                    code=1,
+                    exit_options=terminate_exit_options
+                )
+            ],
+            pre_processing_error=terminate_exit_options,
+            file_upload_error=terminate_exit_options,
+            default=terminate_exit_options
+        )
+
 
     logger.debug("Creating mount configuration string.")
     mount_str = ""
@@ -886,6 +917,7 @@ def add_task_to_job(
                 ),
                 user_identity=user_identity,
                 depends_on=task_deps,
+                exit_conditions=exit_conditions
             )
             batch_client.task.add(job_id=job_id, task=task)
             print(f"Task '{id}' added to job '{job_id}'.")
@@ -903,6 +935,7 @@ def add_task_to_job(
             ),
             user_identity=user_identity,
             depends_on=task_deps,
+            exit_conditions=exit_conditions
         )
         batch_client.task.add(job_id=job_id, task=task)
         logger.debug(f"Task '{task_id}' added to job '{job_id}'.")

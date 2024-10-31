@@ -71,6 +71,25 @@ class TestClients(unittest.TestCase):
         self.assertIsNotNone(task_list)
 
     @patch("cfa_azure.helpers.check_azure_container_exists", MagicMock(return_value=FAKE_CONTAINER_IMAGE))    
+    @patch("cfa_azure.helpers.get_pool_full_info", MagicMock(return_value=dict2obj(FAKE_POOL_INFO)))
+    def test_add_task_dependencies(self):
+        self.azure_client.pool_name = FAKE_BATCH_POOL
+        task_1 = self.azure_client.add_task(
+            "test_job_id", 
+            docker_cmd=["some", "docker", "command"],
+            use_uploaded_files=False, 
+            input_files=["test_file_1.sh"]
+        )
+        task_2 = self.azure_client.add_task(
+            "test_job_id", 
+            docker_cmd=["some", "docker", "command"],
+            use_uploaded_files=False,
+            depends_on=[task_1], 
+            input_files=["test_file_1.sh"]
+        )
+        self.assertIsNotNone(task_2)
+
+    @patch("cfa_azure.helpers.check_azure_container_exists", MagicMock(return_value=FAKE_CONTAINER_IMAGE))    
     def test_add_task(self):
         task_list = self.azure_client.add_task(
             "test_job_id",
@@ -98,6 +117,7 @@ class TestClients(unittest.TestCase):
         mock_logger.debug.assert_called_with("Debugging turned off.")
 
     def test_create_pool(self):
+        self.azure_client.set_pool_info(mode="autoscale")
         pool_details = self.azure_client.create_pool(FAKE_BATCH_POOL)
         self.assertIsNotNone(pool_details)
 
@@ -226,8 +246,7 @@ class TestClients(unittest.TestCase):
     def test_add_job(self):
         self.azure_client.add_job(
             job_id = "fake_job_id",
-            pool_name = FAKE_BATCH_POOL,
-            end_job_on_task_failure = False
+            pool_name = FAKE_BATCH_POOL
         )
         self.assertEqual(len(self.azure_client.jobs), 1)
 
@@ -235,8 +254,7 @@ class TestClients(unittest.TestCase):
     def test_add_job_default(self):
         self.azure_client.pool_name = FAKE_BATCH_POOL
         self.azure_client.add_job(
-            job_id = "fake_job_id",
-            end_job_on_task_failure = False
+            job_id = "fake_job_id"
         )
         self.assertEqual(len(self.azure_client.jobs), 1)
 

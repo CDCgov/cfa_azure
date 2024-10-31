@@ -545,6 +545,7 @@ class TestHelpers(unittest.TestCase):
         )
         self.assertIsNotNone(response)
 
+
     def test_get_pool_parameters_bad_mode(self):
         response = cfa_azure.helpers.get_pool_parameters(
             mode="bad_mode",
@@ -569,7 +570,6 @@ class TestHelpers(unittest.TestCase):
         cfa_azure.helpers.add_job(
             job_id,
             FAKE_BATCH_POOL,
-            end_job_on_task_failure=True,
             batch_client=batch_client
         )
         mock_logger.info.assert_called_with(f"Job '{job_id}' created successfully.")
@@ -581,7 +581,6 @@ class TestHelpers(unittest.TestCase):
         cfa_azure.helpers.add_job(
             job_id,
             FAKE_BATCH_POOL,
-            end_job_on_task_failure=False,
             batch_client=batch_client
         )
         mock_logger.debug.assert_called_with("Attempting to add job.")

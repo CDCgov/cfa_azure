@@ -24,6 +24,33 @@ FAKE_YAML_CONTENT       = {
     },
     'outputDirectory': "some_directory"
 }
+FAKE_CONFIG_MINIMAL = {
+    'Authentication': {
+        'resource_group': FAKE_RESOURCE_GROUP,
+        'subscription_id': 'Test Subscription ID',
+        'subnet_id': 'Test Subnet ID',
+        'tenant_id': 'Test Tenant ID',
+        'sp_application_id': 'Some App ID',
+        'batch_application_id': 'Some Batch App ID',
+        'batch_object_id': 'Some Batch Object ID',
+        'user_assigned_identity': 'Test User Identity',
+        'vault_sp_secret_id': 'Test Vault Service Principal',
+        'vault_url': 'Test Vault URL'
+    },
+    'Batch': {
+        'batch_account_name': FAKE_ACCOUNT,
+        'batch_service_url': 'Test Batch Service URL',
+        'pool_vm_size': 10
+    },
+    'Container': {
+        'container_registry_password': 'Test ACR Password',
+        'container_registry_username': 'Test ACR Username'
+    },
+    'Storage': {
+        'storage_account_name': 'Test Storage Account',
+        'storage_account_url': 'Test Storage Account URL'
+    }
+}
 
 FAKE_CONFIG = {
     'Authentication': {
@@ -109,7 +136,7 @@ class FakeClient:
         def state(self):
             return batchmodels.TaskState.completed
 
-        def add(self, job_id, task):
+        def add(self, job_id, task, exit_conditions:dict):
             return True
 
         def as_dict(self):

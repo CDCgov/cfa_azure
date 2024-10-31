@@ -86,10 +86,16 @@ class AzureClient:
         if 'identity' in self.credential_method.lower():
             self.cred = ManagedIdentityCredential()
         elif 'sp' in self.credential_method.lower():
-            sp_secret = helpers.get_sp_secret(self.config, self.cred)
-            self.cred = ServicePrincipalCredentials(
-                self.config['Authentication']['sp_application_id'],
-                sp_secret)
+            if 'sp_secrets' in config['Authentication'].keys(): 
+                self.cred = ServicePrincipalCredentials(
+                    self.config['Authentication']['sp_application_id'],
+                    sp_secret)
+            else: 
+                sp_secret = helpers.get_sp_secret(self.config,
+                                                  DefaultAzureCredential())
+                self.cred = ServicePrincipalCredentials(
+                    self.config['Authentication']['sp_application_id'],
+                    sp_secret)
         elif 'user' in self.credential_method.lower():
             if device_code:
                 self.cred = DeviceCodeCredential()

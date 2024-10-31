@@ -342,7 +342,6 @@ def get_batch_pool_json(
             "containerImageNames": [container_image_name],
             "containerRegistries": [container_registry]
         }
-        print(container_configuration)
         deployment_config['virtualMachineConfiguration']['containerConfiguration'] = container_configuration
     logger.debug("VM and container configurations prepared.")
 

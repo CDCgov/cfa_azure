@@ -64,6 +64,18 @@ client.set_pool_info(
   client = AzureClient("./configuration.toml")
   client.create_pool("My Test Pool")
   ```
+- set_container: configures the Azure batch job to use generic Docker container that may be hosted in any public or private repository (e.g. Docker Hub, Github Container Registry, etc.). The repository must be accessible from the virtual network and subnet where the batch pool is deployed at runtime. 
+  Example:
+  ```
+  client = AzureClient("./configuration.toml")
+  client.set_container(
+    container_image_name="cdcgov/prime-simplereport/frontend-lighthouse:pr-8212", # Replace with image name and tag
+    registry_url="ghcr.io/cdcgov/prime-simplereport/",                            # Replace with URL of container registry
+    container_registry_server="ghcr.io",                                          # Server where registry is hosted
+    access_token="SOME_TOKEN_OR_PASSWORD"                                         # Optional password or personal token (Otherwise omit this argument)
+  )
+  client.create_pool(pool_name)
+  ```
 - update_scale_settings: modifies the scaling mode (fixed or autoscale) for an existing pool
   Example:
   ```

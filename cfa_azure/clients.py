@@ -6,16 +6,18 @@ from time import sleep
 from azure.core.exceptions import HttpResponseError
 
 from cfa_azure import helpers
+from helpers import check_env_req, config_to_env_var_map, read_config, get_sp_secret, get_sp_credential, get_blob_service_client, get_batch_mgmt_client, get_batch_service_client
 
 logger = logging.getLogger(__name__)
 
 
 class AzureClient:
-    def __init__(self, config_path: str):
-        """Azure Client for interacting with Azure Batch, Container Registries and Blob Storage
+    def __init__(self, config_path: str = None, use_env_vars: bool = False):
+        """Azure Client for interacting with Azure Batch, Container Registries, and Blob Storage
 
         Args:
-            config_path (str): path to configuration toml file
+            config_path (str): path to configuration file, required if not using environment variables
+            use_env_vars (bool): set to True to load configuration from environment variables
         """
         self.debug = None
         self.scaling = None
@@ -34,40 +36,68 @@ class AzureClient:
         self.mount_container_clients = []
         self.pool_parameters = None
         self.timeout = None
-        self.save_logs_to_blob = None
         
         logger.debug("Attributes initialized in client.")
 
-        # load config
-        self.config = helpers.read_config(config_path)
-        logger.debug("config loaded")
+        if use_env_vars:
+            try:
+                # Check for environment variables
+                if not helpers.check_env_req():
+                    raise ValueError("Missing required environment variables for AzureClient.")
+                
+                # Load config from environment variables using the config_to_env_var_map from helpers
+                from helpers import config_to_env_var_map  # Ensure this is accessible
 
-        helpers.check_config_req(self.config)
+                self.config = {
+                    config_key: os.getenv(env_var) 
+                    for config_key, env_var in config_to_env_var_map.items()
+                }
+                logger.debug("Config loaded from environment variables.")
+            except ValueError as e:
+                logger.error("Environment variable setup failed: %s", e)
+                raise e
+        else:     
+            try:
+                # load config
+                self.config = helpers.read_config(config_path)
+                logger.debug("config loaded")
+
+                # Check config requirements
+                if not helpers.check_config_req(self.config):
+                    raise ValueError("Configuration file is missing required keys.")
+            except FileNotFoundError as e:
+                logger.error("Configuration file not found at path: %s", config_path)
+                raise
+            except ValueError as e:
+                logger.error("Configuration file setup failed: %s", e)
+                raise
+
         # extract info from config
         try:
-            self.account_name = self.config["Batch"]["batch_account_name"]
-            logger.debug("account name read in from config")
-        except Exception as e:
+            self.account_name = self.config.get("Batch.batch_account_name")
+            if not self.account_name:
+                raise KeyError("Batch account name not found in config.")
+            logger.debug("Batch account name loaded: %s", self.account_name)
+        except KeyError as e:
             logger.warning("Batch account name not found in config.")
-            logger.warning(
-                "Please add the batch_account_name in the Batch section of the config."
-            )
-            raise e
+            raise KeyError("Please add AZURE_BATCH_ACCOUNT_NAME to environment variables or config file.") from e
 
         try:
-            self.resource_group_name = self.config["Authentication"][
-                "resource_group"
-            ]
-            logger.debug("resource group name read in from config")
-        except Exception as e:
-            logger.warning(e)
-            raise e
+            self.resource_group_name = self.config.get("Authentication.resource_group")
+            if not self.resource_group_name:
+                raise KeyError("Resource group name not found in configuration.")
+            logger.debug("Resource group name loaded: %s", self.resource_group_name)
+        except KeyError as e:
+            logger.warning("Resource group name not found in configuration.")
+            raise KeyError("Please add AZURE_RESOURCE_GROUP to environment variables or config file.") from e
+
 
         # get credentials
         self.sp_secret = helpers.get_sp_secret(self.config)
         logger.debug("generated SP secret.")
         self.sp_credential = helpers.get_sp_credential(self.config)
         logger.debug("generated SP credential.")
+
         # create blob service account
         self.blob_service_client = helpers.get_blob_service_client(self.config)
         logger.debug("generated Blob Service Client.")

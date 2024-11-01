@@ -1332,8 +1332,7 @@ def get_pool_parameters(
             "resizeOperationStatus": {
                 "targetDedicatedNodes": 1,
                 "nodeDeallocationOption": "Requeue",
-                "resizeTimeout": fixedscale_resize_timeout,
-                "startTime": "2023-07-05T13:18:25.7572321Z",
+                "resizeTimeout": fixedscale_resize_timeout
             },
             "currentDedicatedNodes": 1,
             "currentLowPriorityNodes": 0,

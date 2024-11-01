@@ -218,6 +218,7 @@ class AzureClient:
                 container_registry_server=self.container_registry_server,
                 config=self.config,
                 mount_config=self.mount_config,
+                credential = self.cred,
                 autoscale_formula_path=autoscale_formula_path,
                 timeout=timeout,
                 dedicated_nodes=dedicated_nodes,
@@ -542,7 +543,8 @@ class AzureClient:
             container_registry_url=self.registry_url,
             container_registry_server=self.container_registry_server,
             config=self.config,
-            mount_config=mount_config
+            mount_config=mount_config,
+            credential = self.cred
         )
         self.create_pool(pool_name)
         return pool_name

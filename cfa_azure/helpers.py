@@ -1242,6 +1242,7 @@ def get_pool_parameters(
     container_registry_server: str,
     config: dict,
     mount_config: list,
+    credential: object,
     autoscale_formula_path: str = None,
     autoscale_evaluation_interval: str = 'PT5M',
     timeout: int = 60,
@@ -1261,6 +1262,7 @@ def get_pool_parameters(
         container_registry_server (str): container registry server
         config (dict): config dict
         mount_config (list): output from get_mount_config() regarding mounting of blob storage
+        credential (object): credential object from azure.identity
         autoscale_formula_path (str, optional): path to autoscale formula file if mode is 'autoscale'. Defaults to None.
         timeout (int, optional): length in minutes of timeout for tasks that run in this pool. Defaults to 60.
         dedicated_nodes (int, optional): number of dedicated nodes. Defaults to 1.
@@ -1322,6 +1324,7 @@ def get_pool_parameters(
                 container_registry_url,
                 container_registry_server,
                 config,
+                credential,
                 availability_zones
             ),
             "networkConfiguration": get_network_config(config),

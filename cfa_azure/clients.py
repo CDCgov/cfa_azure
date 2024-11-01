@@ -842,7 +842,7 @@ class AzureClient:
             repo = repo_tag.split(":")[0]
             tag = repo_tag.split(":")[-1]
             container_name = helpers.check_azure_container_exists(
-                registry, repo, tag
+                registry, repo, tag, credential=self.cred
             )
             if container_name is None:
                 raise ValueError(f"{container} does not exist.")
@@ -1024,7 +1024,7 @@ class AzureClient:
         """
         # check full_container_name exists in ACR
         container_name = helpers.check_azure_container_exists(
-            registry_name, repo_name, tag_name
+            registry_name, repo_name, tag_name, credential= self.cred
         )
         if container_name is not None:
             self.container_registry_server = f"{registry_name}.azurecr.io"

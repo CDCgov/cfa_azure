@@ -1822,7 +1822,7 @@ def get_container_registry_client(endpoint: str, credential: object, audience: s
     return ContainerRegistryClient(endpoint, DefaultAzureCredential(), audience=audience)
 
 def check_azure_container_exists(
-    registry_name: str, repo_name: str, tag_name: str
+    registry_name: str, repo_name: str, tag_name: str, credential: object
 ) -> str:
     """specify the container in ACR to use without packaging and uploading the docker container from local.
 
@@ -1830,6 +1830,7 @@ def check_azure_container_exists(
         registry_name (str): the name of the registry in Azure Container Registry
         repo_name (str): the name of the repo
         tag_name (str): the tag name
+        credential (object): credential object from azure.identity
 
     Returns:
         str: full name of container
@@ -1841,7 +1842,7 @@ def check_azure_container_exists(
     logger.debug(f"Set endpoint to {endpoint}")
     try:
         # check full_container_name exists in ACR
-        cr_client = get_container_registry_client(endpoint=endpoint, audience=audience)
+        cr_client = get_container_registry_client(endpoint=endpoint, credential = credential, audience=audience)
         logger.debug("Container registry client created. Container exists.")
     except Exception as e:
         logger.error(

@@ -97,7 +97,7 @@ class AzureClient:
             if device_code:
                 self.cred = DeviceCodeCredential()
             else:
-                self.cred = DefaultAzureCredential()
+                self.cred = DefaultAzureCredential(exclude_managed_identity = True)
         elif 'env' in self.credential_method.lower():
             keys = os.environ.keys()
             if 'AZURE_TENANT_ID' not in keys or 'AZURE_CLIENT_ID' not in keys or 'AZURE_CLIENT_SECRET' not in keys:

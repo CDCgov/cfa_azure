@@ -740,7 +740,7 @@ def add_job(
     job_id: str,
     pool_id: str,
     batch_client: object,
-    task_retries: int = 3
+    task_retries: int = 0
 ):
     """takes in a job ID and config to create a job in the pool
 
@@ -748,6 +748,7 @@ def add_job(
         job_id (str): name of the job to run
         pool_id (str): name of pool
         batch_client (object): batch client object
+        task_retries (int): number of times to retry a failing task. Default 0.
     """
     logger.debug(f"Attempting to create job '{job_id}'...")
     logger.debug("Adding job parameters to job.")

@@ -1,12 +1,11 @@
 import datetime
 import json
 import logging
+import os
 from time import sleep 
 
 from azure.core.exceptions import HttpResponseError
-
 from cfa_azure import helpers
-from helpers import check_env_req, config_to_env_var_map, read_config, get_sp_secret, get_sp_credential, get_blob_service_client, get_batch_mgmt_client, get_batch_service_client
 
 logger = logging.getLogger(__name__)
 
@@ -36,29 +35,48 @@ class AzureClient:
         self.mount_container_clients = []
         self.pool_parameters = None
         self.timeout = None
+        self.save_logs_to_blob = None
         
         logger.debug("Attributes initialized in client.")
 
         if use_env_vars:
             try:
-                # Check for environment variables
-                if not helpers.check_env_req():
-                    raise ValueError("Missing required environment variables for AzureClient.")
-                
-                # Load config from environment variables using the config_to_env_var_map from helpers
-                from helpers import config_to_env_var_map  # Ensure this is accessible
+                missing_vars = helpers.check_env_req()
+                if missing_vars:
+                    raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
+                # Construct self.config with a nested structure
                 self.config = {
-                    config_key: os.getenv(env_var) 
-                    for config_key, env_var in config_to_env_var_map.items()
+                    "Authentication": {
+                        "subscription_id": os.getenv("AZURE_SUBSCRIPTION_ID"),
+                        "resource_group": os.getenv("AZURE_RESOURCE_GROUP"),
+                        "user_assigned_identity": os.getenv("AZURE_USER_ASSIGNED_IDENTITY"),
+                        "tenant_id": os.getenv("AZURE_TENANT_ID"),
+                        "batch_application_id": os.getenv("AZURE_BATCH_APPLICATION_ID"),
+                        "batch_object_id": os.getenv("AZURE_BATCH_OBJECT_ID"),
+                        "sp_application_id": os.getenv("AZURE_SP_APPLICATION_ID"),
+                        "vault_url": os.getenv("AZURE_VAULT_URL"),
+                        "vault_sp_secret_id": os.getenv("AZURE_VAULT_SP_SECRET_ID"),
+                        "subnet_id": os.getenv("AZURE_SUBNET_ID")
+                    },
+                    "Batch": {
+                        "batch_account_name": os.getenv("AZURE_BATCH_ACCOUNT_NAME"),
+                        "batch_service_url": os.getenv("AZURE_BATCH_SERVICE_URL"),
+                        "pool_vm_size": os.getenv("AZURE_POOL_VM_SIZE")
+                    },
+                    "Storage": {
+                        "storage_account_name": os.getenv("AZURE_STORAGE_ACCOUNT_NAME"),
+                        "storage_account_url": os.getenv("AZURE_STORAGE_ACCOUNT_URL")
+                    }
                 }
-                logger.debug("Config loaded from environment variables.")
+                logger.debug("Config loaded from environment variables with nested structure.")
             except ValueError as e:
                 logger.error("Environment variable setup failed: %s", e)
                 raise e
+
         else:     
             try:
-                # load config
+                # load config file
                 self.config = helpers.read_config(config_path)
                 logger.debug("config loaded")
 
@@ -74,7 +92,7 @@ class AzureClient:
 
         # extract info from config
         try:
-            self.account_name = self.config.get("Batch.batch_account_name")
+            self.account_name = self.config["Batch"]["batch_account_name"]
             if not self.account_name:
                 raise KeyError("Batch account name not found in config.")
             logger.debug("Batch account name loaded: %s", self.account_name)
@@ -83,7 +101,7 @@ class AzureClient:
             raise KeyError("Please add AZURE_BATCH_ACCOUNT_NAME to environment variables or config file.") from e
 
         try:
-            self.resource_group_name = self.config.get("Authentication.resource_group")
+            self.resource_group_name = self.config["Authentication"]["resource_group"]
             if not self.resource_group_name:
                 raise KeyError("Resource group name not found in configuration.")
             logger.debug("Resource group name loaded: %s", self.resource_group_name)

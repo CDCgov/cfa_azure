@@ -1846,6 +1846,7 @@ def get_pool_full_info(
     return result
 
 
+
 def check_env_req() -> bool:
     """Checks if all necessary environment variables exist for the AzureClient.
     Returns true if all required variables are found, false otherwise.
@@ -1853,7 +1854,6 @@ def check_env_req() -> bool:
     Returns:
         bool: true if environment variables contain all required components, false otherwise
     """
-    
     config_to_env_var_map = {
         "Authentication.subscription_id": "AZURE_SUBSCRIPTION_ID",
         "Authentication.resource_group": "AZURE_RESOURCE_GROUP",
@@ -1871,15 +1871,13 @@ def check_env_req() -> bool:
         "Storage.storage_account_name": "AZURE_STORAGE_ACCOUNT_NAME",
         "Storage.storage_account_url": "AZURE_STORAGE_ACCOUNT_URL"
     }
-
     missing_vars = [env_var for env_var in config_to_env_var_map.values() if not os.getenv(env_var)]
     
     if not missing_vars:
         logger.debug("All required environment variables are set.")
-        return True
     else:
         logger.warning(f"Missing environment variables: {missing_vars}")
-        return False
+    return missing_vars
 
     
 def check_config_req(config: str):

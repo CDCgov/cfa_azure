@@ -758,7 +758,7 @@ class AzureClient:
         pool_name: str | None = None,
         end_job_on_task_failure: bool = False,
         save_logs_to_blob: str | None = None,
-        task_retries: int = 3
+        task_retries: int = 0
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 

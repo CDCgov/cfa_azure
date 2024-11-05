@@ -696,7 +696,7 @@ def add_job(
     pool_id: str,
     end_job_on_task_failure: bool,
     batch_client: object,
-    task_retries: int = 3
+    task_retries: int = 0
 ):
     """takes in a job ID and config to create a job in the pool
 

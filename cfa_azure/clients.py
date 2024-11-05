@@ -711,13 +711,15 @@ class AzureClient:
     def add_job(
         self,
         job_id: str,
-        pool_name: str | None = None
+        pool_name: str | None = None,
+        task_retries: int = 0
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
         Args:
             job_id (str): name of job
             pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
+            task_retries (int): number of times to retry a task that fails. Default 0.
         """
         # make sure the job_id does not have spaces
         job_id_r = job_id.replace(" ", "")
@@ -735,7 +737,8 @@ class AzureClient:
         helpers.add_job(
             job_id=job_id_r,
             pool_id=p_name,
-            batch_client=self.batch_client
+            batch_client=self.batch_client,
+            task_retries = task_retries
         )
         self.jobs.add(job_id_r)
 

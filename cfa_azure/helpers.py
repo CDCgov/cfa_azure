@@ -17,6 +17,7 @@ import toml
 import yaml
 from azure.batch import BatchServiceClient
 import azure.batch.models as batchmodels
+from azure.batch.models import JobConstraints
 from azure.batch.models import ExitOptions, ExitCodeMapping, JobAction, DependencyAction, ExitConditions, OnTaskFailure
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.containerregistry import ContainerRegistryClient
@@ -740,7 +741,7 @@ def add_job(
     job_id: str,
     pool_id: str,
     batch_client: object,
-    task_retries: int = 3
+    task_retries: int = 0
 ):
     """takes in a job ID and config to create a job in the pool
 
@@ -748,6 +749,7 @@ def add_job(
         job_id (str): name of the job to run
         pool_id (str): name of pool
         batch_client (object): batch client object
+        task_retries (int): number of times to retry a failing task. Default 0.
     """
     logger.debug(f"Attempting to create job '{job_id}'...")
     logger.debug("Adding job parameters to job.")
@@ -755,7 +757,8 @@ def add_job(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
         uses_task_dependencies=True,
-        on_task_failure = OnTaskFailure.perform_exit_options_job_action
+        on_task_failure = OnTaskFailure.perform_exit_options_job_action,
+        constraints = JobConstraints(max_task_retry_count = task_retries)
     )
     logger.debug("Attempting to add job.")
     try:

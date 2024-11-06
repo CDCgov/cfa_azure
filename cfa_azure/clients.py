@@ -1,22 +1,24 @@
 import datetime
 import json
 import logging
+import os
 from time import sleep 
 
 from azure.core.exceptions import HttpResponseError
-
 from cfa_azure import helpers
 
 logger = logging.getLogger(__name__)
 
 
 class AzureClient:
-    def __init__(self, config_path: str):
-        """Azure Client for interacting with Azure Batch, Container Registries and Blob Storage
+    def __init__(self, config_path: str = None, use_env_vars: bool = False):
+        """Azure Client for interacting with Azure Batch, Container Registries, and Blob Storage
 
         Args:
-            config_path (str): path to configuration toml file
+            config_path (str): path to configuration file, required if not using environment variables
+            use_env_vars (bool): set to True to load configuration from environment variables
         """
+
         self.debug = None
         self.scaling = None
         self.input_container_name = None
@@ -37,37 +39,90 @@ class AzureClient:
         self.save_logs_to_blob = None
         
         logger.debug("Attributes initialized in client.")
+        
+        if not config_path and not use_env_vars:
+            raise Exception(
+                "No configuration method specified. Please provide a config path or set `use_env_vars=True` to load settings from environment variables."
+                )
+        
+        # extract credentials using environment variables
+        elif use_env_vars:
+            try:
+                missing_vars = helpers.check_env_req()
+                if missing_vars:
+                    raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
-        # load config
-        self.config = helpers.read_config(config_path)
-        logger.debug("config loaded")
+                # Construct self.config with a nested structure
+                self.config = {
+                    "Authentication": {
+                        "subscription_id": os.getenv("AZURE_SUBSCRIPTION_ID"),
+                        "resource_group": os.getenv("AZURE_RESOURCE_GROUP"),
+                        "user_assigned_identity": os.getenv("AZURE_USER_ASSIGNED_IDENTITY"),
+                        "tenant_id": os.getenv("AZURE_TENANT_ID"),
+                        "batch_application_id": os.getenv("AZURE_BATCH_APPLICATION_ID"),
+                        "batch_object_id": os.getenv("AZURE_BATCH_OBJECT_ID"),
+                        "sp_application_id": os.getenv("AZURE_SP_APPLICATION_ID"),
+                        "vault_url": os.getenv("AZURE_VAULT_URL"),
+                        "vault_sp_secret_id": os.getenv("AZURE_VAULT_SP_SECRET_ID"),
+                        "subnet_id": os.getenv("AZURE_SUBNET_ID")
+                    },
+                    "Batch": {
+                        "batch_account_name": os.getenv("AZURE_BATCH_ACCOUNT_NAME"),
+                        "batch_service_url": os.getenv("AZURE_BATCH_SERVICE_URL"),
+                        "pool_vm_size": os.getenv("AZURE_POOL_VM_SIZE")
+                    },
+                    "Storage": {
+                        "storage_account_name": os.getenv("AZURE_STORAGE_ACCOUNT_NAME"),
+                        "storage_account_url": os.getenv("AZURE_STORAGE_ACCOUNT_URL")
+                    }
+                }
+                logger.debug("Config loaded from environment variables with nested structure.")
+            except ValueError as e:
+                logger.error("Environment variable setup failed: %s", e)
+                raise e
 
-        helpers.check_config_req(self.config)
+        else:     
+            try:
+                # load config file
+                self.config = helpers.read_config(config_path)
+                logger.debug("config loaded")
+
+                # Check config requirements
+                if not helpers.check_config_req(self.config):
+                    raise ValueError("Configuration file is missing required keys.")
+            except FileNotFoundError as e:
+                logger.error("Configuration file not found at path: %s", config_path)
+                raise
+            except ValueError as e:
+                logger.error("Configuration file setup failed: %s", e)
+                raise
+
         # extract info from config
         try:
             self.account_name = self.config["Batch"]["batch_account_name"]
-            logger.debug("account name read in from config")
-        except Exception as e:
+            if not self.account_name:
+                raise KeyError("Batch account name not found in config.")
+            logger.debug("Batch account name loaded: %s", self.account_name)
+        except KeyError as e:
             logger.warning("Batch account name not found in config.")
-            logger.warning(
-                "Please add the batch_account_name in the Batch section of the config."
-            )
-            raise e
+            raise KeyError("Please add AZURE_BATCH_ACCOUNT_NAME to environment variables or config file.") from e
 
         try:
-            self.resource_group_name = self.config["Authentication"][
-                "resource_group"
-            ]
-            logger.debug("resource group name read in from config")
-        except Exception as e:
-            logger.warning(e)
-            raise e
+            self.resource_group_name = self.config["Authentication"]["resource_group"]
+            if not self.resource_group_name:
+                raise KeyError("Resource group name not found in configuration.")
+            logger.debug("Resource group name loaded: %s", self.resource_group_name)
+        except KeyError as e:
+            logger.warning("Resource group name not found in configuration.")
+            raise KeyError("Please add AZURE_RESOURCE_GROUP to environment variables or config file.") from e
+
 
         # get credentials
         self.sp_secret = helpers.get_sp_secret(self.config)
         logger.debug("generated SP secret.")
         self.sp_credential = helpers.get_sp_credential(self.config)
         logger.debug("generated SP credential.")
+
         # create blob service account
         self.blob_service_client = helpers.get_blob_service_client(self.config)
         logger.debug("generated Blob Service Client.")

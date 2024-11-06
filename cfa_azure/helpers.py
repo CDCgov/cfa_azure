@@ -1849,6 +1849,40 @@ def get_pool_full_info(
     return result
 
 
+
+def check_env_req() -> bool:
+    """Checks if all necessary environment variables exist for the AzureClient.
+    Returns true if all required variables are found, false otherwise.
+
+    Returns:
+        bool: true if environment variables contain all required components, false otherwise
+    """
+    config_to_env_var_map = {
+        "Authentication.subscription_id": "AZURE_SUBSCRIPTION_ID",
+        "Authentication.resource_group": "AZURE_RESOURCE_GROUP",
+        "Authentication.user_assigned_identity": "AZURE_USER_ASSIGNED_IDENTITY",
+        "Authentication.tenant_id": "AZURE_TENANT_ID",
+        "Authentication.batch_application_id": "AZURE_BATCH_APPLICATION_ID",
+        "Authentication.batch_object_id": "AZURE_BATCH_OBJECT_ID",
+        "Authentication.sp_application_id": "AZURE_SP_APPLICATION_ID",
+        "Authentication.vault_url": "AZURE_VAULT_URL",
+        "Authentication.vault_sp_secret_id": "AZURE_VAULT_SP_SECRET_ID",
+        "Authentication.subnet_id": "AZURE_SUBNET_ID",
+        "Batch.batch_account_name": "AZURE_BATCH_ACCOUNT_NAME",
+        "Batch.batch_service_url": "AZURE_BATCH_SERVICE_URL",
+        "Batch.pool_vm_size": "AZURE_POOL_VM_SIZE",
+        "Storage.storage_account_name": "AZURE_STORAGE_ACCOUNT_NAME",
+        "Storage.storage_account_url": "AZURE_STORAGE_ACCOUNT_URL"
+    }
+    missing_vars = [env_var for env_var in config_to_env_var_map.values() if not os.getenv(env_var)]
+    
+    if not missing_vars:
+        logger.debug("All required environment variables are set.")
+    else:
+        logger.warning(f"Missing environment variables: {missing_vars}")
+    return missing_vars
+
+    
 def check_config_req(config: str):
     """checks if the config file has all the necessary components for the client
     Returns true if all components exist in config.

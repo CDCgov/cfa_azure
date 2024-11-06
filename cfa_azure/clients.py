@@ -18,6 +18,7 @@ class AzureClient:
             config_path (str): path to configuration file, required if not using environment variables
             use_env_vars (bool): set to True to load configuration from environment variables
         """
+
         self.debug = None
         self.scaling = None
         self.input_container_name = None
@@ -38,8 +39,14 @@ class AzureClient:
         self.save_logs_to_blob = None
         
         logger.debug("Attributes initialized in client.")
-
-        if use_env_vars:
+        
+        if not config_path and not use_env_vars:
+            raise Exception(
+                "No configuration method specified. Please provide a config path or set `use_env_vars=True` to load settings from environment variables."
+                )
+        
+        # extract credentials using environment variables
+        elif use_env_vars:
             try:
                 missing_vars = helpers.check_env_req()
                 if missing_vars:

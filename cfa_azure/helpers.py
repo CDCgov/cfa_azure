@@ -667,7 +667,7 @@ def get_batch_service_client(config: dict, credential: object):
     logger.debug("Initializing Batch Service Client...")
     logger.debug("Attempting to create Batch Service Client.")
     batch_client = BatchServiceClient(
-        credentials = credential,
+        credential = credential,
         batch_url=config["Batch"]["batch_service_url"],
     )
     logger.debug("Batch Service Client initialized successfully.")

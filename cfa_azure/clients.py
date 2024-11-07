@@ -381,6 +381,7 @@ class AzureClient:
 
         else:
             logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
+            container_image_name=self.container_image_name
 
         if not 'pool_id' in self.config['Batch']:
             self.config['Batch']['pool_id'] = pool_name
@@ -474,6 +475,7 @@ class AzureClient:
 
         else:
             logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
+            container_image_name=self.container_image_name
 
         if not 'pool_id' in self.config['Batch']:
             self.config['Batch']['pool_id'] = pool_name

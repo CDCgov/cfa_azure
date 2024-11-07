@@ -22,6 +22,7 @@ class TestClients(unittest.TestCase):
         mock_logger.info.assert_called_with("Client initialized! Happy coding!")
 
     @patch("cfa_azure.clients.logger")
+    @patch("cfa_azure.helpers.get_deployment_config", MagicMock(return_value={"virtualMachineConfiguration": {}}))
     def test_set_pool_info(self, mock_logger):
         self.azure_client.set_pool_info(
             mode="fixed",
@@ -116,6 +117,7 @@ class TestClients(unittest.TestCase):
         self.assertFalse(self.azure_client.debug)
         mock_logger.debug.assert_called_with("Debugging turned off.")
 
+    @patch("cfa_azure.helpers.get_deployment_config", MagicMock(return_value={"virtualMachineConfiguration": {}}))
     def test_create_pool(self):
         self.azure_client.set_pool_info(mode="autoscale")
         pool_details = self.azure_client.create_pool(FAKE_BATCH_POOL)

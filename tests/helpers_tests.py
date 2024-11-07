@@ -511,6 +511,7 @@ class TestHelpers(unittest.TestCase):
             self.assertIsNone(response)
 
     @patch("cfa_azure.helpers.get_autoscale_formula", MagicMock(return_value=FAKE_AUTOSCALE_FORMULA))
+    @patch("cfa_azure.helpers.get_deployment_config", MagicMock(return_value={"virtualMachineConfiguration": {}}))
     def test_get_pool_parameters(self):
         response = cfa_azure.helpers.get_pool_parameters(
             mode="autoscale",

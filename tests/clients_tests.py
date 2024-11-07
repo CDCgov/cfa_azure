@@ -7,7 +7,7 @@ from tests.fake_client import *
 class TestClients(unittest.TestCase):
 
     @patch("cfa_azure.clients.logger")
-    @patch("cfa_azure.helpers.read_config", MagicMock(return_value=FAKE_CONFIG))
+    @patch("cfa_azure.helpers.read_config", MagicMock(return_value=FAKE_CONFIG_MINIMAL))
     @patch("cfa_azure.helpers.check_config_req", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.get_sp_secret", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.get_sp_credential", MagicMock(return_value=True))

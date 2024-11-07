@@ -517,7 +517,7 @@ class TestHelpers(unittest.TestCase):
             container_image_name=FAKE_CONTAINER_IMAGE,
             container_registry_url=FAKE_CONTAINER_REGISTRY,
             container_registry_server=FAKE_CONTAINER_REGISTRY,
-            config=FAKE_CONFIG,
+            config=FAKE_CONFIG_MINIMAL,
             mount_config=[],
             autoscale_formula_path="some_autoscale_formula",
             timeout=60,
@@ -528,13 +528,14 @@ class TestHelpers(unittest.TestCase):
         )
         self.assertIsNotNone(response)
 
+    @patch("cfa_azure.helpers.get_deployment_config", MagicMock(return_value={"virtualMachineConfiguration": {}}))
     def test_get_pool_parameters_use_default(self):
         response = cfa_azure.helpers.get_pool_parameters(
             mode="autoscale",
             container_image_name=FAKE_CONTAINER_IMAGE,
             container_registry_url=FAKE_CONTAINER_REGISTRY,
             container_registry_server=FAKE_CONTAINER_REGISTRY,
-            config=FAKE_CONFIG,
+            config=FAKE_CONFIG_MINIMAL,
             mount_config=[],
             autoscale_formula_path="some_autoscale_formula",
             timeout=60,
@@ -552,7 +553,7 @@ class TestHelpers(unittest.TestCase):
             container_image_name=FAKE_CONTAINER_IMAGE,
             container_registry_url=FAKE_CONTAINER_REGISTRY,
             container_registry_server=FAKE_CONTAINER_REGISTRY,
-            config=FAKE_CONFIG,
+            config=FAKE_CONFIG_MINIMAL,
             mount_config=[],
             autoscale_formula_path="some_autoscale_formula",
             timeout=60,

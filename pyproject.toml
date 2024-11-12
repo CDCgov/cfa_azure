@@ -24,3 +24,7 @@ pyyaml = "*"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]  
+python_files = ["*_tests.py"]

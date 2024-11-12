@@ -1,0 +1,6 @@
+coverage
+numpy
+pandas
+poetry
+pytest
+pytest-xdist

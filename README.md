@@ -1,7 +1,7 @@
 # cfa_azure module
 ## created by Ryan Raasch (Peraton)
 
-## ***Version 1.0.0 WARNING***
+## ***Version 1.0.x WARNING***
 The expected configuration.toml has changed several keys to make it easier on users to find the right information in the Azure Management Console. The following keys have changed:
 - `client_id` is now `batch_application_id`
 - `principal_id` is now `batch_object_id` 
@@ -56,13 +56,22 @@ client.set_pool_info(
 )
 ```
 
+**Updated High Performance Compute Image**  
+The default base Ubuntu image used for Azure Batch nodes is Ubuntu 20.04, which is nearing end of life on 4/22/2025. There is an option to use a high performance compute image using Ubuntu 22.04 as the base OS. It's important to use a compatible VM size with these HPC images. To implement a HPC image for Azure pools, set the parameter `use_hpc_image` to `True` in the `AzureClient` method `set_pool_info()`, like the following:
+```
+client.set_pool_info("autoscale",
+    timeout=60,
+    ...,
+    use_hpc_image = True
+    )
+```
 
 ### Functions
 - create_pool: creates a new Azure batch pool using default autoscale mode   
   Example:
   ```
   client = AzureClient("./configuration.toml")
-  client.create_pool("My Test Pool")
+  client.create_pool("my-test-pool")
   ```
 - update_scale_settings: modifies the scaling mode (fixed or autoscale) for an existing pool
   Example:
@@ -70,7 +79,7 @@ client.set_pool_info(
   # Specify new autoscale formula that will be evaluated every 30 minutes
   client.scaling = "autoscale"
   client.update_scale_settings(
-      pool_name="My Test Pool",
+      pool_name="my-test-pool",
       autoscale_formula_path="./new_autoscale_formula.txt", 
       evaluation_interval="PT30M"
   )
@@ -95,11 +104,11 @@ client.set_pool_info(
   client = AzureClient("./configuration.toml")
   client.set_input_container("some-input-container")
   client.set_output_container("some-output-container")
-  client.create_pool(pool_name="My Test pool")
+  client.create_pool(pool_name="my-test-pool")
 
   # Now change the containers mounted on this pool
   client.update_containers(
-      pool_name="My Test pool",
+      pool_name="my-test-pool",
       input_container_name="another-input-container",
       output_container_name="another-output-container",
       force_update=False

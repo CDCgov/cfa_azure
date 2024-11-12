@@ -2,9 +2,8 @@ name: Python Unit Tests with Coverage
 
 on:
   push:
-    branches: [ unit_tests ]
+    branches: [ master ]
   pull_request:
-    branches: [ unit_tests ]
 
 jobs:
   build:

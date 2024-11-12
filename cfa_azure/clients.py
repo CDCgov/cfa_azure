@@ -167,7 +167,8 @@ class AzureClient:
         low_priority_nodes=1,
         cache_blobfuse: bool = True,
         task_slots_per_node: int = 1,
-        availability_zones = False
+        availability_zones: bool = False,
+        use_hpc_image: bool = False
     ) -> None:
         """Sets the scaling mode of the client, either "fixed" or "autoscale".
         If "fixed" is selected, debug must be turned off.
@@ -184,6 +185,7 @@ class AzureClient:
             cache_blobfuse (bool): True to use blobfuse caching, False to download data from blobfuse every time. Defaults to True.
             task_slots_per_node (int): number of task slots per node. Default 1.
             availability_zones (bool): whether to use availability zones for the pool. True to use Availability Zones. False to stay Regional. Default False.
+            use_hpc_image (bool): whether to use a high performance compute image for nodes. Default False.
         """
         # check if debug and scaling mode match, otherwise alert the user
         if self.debug is True and mode == "autoscale":
@@ -238,7 +240,8 @@ class AzureClient:
                 use_default_autoscale_formula=use_default_autoscale_formula,
                 max_autoscale_nodes=max_autoscale_nodes,
                 task_slots_per_node= task_slots_per_node,
-                availability_zones = availability_zones
+                availability_zones = availability_zones,
+                use_hpc_image = use_hpc_image
             )
             logger.debug("pool parameters generated")
         else:

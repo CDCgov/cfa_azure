@@ -1201,7 +1201,8 @@ def get_deployment_config(
     container_registry_url: str,
     container_registry_server: str,
     config: str,
-    availability_zones: bool = False
+    availability_zones: bool = False,
+    use_hpc_image: bool = False
 ):
     """gets the deployment config based on the config information
 
@@ -1210,6 +1211,8 @@ def get_deployment_config(
         container_registry_url (str): container registry URL
         container_registry_server (str): container registry server
         config (str): config dict
+        availability_zones (bool): whether to use availability zones. Default False.
+        use_hpc_image (bool): whether to use high performance compute images for each node. Default False.
 
     Returns:
         dict: dictionary containing info for container deployment. Uses ubuntu server with info obtained from config file.
@@ -1220,19 +1223,31 @@ def get_deployment_config(
     else:
         policy = "Regional"
 
-    logger.debug("Getting deployment config.")
-    deployment_config = {
-        "virtualMachineConfiguration": {
-            "imageReference": {
+    if use_hpc_image:
+        image_ref = {
+            "publisher": "microsoft-dsvm",
+            "offer": "ubuntu-hpc",
+            "sku": "2204",
+            "version": "latest"
+            }
+        node_agent_sku = "batch.node.ubuntu 22.04"
+    else:
+        image_ref = {
                 "publisher": "microsoft-azure-batch",
                 "offer": "ubuntu-server-container",
                 "sku": "20-04-lts",
                 "version": "latest",
-            },
+            }
+        node_agent_sku = "batch.node.ubuntu 20.04"
+
+    logger.debug("Getting deployment config.")
+    deployment_config = {
+        "virtualMachineConfiguration": {
+            "imageReference": image_ref,
             "nodePlacementConfiguration": {
                 "policy": policy
             },
-            "nodeAgentSkuId": "batch.node.ubuntu 20.04",
+            "nodeAgentSkuId": node_agent_sku,
             "containerConfiguration": {
                 "type": "dockercompatible",
                 "containerImageNames": [container_image_name],
@@ -1327,7 +1342,8 @@ def get_pool_parameters(
     use_default_autoscale_formula: bool = False,
     max_autoscale_nodes: int = 3,
     task_slots_per_node: int = 1,
-    availability_zones: bool = False
+    availability_zones: bool = False,
+    use_hpc_image: bool = False
 ):
     """creates a pool parameter dictionary to be used with pool creation.
 
@@ -1345,6 +1361,7 @@ def get_pool_parameters(
         use_default_autoscale_formula (bool, optional)
         max_autoscale_nodes (int): maximum number of nodes to use with autoscaling. Default 3.
         task_slots_per_node (int): number of task slots per node. Default is 1.
+        use_hpc_image (bool): whether to use a high performance compute image for each node. Default False.
 
     Returns:
         dict: dict of pool parameters for pool creation
@@ -1399,7 +1416,8 @@ def get_pool_parameters(
                 container_registry_url,
                 container_registry_server,
                 config,
-                availability_zones
+                availability_zones,
+                use_hpc_image
             ),
             "networkConfiguration": get_network_config(config),
             "scaleSettings": scale_settings,

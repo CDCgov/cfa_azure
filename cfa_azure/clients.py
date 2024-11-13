@@ -878,13 +878,22 @@ class AzureClient:
         return _files
 
     def add_job(
-        self, job_id: str, pool_name: str | None = None, task_retries: int = 0
+        self, 
+        job_id: str, 
+        pool_name: str | None = None,
+        end_job_on_task_failure: bool = False,
+        save_logs_to_blob: str | None = None,
+        logs_folder: str | None = None,
+        task_retries: int = 0
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
         Args:
             job_id (str): name of job
             pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
+            end_job_on_task_failure (bool):  whether to end the job if a task fails. Default False.
+            save_logs_to_blob (str): the name of the blob container. Must be mounted to the pool. Default None for no saving.
+            logs_folder (str): the folder structure to use when saving logs to blob. Default None will save to /stdout_stderr/ folder in specified blob container.
             task_retries (int): number of times to retry a task that fails. Default 0.
         """
         # make sure the job_id does not have spaces
@@ -893,11 +902,24 @@ class AzureClient:
 
         if pool_name:
             p_name = pool_name
+            self.pool_name = pool_name
         elif self.pool_name:
             p_name = self.pool_name
         else:
             logger.error("Please specify a pool for the job and try again.")
             raise Exception("Please specify a pool for the job and try again.")
+
+        self.save_logs_to_blob = save_logs_to_blob
+
+        if logs_folder is None:
+            self.log_folder = "stdout_stderr"
+        else:
+            if logs_folder.startswith("/"):
+                logs_folder = logs_folder[1:]
+            if logs_folder.endswith("/"):
+                logs_folder = logs_folder[:-1]
+            self.logs_folder = logs_folder
+        
         # add the job to the pool
         logger.debug(f"Attempting to add job {job_id_r}.")
         helpers.add_job(
@@ -1016,6 +1038,7 @@ class AzureClient:
             task_id_base=job_id,
             docker_command=docker_cmd,
             save_logs_rel_path=rel_mnt_path,
+            logs_folder = self.logs_folder,
             name_suffix=name_suffix,
             input_files=in_files,
             mounts=self.mounts,

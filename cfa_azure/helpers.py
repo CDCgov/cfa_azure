@@ -806,6 +806,7 @@ def add_task_to_job(
     task_id_base: str,
     docker_command: str,
     save_logs_rel_path: str | None = None,
+    logs_folder: str = "stdout_stderr",
     name_suffix: str = "",
     input_files: list[str] | None = None,
     mounts: list | None = None,
@@ -822,6 +823,7 @@ def add_task_to_job(
         task_id_base (str): the name given to the task_id as a base
         docker_command (str): the docker command to execute for the task
         save_logs_rel_path (str): relative path to blob where logs should be stored. Default None for not saving logs.
+        logs_folder (str): folder structure to save stdout logs to in blob container. Default is stdout_stderr.
         name_suffix (str): suffix to append to task name. Default is empty string.
         input_files (list[str]): a  list of input files
         mounts (list[tuple]): a list of tuples in the form (container_name, relative_mount_directory)
@@ -914,7 +916,7 @@ def add_task_to_job(
             s_time = t.strftime("%Y%m%d_%H%M%S")
             if not save_logs_rel_path.startswith("/"):
                 save_logs_rel_path = "/" + save_logs_rel_path
-            _folder = f"{save_logs_rel_path}/stdout_stderr/"
+            _folder = f"{save_logs_rel_path}/{logs_folder}/"
             sout = f"{_folder}/stdout_{job_id}_{task_id}_{s_time}.txt"
             full_cmd = f"""/bin/bash -c "mkdir -p {_folder}; {d_cmd_str} 2>&1 | tee {sout}" """
     else:

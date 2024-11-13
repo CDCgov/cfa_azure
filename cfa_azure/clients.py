@@ -910,7 +910,7 @@ class AzureClient:
         self.save_logs_to_blob = save_logs_to_blob
 
         if logs_folder is None:
-            self.log_folder = "stdout_stderr"
+            self.logs_folder = "stdout_stderr"
         else:
             if logs_folder.startswith("/"):
                 logs_folder = logs_folder[1:]

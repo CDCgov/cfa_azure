@@ -881,7 +881,6 @@ class AzureClient:
         self, 
         job_id: str, 
         pool_name: str | None = None,
-        end_job_on_task_failure: bool = False,
         save_logs_to_blob: str | None = None,
         logs_folder: str | None = None,
         task_retries: int = 0
@@ -891,7 +890,6 @@ class AzureClient:
         Args:
             job_id (str): name of job
             pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
-            end_job_on_task_failure (bool):  whether to end the job if a task fails. Default False.
             save_logs_to_blob (str): the name of the blob container. Must be mounted to the pool. Default None for no saving.
             logs_folder (str): the folder structure to use when saving logs to blob. Default None will save to /stdout_stderr/ folder in specified blob container.
             task_retries (int): number of times to retry a task that fails. Default 0.

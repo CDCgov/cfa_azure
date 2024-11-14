@@ -128,30 +128,11 @@ class AzureClient:
             if not self.account_name:
                 raise KeyError("Batch account name not found in config.")
             logger.debug("Batch account name loaded: %s", self.account_name)
-        except KeyError as e:
-            logger.warning("Batch account name not found in config.")
-            raise KeyError(
-                "Please add AZURE_BATCH_ACCOUNT_NAME to environment variables or config file."
-            ) from e
 
         try:
             self.resource_group_name = self.config["Authentication"][
                 "resource_group"
             ]
-            if not self.resource_group_name:
-                raise KeyError(
-                    "Resource group name not found in configuration."
-                )
-            logger.debug(
-                "Resource group name loaded: %s", self.resource_group_name
-            )
-        except KeyError as e:
-            logger.warning(
-                f"Resource group name not found in configuration. {e}"
-            )
-            raise KeyError(
-                "Please add AZURE_RESOURCE_GROUP to environment variables or config file."
-            ) from None
 
         # get credentials
         self.sp_secret = helpers.get_sp_secret(self.config)

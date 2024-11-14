@@ -110,8 +110,8 @@ class AzureClient:
 
                 # Check config requirements
                 if not helpers.check_config_req(self.config):
-                    raise ValueError(
-                        "Configuration file is missing required keys."
+                    print(
+                        "Configuration file is missing required keys. Some functionality may not work as expected."
                     )
             except FileNotFoundError:
                 logger.error(

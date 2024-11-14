@@ -1975,10 +1975,8 @@ def check_config_req(config: str):
         logger.debug("All required keys exist in the config.")
         return True
     else:
-        logger.warning(
-            str(list(req - loaded)),
-            "missing from the config file and will be required by client.",
-        )
+        logger.warning(f"{str(list(req - loaded))} keys missing from the config file and may be required by client.")
+        print(f"{str(list(req - loaded))} keys missing from the config file and may be required by client.")
         return False
 
 

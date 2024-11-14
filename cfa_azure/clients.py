@@ -126,7 +126,7 @@ class AzureClient:
         logger.debug("generated Batch Management Client.")
 
         # create batch service client
-        self.batch_client = helpers.get_batch_service_client(self.config, self.cred)
+        self.batch_client = helpers.get_batch_service_client(self.config, self.secret_cred)
         logger.info("Client initialized! Happy coding!")
 
     def set_debugging(self, debug: bool) -> None:

@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from time import sleep
-from azure.identity import ManagedIdentityCredential, DeviceCodeCredential, DefaultAzureCredential, EnvironmentCredential, ClientSecretCredential
+from azure.identity import ManagedIdentityCredential, DeviceCodeCredential, DefaultAzureCredential, EnvironmentCredential, ClientSecretCredential, InteractiveBrowserCredential
 
 from azure.core.exceptions import HttpResponseError
 
@@ -86,18 +86,17 @@ class AzureClient:
             self.cred = ManagedIdentityCredential()
         elif 'sp' in self.credential_method.lower():
             if 'sp_secrets' not in self.config['Authentication'].keys(): 
-                sp_secret = helpers.get_sp_secret(self.config,
-                                                  DefaultAzureCredential())
+                sp_secret = helpers.get_sp_secret(self.config, DefaultAzureCredential())
             self.cred = ClientSecretCredential(
-                    tenant_id=self.config["Authentication"]["tenant_id"],
-                    client_id=self.config["Authentication"]["sp_application_id"],
-                    client_secret=sp_secret,
-                    )
+                tenant_id=self.config["Authentication"]["tenant_id"],
+                client_id=self.config["Authentication"]["sp_application_id"],
+                client_secret=sp_secret,
+                )
         elif 'user' in self.credential_method.lower():
             if device_code:
                 self.cred = DeviceCodeCredential()
             else:
-                self.cred = DefaultAzureCredential(exclude_managed_identity = True)
+                self.cred = InteractiveBrowserCredential()
         elif 'env' in self.credential_method.lower():
             keys = os.environ.keys()
             if 'AZURE_TENANT_ID' not in keys or 'AZURE_CLIENT_ID' not in keys or 'AZURE_CLIENT_SECRET' not in keys:
@@ -107,7 +106,15 @@ class AzureClient:
                 self.cred = EnvironmentCredential()
         else:
             raise Exception("please choose a credential_method from 'identity', 'sp', 'ext_user', 'env' and try again.")
-    
+
+        if 'sp_secrets' not in self.config['Authentication'].keys(): 
+            sp_secret = helpers.get_sp_secret(self.config, self.cred)
+        self.secret_cred = ClientSecretCredential(
+            tenant_id=self.config["Authentication"]["tenant_id"],
+            client_id=self.config["Authentication"]["sp_application_id"],
+            client_secret=sp_secret,
+            )
+            
         logger.debug(f"generated credentials from {credential_method}.")
         # create blob service account
         
@@ -115,7 +122,7 @@ class AzureClient:
         logger.debug("generated Blob Service Client.")
 
         # create batch mgmt client
-        self.batch_mgmt_client = helpers.get_batch_mgmt_client(self.config, self.cred)
+        self.batch_mgmt_client = helpers.get_batch_mgmt_client(self.config, self.secret_cred)
         logger.debug("generated Batch Management Client.")
 
         # create batch service client
@@ -218,7 +225,7 @@ class AzureClient:
                 container_registry_server=self.container_registry_server,
                 config=self.config,
                 mount_config=self.mount_config,
-                credential = self.cred,
+                credential = self.secret_cred,
                 autoscale_formula_path=autoscale_formula_path,
                 timeout=timeout,
                 dedicated_nodes=dedicated_nodes,

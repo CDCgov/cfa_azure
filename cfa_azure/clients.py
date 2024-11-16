@@ -128,11 +128,16 @@ class AzureClient:
             if not self.account_name:
                 raise KeyError("Batch account name not found in config.")
             logger.debug("Batch account name loaded: %s", self.account_name)
+        except Exception:
+            logger.warning("Could not find batch account name in config.")
 
         try:
             self.resource_group_name = self.config["Authentication"][
                 "resource_group"
             ]
+        except Exception:
+            logger.warning("Could not find resource group name in config.")
+            
 
         # get credentials
         self.sp_secret = helpers.get_sp_secret(self.config)

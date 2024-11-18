@@ -252,7 +252,9 @@ def get_batch_mgmt_client(config: dict):
         logger.warning(
             f"Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section.",
         )
-        print(f"WARNING: Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section if necessary.")
+        print(
+            f"WARNING: Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section if necessary."
+        )
         print("Some functionality may be unavailable.")
         return None
 
@@ -1982,8 +1984,12 @@ def check_config_req(config: str):
         logger.debug("All required keys exist in the config.")
         return True
     else:
-        logger.warning(f"{str(list(req - loaded))} keys missing from the config file and may be required by client.")
-        print(f"{str(list(req - loaded))} keys missing from the config file and may be required by client.")
+        logger.warning(
+            f"{str(list(req - loaded))} keys missing from the config file and may be required by client."
+        )
+        print(
+            f"{str(list(req - loaded))} keys missing from the config file and may be required by client."
+        )
         return False
 
 

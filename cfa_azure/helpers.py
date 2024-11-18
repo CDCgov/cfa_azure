@@ -1762,13 +1762,19 @@ def upload_docker_image(
         image_name (str): name of image in local Docker
         registry_name (str): name of Azure Container Registry
         repo_name (str): name of repo
-        tag (str): tag for the Docker container
+        tag (str): tag for the Docker container. Default is "latest". If None, a timestamp tag will be generated.
         path_to_dockerfile (str): path to Dockerfile. Default is ./Dockerfile.
         use_device_code (bool): whether to use the device code when authenticating. Default False.
 
     Returns:
         str: full container name
     """
+    # Generate a unique tag if none provided
+    if tag is None:
+        tag = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    
+    full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"    
+
     # check if docker is running
     logger.debug("Trying to ping docker daemon.")
     try:
@@ -1781,26 +1787,18 @@ def upload_docker_image(
         logger.warning("Try again when Docker is running.")
         raise DockerException("Make sure Docker is running.") from None
 
-    logger.debug("pulling list of docker images available.")
-    d_list = [image.tags for image in docker_env.images.list()]
-    logger.debug("checking if image_name exists in docker repo.")
-    status = sum([image_name in image for image in d_list])
-    if status == 0:
-        logger.error(
-            f"Image {image_name} does not exist. Check the image name."
-        )
-        print(f"Image {image_name} does not exist. Check the image name.")
-        raise Exception(
-            f"Image {image_name} does not exist. Check the image name."
-        ) from None
-    else:
-        logger.debug(f"{image_name} found in docker repo.")
-    full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
+    # Tagging the image with the unique tag
+    logger.debug(f"Tagging image {image_name} with {full_container_name}.")
+    try:
+        image = docker_env.images.get(image_name)
+        image.tag(full_container_name)
+    except docker.errors.ImageNotFound:
+        # Log available images to guide the user
+        available_images = [img.tags for img in docker_env.images.list()]
+        logger.error(f"Image {image_name} does not exist. Available images are: {available_images}")
+        raise
 
-    # tag the image with full_container_name
-    logger.debug(f"tagging {image_name} before pushing to ACR.")
-    sp.run(f"docker tag {image_name} {full_container_name}", shell=True)
-    # Upload container to registry
+    # Log in to ACR and upload container to registry
     # upload with device login if desired
     if use_device_code:
         logger.debug("Logging in with device code.")
@@ -1811,6 +1809,7 @@ def upload_docker_image(
     sp.run(f"az acr login --name {registry_name}", shell=True)
     logger.debug("Pushing Docker container to ACR.")
     sp.run(f"docker push {full_container_name}", shell=True)
+    
     return full_container_name
 
 

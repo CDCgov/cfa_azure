@@ -874,10 +874,7 @@ def add_task_to_job(
             default=no_exit_options,
         )
     else:
-        terminate_exit_options = ExitOptions(
-            dependency_action=DependencyAction.block,
-            job_action=JobAction.terminate,
-        )
+        terminate_exit_options = ExitOptions(dependency_action=DependencyAction.block, job_action=JobAction.none)
         exit_conditions = ExitConditions(
             exit_codes=[
                 ExitCodeMapping(code=0, exit_options=no_exit_options),
@@ -940,7 +937,7 @@ def add_task_to_job(
                 ),
                 user_identity=user_identity,
                 depends_on=task_deps,
-                exit_conditions=exit_conditions,
+                exit_conditions=exit_conditions
             )
             batch_client.task.add(job_id=job_id, task=task)
             print(f"Task '{id}' added to job '{job_id}'.")
@@ -958,7 +955,7 @@ def add_task_to_job(
             ),
             user_identity=user_identity,
             depends_on=task_deps,
-            exit_conditions=exit_conditions,
+            exit_conditions=exit_conditions
         )
         batch_client.task.add(job_id=job_id, task=task)
         logger.debug(f"Task '{task_id}' added to job '{job_id}'.")

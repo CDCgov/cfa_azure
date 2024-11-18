@@ -9,6 +9,7 @@ coverage
 cryptography>=43.0.1
 docker
 numpy>=2.1.1
+setuptools
 pandas
 pathlib
 poetry

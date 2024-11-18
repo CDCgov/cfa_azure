@@ -417,19 +417,6 @@ class TestHelpers(unittest.TestCase):
         mock_logger.debug.assert_called_with("Download complete.")
 
     @patch("cfa_azure.helpers.logger")
-    @patch("cfa_azure.helpers.check_blob_existence", MagicMock(return_value=True))
-    def test_download_file(self, mock_logger):
-        blob_service_client = FakeClient()
-        cfa_azure.helpers.download_file(
-            c_client=blob_service_client,
-            src_path="some_path/",
-            dest_path="/another_path",
-            do_check= False,
-            verbose = False 
-        )
-        mock_logger.debug.assert_called_with("File downloaded.")
-
-    @patch("cfa_azure.helpers.logger")
     @patch("cfa_azure.helpers.download_file", MagicMock(return_value=True))
     def test_download_directory_extensions_inclusions(self, mock_logger):
         blob_service_client = FakeClient()

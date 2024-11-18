@@ -17,3 +17,4 @@ venv*
 req*
 yaml*
 .coverage
+run_client.py

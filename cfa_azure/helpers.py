@@ -249,10 +249,12 @@ def get_batch_mgmt_client(config: dict):
         logger.debug("Batch Management Client successfully created.")
         return batch_mgmt_client
     except KeyError as e:
-        logger.error(
+        logger.warning(
             f"Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section.",
         )
-        raise e
+        print(f"WARNING: Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section if necessary.")
+        print("Some functionality of may be unavailable.")
+        return None
 
 
 def create_blob_containers(

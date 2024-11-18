@@ -8,7 +8,7 @@ callee
 coverage
 cryptography>=43.0.1
 docker
-numpy
+numpy>=2.1.1
 pandas
 pathlib
 poetry

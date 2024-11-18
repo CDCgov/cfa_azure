@@ -249,10 +249,14 @@ def get_batch_mgmt_client(config: dict):
         logger.debug("Batch Management Client successfully created.")
         return batch_mgmt_client
     except KeyError as e:
-        logger.error(
+        logger.warning(
             f"Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section.",
         )
-        raise e
+        print(
+            f"WARNING: Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section if necessary."
+        )
+        print("Some functionality may be unavailable.")
+        return None
 
 
 def create_blob_containers(
@@ -738,17 +742,22 @@ def get_batch_service_client(config: dict):
     logger.debug("Pulling in SP Secret for batch client.")
     sp_secret = get_sp_secret(config)
     logger.debug("Attempting to create Batch Service Client.")
-    batch_client = BatchServiceClient(
-        credentials=ServicePrincipalCredentials(
-            client_id=config["Authentication"]["sp_application_id"],
-            tenant=config["Authentication"]["tenant_id"],
-            secret=sp_secret,
-            resource="https://batch.core.windows.net/",
-        ),
-        batch_url=config["Batch"]["batch_service_url"],
-    )
-    logger.debug("Batch Service Client initialized successfully.")
-    return batch_client
+    try:
+        batch_client = BatchServiceClient(
+            credentials=ServicePrincipalCredentials(
+                client_id=config["Authentication"]["sp_application_id"],
+                tenant=config["Authentication"]["tenant_id"],
+                secret=sp_secret,
+                resource="https://batch.core.windows.net/",
+            ),
+            batch_url=config["Batch"]["batch_service_url"],
+        )
+        logger.debug("Batch Service Client initialized successfully.")
+        return batch_client
+    except Exception:
+        logger.warning("Could not establish batch client.")
+        print("Could not establish batch client.")
+        return None
 
 
 def list_nodes_by_pool(pool_name: str, config: dict, node_state: str = None):
@@ -1976,8 +1985,10 @@ def check_config_req(config: str):
         return True
     else:
         logger.warning(
-            str(list(req - loaded)),
-            "missing from the config file and will be required by client.",
+            f"{str(list(req - loaded))} keys missing from the config file and may be required by client."
+        )
+        print(
+            f"{str(list(req - loaded))} keys missing from the config file and may be required by client."
         )
         return False
 

@@ -318,7 +318,7 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(task_summary['completed tasks'], 1)
 
     def test_check_config_req(self):
-        status = cfa_azure.helpers.check_config_req(FAKE_CONFIG)
+        status = cfa_azure.helpers.check_config_req(FAKE_CONFIG_MINIMAL)
         self.assertIsNotNone(status)
 
     def test_check_config_req_badconfig(self):

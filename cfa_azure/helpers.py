@@ -1889,8 +1889,8 @@ def check_config_req(config: str):
         return True
     else:
         logger.warning(
+            "%s missing from the config file and will be required by client.",
             str(list(req - loaded)),
-            "missing from the config file and will be required by client.",
         )
         return False
 

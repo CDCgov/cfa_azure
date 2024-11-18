@@ -89,9 +89,9 @@ class AzureClient:
             if 'sp_secrets' not in self.config['Authentication'].keys(): 
                 sp_secret = helpers.get_sp_secret(self.config, DefaultAzureCredential())
             self.cred = ServicePrincipalCredentials(
-                tenant_id=self.config["Authentication"]["tenant_id"],
+                tenant=self.config["Authentication"]["tenant_id"],
                 client_id=self.config["Authentication"]["sp_application_id"],
-                client_secret=sp_secret,
+                secret=sp_secret,
                 )
         elif 'user' in self.credential_method.lower():
             if device_code:
@@ -111,9 +111,9 @@ class AzureClient:
         if 'sp_secrets' not in self.config['Authentication'].keys(): 
             sp_secret = helpers.get_sp_secret(self.config, self.cred)
         self.secret_cred = ServicePrincipalCredentials(
-            tenant_id=self.config["Authentication"]["tenant_id"],
+            tenant=self.config["Authentication"]["tenant_id"],
             client_id=self.config["Authentication"]["sp_application_id"],
-            client_secret=sp_secret,
+            secret=sp_secret,
             )
             
         logger.debug(f"generated credentials from {credential_method}.")

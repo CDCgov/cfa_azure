@@ -12,11 +12,10 @@ setup(
         "azure-keyvault>=4.2.0",
         "azure-batch>=14.0.0",
         "azure-mgmt-batch>=17.1.0",
-        "azure-mgmt-resource>=23.2.0",
-        "azure-mgmt-authorization>=4.0.0"
+        "azure-mgmt-resource>=21.2.1",
         "azure-storage-blob>=12.17.0",
         "azure-containerregistry>=1.2.0",
-        "cryptography>=43.0.1"
+        "cryptography>=43.0.1",
         "toml>=0.10.2",
         "pandas",
         "pathlib",

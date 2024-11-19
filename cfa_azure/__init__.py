@@ -27,9 +27,7 @@ elif log_status.lower().startswith("file"):
 elif log_status.lower().startswith("std"):
     handler = [logging.StreamHandler(sys.stdout)]
 else:
-    print(
-        f"Did not recognize {log_status}. Setting to stdout."
-    )
+    print(f"Did not recognize {log_status}. Setting to stdout.")
     handler = [logging.StreamHandler(sys.stdout)]
 
 logging.basicConfig(

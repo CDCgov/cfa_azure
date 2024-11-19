@@ -4,8 +4,8 @@
 ## ***Version 1.0.0 WARNING***
 The expected configuration.toml has changed several keys to make it easier on users to find the right information in the Azure Management Console. The following keys have changed:
 - `client_id` is now `batch_application_id`
-- `principal_id` is now `batch_object_id` 
-- `application_id` is now `sp_application_id` 
+- `principal_id` is now `batch_object_id`
+- `application_id` is now `sp_application_id`
 
 Refer to the example_config.toml in the examples folder, found [here](examples/example_config.toml) to view the required keys/values needed in the configuration file.
 
@@ -32,21 +32,21 @@ LOG_OUTPUT: sets the output of the logs. Choices are:
 - stdout: saves log output to stdout
 - both: saves log output to both file and stdout
 
-**Example**:  
+**Example**:
 Run the following in the terminal in which `cfa_azure` will be run.
 ```
 export LOG_LEVEL="info"
 export LOG_OUTPUT="stdout"
 ```
 
-**Persisting stdout and stderr to Blob Storage**  
-In certain situations, it is beneficial to save the stdout and stderr from each task to Blob Storage (like when using autoscale pools). It is possible to persist these to Blob Storage by specifying the blob container name in the `save_logs_to_blob` parameter when using `client.add_job()`. *Note that the blob container specified must be mounted to the pool being used for the job.  
+**Persisting stdout and stderr to Blob Storage**
+In certain situations, it is beneficial to save the stdout and stderr from each task to Blob Storage (like when using autoscale pools). It is possible to persist these to Blob Storage by specifying the blob container name in the `save_logs_to_blob` parameter when using `client.add_job()`. *Note that the blob container specified must be mounted to the pool being used for the job.
 For example, if we would like to persist stdout and stderr to the blob container "input-test" for a job named "persisting_test", we would use the following code:
 ```
 client.add_job("persisting_test", save_logs_to_blob = "input-test")
 ```
 
-**Availability Zones**  
+**Availability Zones**
 To make use of Azure's availability zone functionality there is a parameter available in the `set_pool_info()` method called `availability_zones`. To use availability zones when building a pool, set this parameter to True. If you want to stick with the default Regional configuration, this parameter can be left out or set to False. Turn availability zone on like the following:
 ```
 client.set_pool_info(
@@ -58,7 +58,7 @@ client.set_pool_info(
 
 
 ### Functions
-- create_pool: creates a new Azure batch pool using default autoscale mode   
+- create_pool: creates a new Azure batch pool using default autoscale mode
   Example:
   ```
   client = AzureClient("./configuration.toml")
@@ -71,7 +71,7 @@ client.set_pool_info(
   client.scaling = "autoscale"
   client.update_scale_settings(
       pool_name="My Test Pool",
-      autoscale_formula_path="./new_autoscale_formula.txt", 
+      autoscale_formula_path="./new_autoscale_formula.txt",
       evaluation_interval="PT30M"
   )
 
@@ -88,7 +88,7 @@ client.set_pool_info(
   # Switch to fixed scaling mode with 15 spot EC2 nodes and forced termination of current jobs
   client.update_scale_settings(low_priority_nodes=15, node_deallocation_option='Terminate')
   ```
-- update_containers: modifies the containers mounted on an existing Azure batch pool. It essentially recreates the pool with new mounts. 
+- update_containers: modifies the containers mounted on an existing Azure batch pool. It essentially recreates the pool with new mounts.
   Example:
   ```
   # First create a pool
@@ -109,9 +109,9 @@ client.set_pool_info(
 
   *There are N compute nodes actively running tasks in pool. Please wait for jobs to complete or retry with `force_update=True`.*
 
-  As the message suggests, you can either wait for existing jobs to complete in the pool and retry the `update_containers()` operation. Or you can change the `force_update` parameter to `True and re-run the `update_containers()` operation to immediately recreate the pool with new containers. 
+  As the message suggests, you can either wait for existing jobs to complete in the pool and retry the `update_containers()` operation. Or you can change the `force_update` parameter to `True and re-run the `update_containers()` operation to immediately recreate the pool with new containers.
 
- 
+
 ### helpers
 Functions:
 - read_config: reads in a configuration toml file to a python object

@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import toml
 import yaml
-from azure.batch import AzureBatchCredential, BatchServiceClient
+from azure.batch import BatchServiceClient
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
 from azure.identity import (

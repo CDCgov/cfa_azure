@@ -876,8 +876,7 @@ def add_task_to_job(
         )
     else:
         terminate_exit_options = ExitOptions(
-            dependency_action=DependencyAction.block,
-            job_action=JobAction.none,
+            dependency_action=DependencyAction.block, job_action=JobAction.none,
         )
         exit_conditions = ExitConditions(
             exit_codes=[

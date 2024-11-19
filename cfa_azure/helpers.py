@@ -861,7 +861,8 @@ def add_task_to_job(
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
 
     no_exit_options = ExitOptions(
-        dependency_action=DependencyAction.satisfy, job_action=JobAction.none
+        dependency_action=DependencyAction.satisfy,
+        job_action=JobAction.none
     )
     if run_dependent_tasks_on_fail:
         exit_conditions = ExitConditions(
@@ -871,11 +872,12 @@ def add_task_to_job(
             ],
             pre_processing_error=no_exit_options,
             file_upload_error=no_exit_options,
-            default=no_exit_options
+            default=no_exit_options,
         )
     else:
         terminate_exit_options = ExitOptions(
-            dependency_action=DependencyAction.block, job_action=JobAction.none
+            dependency_action=DependencyAction.block,
+            job_action=JobAction.none,
         )
         exit_conditions = ExitConditions(
             exit_codes=[
@@ -884,7 +886,7 @@ def add_task_to_job(
             ],
             pre_processing_error=terminate_exit_options,
             file_upload_error=terminate_exit_options,
-            default=terminate_exit_options
+            default=terminate_exit_options,
         )
 
     logger.debug("Creating mount configuration string.")
@@ -935,11 +937,11 @@ def add_task_to_job(
                 command_line=d_cmd_str + " " + input_file,
                 container_settings=batchmodels.TaskContainerSettings(
                     image_name=full_container_name,
-                    container_run_options=f"--name={job_id} --rm " + mount_str
+                    container_run_options=f"--name={job_id} --rm " + mount_str,
                 ),
                 user_identity=user_identity,
                 depends_on=task_deps,
-                exit_conditions=exit_conditions
+                exit_conditions=exit_conditions,
             )
             batch_client.task.add(job_id=job_id, task=task)
             print(f"Task '{id}' added to job '{job_id}'.")
@@ -953,11 +955,11 @@ def add_task_to_job(
             container_settings=batchmodels.TaskContainerSettings(
                 image_name=full_container_name,
                 container_run_options=f"--name={job_id}_{str(task_id_max+1)} --rm "
-                + mount_str
+                + mount_str,
             ),
             user_identity=user_identity,
             depends_on=task_deps,
-            exit_conditions=exit_conditions
+            exit_conditions=exit_conditions,
         )
         batch_client.task.add(job_id=job_id, task=task)
         logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
@@ -973,7 +975,7 @@ def monitor_tasks(
     resource_group,
     account_name,
     pool_name,
-    batch_mgmt_client
+    batch_mgmt_client,
 ):
     """monitors tasks running in the job based on job ID
 

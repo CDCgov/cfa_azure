@@ -878,12 +878,12 @@ class AzureClient:
         return _files
 
     def add_job(
-        self, 
-        job_id: str, 
+        self,
+        job_id: str,
         pool_name: str | None = None,
         save_logs_to_blob: str | None = None,
         logs_folder: str | None = None,
-        task_retries: int = 0
+        task_retries: int = 0,
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
@@ -917,7 +917,7 @@ class AzureClient:
             if logs_folder.endswith("/"):
                 logs_folder = logs_folder[:-1]
             self.logs_folder = logs_folder
-        
+
         # add the job to the pool
         logger.debug(f"Attempting to add job {job_id_r}.")
         helpers.add_job(
@@ -1036,7 +1036,7 @@ class AzureClient:
             task_id_base=job_id,
             docker_command=docker_cmd,
             save_logs_rel_path=rel_mnt_path,
-            logs_folder = self.logs_folder,
+            logs_folder=self.logs_folder,
             name_suffix=name_suffix,
             input_files=in_files,
             mounts=self.mounts,

@@ -861,8 +861,7 @@ def add_task_to_job(
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
 
     no_exit_options = ExitOptions(
-        dependency_action=DependencyAction.satisfy,
-        job_action=JobAction.none
+        dependency_action=DependencyAction.satisfy, job_action=JobAction.none
     )
     if run_dependent_tasks_on_fail:
         exit_conditions = ExitConditions(
@@ -876,7 +875,8 @@ def add_task_to_job(
         )
     else:
         terminate_exit_options = ExitOptions(
-            dependency_action=DependencyAction.block, job_action=JobAction.none,
+            dependency_action=DependencyAction.block,
+            job_action=JobAction.none,
         )
         exit_conditions = ExitConditions(
             exit_codes=[

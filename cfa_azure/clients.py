@@ -9,9 +9,7 @@ from azure.core.exceptions import HttpResponseError
 from azure.identity import (
     ClientSecretCredential,
     DefaultAzureCredential,
-    DeviceCodeCredential,
     EnvironmentCredential,
-    InteractiveBrowserCredential,
     ManagedIdentityCredential,
 )
 

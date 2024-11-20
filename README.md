@@ -19,6 +19,7 @@ The `cfa_azure` module is composed of three submodules: `batch`, `clients`, and 
 ### clients
 Classes:
 - AzureClient: a client object used for interacting with Azure. It initializes based on a supplied configuration file and creates various Azure clients under the hood. It can be used to upload containers, upload files, run jobs, and more.
+
 To customize the logging capabilities of cfa_azure, two environment variables can be set. These are LOG_LEVEL and LOG_OUTPUT.
 
 LOG_LEVEL: sets the logging level. Choices are:
@@ -38,6 +39,11 @@ Run the following in the terminal in which `cfa_azure` will be run.
 export LOG_LEVEL="info"
 export LOG_OUTPUT="stdout"
 ```
+
+**Using Various Credential Methods**  
+When instantiating a AzureClient object, there is an option set the `credential_method` to use. Previously, only a service principal could be used. Now, there is an option to choose `identity`, `sp`, or `env`. Setting `identity` will use the managed identity associated with the VM where the code is running. Setting `sp` will use a service principal for the credential. Setting `env` will use environment variables to create the credential. When choosing `env`, the following environment variables will need to be set: "AZURE_TENANT_ID", "AZURE_CLIENT_ID", and "AZURE_CLIENT_SECRET".
+
+By default, the managed identity option will be used. In whichever credential method is used, a secret is pulled from the keyvault using the credential to create a secretclientcredential for interaction with various Azure services. 
 
 **Persisting stdout and stderr to Blob Storage**
 In certain situations, it is beneficial to save the stdout and stderr from each task to Blob Storage (like when using autoscale pools). It is possible to persist these to Blob Storage by specifying the blob container name in the `save_logs_to_blob` parameter when using `client.add_job()`. *Note that the blob container specified must be mounted to the pool being used for the job.

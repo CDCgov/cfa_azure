@@ -38,6 +38,7 @@ class AzureClient:
         self.pool_parameters = None
         self.timeout = None
         self.save_logs_to_blob = None
+        self.logs_folder = "stdout_stderr"
 
         logger.debug("Attributes initialized in client.")
 

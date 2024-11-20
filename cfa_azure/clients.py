@@ -110,8 +110,8 @@ class AzureClient:
 
                 # Check config requirements
                 if not helpers.check_config_req(self.config):
-                    raise ValueError(
-                        "Configuration file is missing required keys."
+                    print(
+                        "Configuration file is missing required keys. Some functionality may not work as expected."
                     )
             except FileNotFoundError:
                 logger.error(
@@ -128,30 +128,15 @@ class AzureClient:
             if not self.account_name:
                 raise KeyError("Batch account name not found in config.")
             logger.debug("Batch account name loaded: %s", self.account_name)
-        except KeyError as e:
-            logger.warning("Batch account name not found in config.")
-            raise KeyError(
-                "Please add AZURE_BATCH_ACCOUNT_NAME to environment variables or config file."
-            ) from e
+        except Exception:
+            logger.warning("Could not find batch account name in config.")
 
         try:
             self.resource_group_name = self.config["Authentication"][
                 "resource_group"
             ]
-            if not self.resource_group_name:
-                raise KeyError(
-                    "Resource group name not found in configuration."
-                )
-            logger.debug(
-                "Resource group name loaded: %s", self.resource_group_name
-            )
-        except KeyError as e:
-            logger.warning(
-                f"Resource group name not found in configuration. {e}"
-            )
-            raise KeyError(
-                "Please add AZURE_RESOURCE_GROUP to environment variables or config file."
-            ) from None
+        except Exception:
+            logger.warning("Could not find resource group name in config.")
 
         # get credentials
         self.sp_secret = helpers.get_sp_secret(self.config)
@@ -875,12 +860,12 @@ class AzureClient:
         return _files
 
     def add_job(
-        self, 
-        job_id: str, 
+        self,
+        job_id: str,
         pool_name: str | None = None,
         save_logs_to_blob: str | None = None,
         logs_folder: str | None = None,
-        task_retries: int = 0
+        task_retries: int = 0,
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
@@ -914,7 +899,7 @@ class AzureClient:
             if logs_folder.endswith("/"):
                 logs_folder = logs_folder[:-1]
             self.logs_folder = logs_folder
-        
+
         # add the job to the pool
         logger.debug(f"Attempting to add job {job_id_r}.")
         helpers.add_job(
@@ -1033,7 +1018,7 @@ class AzureClient:
             task_id_base=job_id,
             docker_command=docker_cmd,
             save_logs_rel_path=rel_mnt_path,
-            logs_folder = self.logs_folder,
+            logs_folder=self.logs_folder,
             name_suffix=name_suffix,
             input_files=in_files,
             mounts=self.mounts,

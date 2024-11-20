@@ -24,20 +24,17 @@ class AzureClient:
     def __init__(
         self,
         config_path: str,
-        credential_method: str = "identity",
-        device_code: bool = False,
+        credential_method: str = "identity"
     ):
         """Azure Client for interacting with Azure Batch, Container Registries and Blob Storage
 
         Args:
             config_path (str): path to configuration toml file
-            credential_method (str): how to authenticate to Azure. Choices are 'identity', 'sp', 'ext_user', and 'env'. Default 'identity'
-            device_code (bool): whether to use device code flow if credential method set to 'ext_user'. Default False.
+            credential_method (str): how to authenticate to Azure. Choices are 'identity', 'sp', and 'env'. Default 'identity'.
 
             credential_method details:
                         - 'identity' uses managed identity linked to VM
                         - 'sp' uses service principal from config/env
-                        - 'ext_user' uses interactive browser
                         - 'env' uses environment credential based on env variables
 
         Returns:
@@ -45,7 +42,6 @@ class AzureClient:
         """
         self.config_path = config_path
         self.credential_method = credential_method
-        self.device_code = device_code
         self.debug = None
         self.scaling = None
         self.input_container_name = None
@@ -105,11 +101,6 @@ class AzureClient:
                 client_id=self.config["Authentication"]["sp_application_id"],
                 client_secret=sp_secret,
             )
-        elif "user" in self.credential_method.lower():
-            if device_code:
-                self.cred = DeviceCodeCredential()
-            else:
-                self.cred = InteractiveBrowserCredential()
         elif "env" in self.credential_method.lower():
             keys = os.environ.keys()
             if (

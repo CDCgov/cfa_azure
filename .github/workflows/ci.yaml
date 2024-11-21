@@ -1,17 +1,15 @@
 name: Python Unit Tests with Coverage
 
-on:
+on: 
   push:
-    branches: [ unit_tests ]
-  pull_request:
-    branches: [ unit_tests ]
+    branches: '**'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
       - name: Checkout code
@@ -22,11 +20,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: install poetry
-        run: pip install poetry
+      - name: Install test libraries
+        run: pip install -r tests/requirements.test.txt
 
-      - name: install package
-        run: poetry install --with test
+      - name: Install poetry package packages
+        run: poetry install
 
       - name: Run tests with coverage
         run: coverage run -m pytest

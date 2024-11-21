@@ -38,6 +38,7 @@ class AzureClient:
         self.pool_parameters = None
         self.timeout = None
         self.save_logs_to_blob = None
+        self.logs_folder = "stdout_stderr"
 
         logger.debug("Attributes initialized in client.")
 
@@ -478,10 +479,8 @@ class AzureClient:
                 sleep(5.0)
 
         else:
-            logger.info(
-                f"Pool {pool_name} does not exist. New pool will be created."
-            )
-
+            logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
+            container_image_name=self.container_image_name
         if "pool_id" not in self.config["Batch"]:
             self.config["Batch"]["pool_id"] = pool_name
 
@@ -595,9 +594,8 @@ class AzureClient:
                 sleep(5.0)
 
         else:
-            logger.info(
-                f"Pool {pool_name} does not exist. New pool will be created."
-            )
+            logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
+            container_image_name=self.container_image_name
 
         if "pool_id" not in self.config["Batch"]:
             self.config["Batch"]["pool_id"] = pool_name

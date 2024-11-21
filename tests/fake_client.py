@@ -102,7 +102,6 @@ FAKE_POOL_INFO = {
     "mount_configuration": {},
 }
 
-
 class FakeClient:
     class FakeBatchJob:
         def delete(self, *args):
@@ -130,7 +129,7 @@ class FakeClient:
         def state(self):
             return batchmodels.TaskState.completed
 
-        def add(self, job_id, task, exit_conditions: dict):
+        def add(self, job_id, task):
             return True
 
         def as_dict(self):
@@ -184,12 +183,33 @@ class FakeClient:
 
     class FakePool:
         class FakePoolInfo:
+            class FakeScaleSettings:
+                @property
+                def auto_scale(self):
+                    return "fixed"
+                
+                def as_dict(self):
+                    return FAKE_POOL_INFO
+
             class FakeDeploymentConfig:
                 class VMConfiguration:
                     class ContainerConfig:
+                        class FakeContainerRegistry:
+                            @property
+                            def registry_server(self):
+                                return "registry_server"
+                            
+                            @property
+                            def user_name(self):
+                                return "user_name"
+                            
                         @property
                         def container_image_names(self):
                             return [FAKE_CONTAINER_IMAGE]
+                        
+                        @property
+                        def container_registries(self):
+                            return [self.FakeContainerRegistry()]
 
                     @property
                     def container_configuration(self):
@@ -222,6 +242,10 @@ class FakeClient:
             @property
             def vm_size(self):
                 return FAKE_POOL_SIZE
+            
+            @property
+            def scale_settings(self):
+                return self.FakeScaleSettings()
 
             def get(self):
                 return True

@@ -1985,10 +1985,8 @@ def check_config_req(config: str):
         return True
     else:
         logger.warning(
-            f"{str(list(req - loaded))} keys missing from the config file and may be required by client."
-        )
-        print(
-            f"{str(list(req - loaded))} keys missing from the config file and may be required by client."
+            "%s missing from the config file and will be required by client.",
+            str(list(req - loaded))
         )
         return False
 

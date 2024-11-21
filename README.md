@@ -1,7 +1,7 @@
 # cfa_azure module
 ## created by Ryan Raasch (Peraton)
 
-## ***Version 1.0.0 WARNING***
+## ***Version 1.0.x WARNING***
 The expected configuration.toml has changed several keys to make it easier on users to find the right information in the Azure Management Console. The following keys have changed:
 - `client_id` is now `batch_application_id`
 - `principal_id` is now `batch_object_id`
@@ -40,6 +40,7 @@ export LOG_LEVEL="info"
 export LOG_OUTPUT="stdout"
 ```
 
+
 **Using Various Credential Methods**
 
 When instantiating a AzureClient object, there is an option set the `credential_method` to use. Previously, only a service principal could be used. Now, there is an option to choose `identity`, `sp`, or `env`. Setting `identity` will use the managed identity associated with the VM where the code is running. Setting `sp` will use a service principal for the credential. Setting `env` will use environment variables to create the credential. When choosing `env`, the following environment variables will need to be set: "AZURE_TENANT_ID", "AZURE_CLIENT_ID", and "AZURE_CLIENT_SECRET".
@@ -65,13 +66,22 @@ client.set_pool_info(
 )
 ```
 
+**Updated High Performance Compute Image**
+The default base Ubuntu image used for Azure Batch nodes is Ubuntu 20.04, which is nearing end of life on 4/22/2025. There is an option to use a high performance compute image using Ubuntu 22.04 as the base OS. It's important to use a compatible VM size with these HPC images. To implement a HPC image for Azure pools, set the parameter `use_hpc_image` to `True` in the `AzureClient` method `set_pool_info()`, like the following:
+```
+client.set_pool_info("autoscale",
+    timeout=60,
+    ...,
+    use_hpc_image = True
+    )
+```
 
 ### Functions
 - create_pool: creates a new Azure batch pool using default autoscale mode
   Example:
   ```
   client = AzureClient("./configuration.toml")
-  client.create_pool("My Test Pool")
+  client.create_pool("my-test-pool")
   ```
 - update_scale_settings: modifies the scaling mode (fixed or autoscale) for an existing pool
   Example:
@@ -79,7 +89,7 @@ client.set_pool_info(
   # Specify new autoscale formula that will be evaluated every 30 minutes
   client.scaling = "autoscale"
   client.update_scale_settings(
-      pool_name="My Test Pool",
+      pool_name="my-test-pool",
       autoscale_formula_path="./new_autoscale_formula.txt",
       evaluation_interval="PT30M"
   )
@@ -104,11 +114,11 @@ client.set_pool_info(
   client = AzureClient("./configuration.toml")
   client.set_input_container("some-input-container")
   client.set_output_container("some-output-container")
-  client.create_pool(pool_name="My Test pool")
+  client.create_pool(pool_name="my-test-pool")
 
   # Now change the containers mounted on this pool
   client.update_containers(
-      pool_name="My Test pool",
+      pool_name="my-test-pool",
       input_container_name="another-input-container",
       output_container_name="another-output-container",
       force_update=False
@@ -119,6 +129,81 @@ client.set_pool_info(
   *There are N compute nodes actively running tasks in pool. Please wait for jobs to complete or retry with `force_update=True`.*
 
   As the message suggests, you can either wait for existing jobs to complete in the pool and retry the `update_containers()` operation. Or you can change the `force_update` parameter to `True and re-run the `update_containers()` operation to immediately recreate the pool with new containers.
+
+ - add_task: adds task to existing job in pool. You can also specify which task it depends on.  By default, dependent tasks will only run if the parent task succeeds. However, this behavior can be overridden by specifying `run_dependent_tasks_on_fail=True` on the parent task. When this property is set to True, any runtime failures in parent task will be ignored. However, execution of dependent tasks will only begin after completion (regardless of success or failure) of the parent task.
+
+  Example: Run tasks in parallel without any dependencies.
+  ```
+  task_1 = client.add_task(
+      "test_job_id",
+      docker_cmd=["some", "docker", "command"],  # replace with actual command
+      input_files=["test_file_1.sh"]
+  )
+  task_2 = client.add_task(
+      "test_job_id",
+      docker_cmd=["some", "other", "docker", "command"], # replace with actual command
+      use_uploaded_files=False,
+      input_files=["test_file_2.sh"]
+  )
+  ```
+ Example: Run tasks sequentially and terminate the job if parent task fails
+  ```
+  parent_task = client.add_task(
+      "test_job_id",
+      docker_cmd=["some", "docker", "command"],  # replace with actual command
+      use_uploaded_files=False,
+      input_files=["test_file_1.sh"]
+  )
+  child_task = client.add_task(
+      "test_job_id",
+      docker_cmd=["some", "other", "docker", "command"], # replace with actual command
+      use_uploaded_files=False,
+      depends_on=parent_task,
+      input_files=["test_file_2.sh"]
+  )
+  ```
+ Example: Run tasks sequentially with 1-to-many dependency. Run the child tasks even if parent task fails.
+  ```
+  parent_task = client.add_task(
+      "test_job_id",
+      docker_cmd=["some", "docker", "command"],  # replace with actual command
+      use_uploaded_files=False,
+      run_dependent_tasks_on_fail=True,
+      input_files=["test_file_1.sh"]
+  )
+  child_task_1 = client.add_task(
+      "test_job_id",
+      docker_cmd=["some", "other", "docker", "command"], # replace with actual command
+      depends_on=parent_task,
+      input_files=["test_file_2.sh"]
+  )
+  child_task_2 = client.add_task(
+      "test_job_id",
+      docker_cmd=["another", "docker", "command"], # replace with actual command
+      depends_on=parent_task,
+      input_files=["test_file_3.sh"]
+  )
+  ```
+ Example: Create many-to-1 dependency with 2 parent tasks that run before child task. Second parent task is optional: job should not terminate if it fails.
+  ```
+  parent_task_1 = client.add_task(
+      "test_job_id",
+      docker_cmd=["some", "docker", "command"],  # replace with actual command
+      input_files=["test_file_1.sh"]
+  )
+  parent_task_2 = client.add_task(
+      "test_job_id",
+      docker_cmd=["some", "other", "docker", "command"],  # replace with actual command
+      run_dependent_tasks_on_fail=True,
+      input_files=["test_file_2.sh"]
+  )
+  child_task = client.add_task(
+      "test_job_id",
+      docker_cmd=["another", "docker", "command"], # replace with actual command
+      depends_on=(parent_task_1 + parent_task_2)
+      input_files=["test_file_2.sh"]
+  )
+  ```
 
 
 ### helpers

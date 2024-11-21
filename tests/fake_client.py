@@ -28,6 +28,33 @@ FAKE_YAML_CONTENT = {
     "baseScenario": {"r0": 10},
     "outputDirectory": "some_directory",
 }
+FAKE_CONFIG_MINIMAL = {
+    "Authentication": {
+        "resource_group": FAKE_RESOURCE_GROUP,
+        "subscription_id": "Test Subscription ID",
+        "subnet_id": "Test Subnet ID",
+        "tenant_id": "Test Tenant ID",
+        "sp_application_id": "Some App ID",
+        "batch_application_id": "Some Batch App ID",
+        "batch_object_id": "Some Batch Object ID",
+        "user_assigned_identity": "Test User Identity",
+        "vault_sp_secret_id": "Test Vault Service Principal",
+        "vault_url": "Test Vault URL",
+    },
+    "Batch": {
+        "batch_account_name": FAKE_ACCOUNT,
+        "batch_service_url": "Test Batch Service URL",
+        "pool_vm_size": 10,
+    },
+    "Container": {
+        "container_registry_password": "Test ACR Password",  # pragma: allowlist secret
+        "container_registry_username": "Test ACR Username",
+    },
+    "Storage": {
+        "storage_account_name": "Test Storage Account",
+        "storage_account_url": "Test Storage Account URL",
+    },
+}
 
 FAKE_CONFIG = {
     "Authentication": {
@@ -76,7 +103,6 @@ FAKE_POOL_INFO = {
     "vm_size": 20,
     "mount_configuration": {},
 }
-
 
 class FakeClient:
     class FakeBatchJob:
@@ -159,12 +185,33 @@ class FakeClient:
 
     class FakePool:
         class FakePoolInfo:
+            class FakeScaleSettings:
+                @property
+                def auto_scale(self):
+                    return "fixed"
+                
+                def as_dict(self):
+                    return FAKE_POOL_INFO
+
             class FakeDeploymentConfig:
                 class VMConfiguration:
                     class ContainerConfig:
+                        class FakeContainerRegistry:
+                            @property
+                            def registry_server(self):
+                                return "registry_server"
+                            
+                            @property
+                            def user_name(self):
+                                return "user_name"
+                            
                         @property
                         def container_image_names(self):
                             return [FAKE_CONTAINER_IMAGE]
+                        
+                        @property
+                        def container_registries(self):
+                            return [self.FakeContainerRegistry()]
 
                     @property
                     def container_configuration(self):

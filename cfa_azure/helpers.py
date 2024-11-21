@@ -17,6 +17,16 @@ import pandas as pd
 import toml
 import yaml
 from azure.batch import BatchServiceClient
+from azure.batch.models import (
+    DependencyAction,
+    ExitCodeMapping,
+    ExitConditions,
+    ExitOptions,
+    JobAction,
+    JobConstraints,
+    OnTaskFailure,
+)
+from azure.common.credentials import ServicePrincipalCredentials
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
 from azure.identity import DefaultAzureCredential
@@ -213,7 +223,7 @@ def get_batch_mgmt_client(config: dict, credential: object):
         print(
             f"WARNING: Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section if necessary."
         )
-        print("Some functionality of may be unavailable.")
+        print("Some functionality may be unavailable.")
         return None
 
 
@@ -733,21 +743,13 @@ def add_job(
         task_retries (int): number of times to retry the task if it fails. Default 3.
     """
     logger.debug(f"Attempting to create job '{job_id}'...")
-    if end_job_on_task_failure:
-        end_job_str = "performExitOptionsJobAction"
-        logger.debug("Setting parameter to end job on task failure.")
-    else:
-        end_job_str = "noAction"
-        logger.debug("No action set for job ending.")
     logger.debug("Adding job parameters to job.")
     job = batchmodels.JobAddParameter(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
         uses_task_dependencies=True,
-        on_task_failure=end_job_str,
-        constraints=batchmodels.JobConstraints(
-            max_task_retry_count=task_retries
-        ),
+        on_task_failure=OnTaskFailure.perform_exit_options_job_action,
+        constraints=JobConstraints(max_task_retry_count=task_retries),
     )
     logger.debug("Attempting to add job.")
     try:
@@ -769,10 +771,12 @@ def add_task_to_job(
     task_id_base: str,
     docker_command: str,
     save_logs_rel_path: str | None = None,
+    logs_folder: str = "stdout_stderr",
     name_suffix: str = "",
     input_files: list[str] | None = None,
     mounts: list | None = None,
     depends_on: str | list[str] | None = None,
+    run_dependent_tasks_on_fail: bool = False,
     batch_client: object | None = None,
     full_container_name: str | None = None,
     task_id_max: int = 0,
@@ -784,10 +788,12 @@ def add_task_to_job(
         task_id_base (str): the name given to the task_id as a base
         docker_command (str): the docker command to execute for the task
         save_logs_rel_path (str): relative path to blob where logs should be stored. Default None for not saving logs.
+        logs_folder (str): folder structure to save stdout logs to in blob container. Default is stdout_stderr.
         name_suffix (str): suffix to append to task name. Default is empty string.
         input_files (list[str]): a  list of input files
         mounts (list[tuple]): a list of tuples in the form (container_name, relative_mount_directory)
         depends_on (str | list[str]): list of tasks this task depends on
+        run_dependent_tasks_on_fail (bool): whether to run dependent tasks if the parent task fails. Default is False.
         batch_client (object): batch client object
         full_container_name (str): name ACR container to run task on
         task_id_max (int): current max task id in use by Batch
@@ -819,6 +825,34 @@ def add_task_to_job(
             logger.debug("Adding task dependency.")
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
 
+    no_exit_options = ExitOptions(
+        dependency_action=DependencyAction.satisfy, job_action=JobAction.none
+    )
+    if run_dependent_tasks_on_fail:
+        exit_conditions = ExitConditions(
+            exit_codes=[
+                ExitCodeMapping(code=0, exit_options=no_exit_options),
+                ExitCodeMapping(code=1, exit_options=no_exit_options),
+            ],
+            pre_processing_error=no_exit_options,
+            file_upload_error=no_exit_options,
+            default=no_exit_options,
+        )
+    else:
+        terminate_exit_options = ExitOptions(
+            dependency_action=DependencyAction.block,
+            job_action=JobAction.none,
+        )
+        exit_conditions = ExitConditions(
+            exit_codes=[
+                ExitCodeMapping(code=0, exit_options=no_exit_options),
+                ExitCodeMapping(code=1, exit_options=terminate_exit_options),
+            ],
+            pre_processing_error=terminate_exit_options,
+            file_upload_error=terminate_exit_options,
+            default=terminate_exit_options,
+        )
+
     logger.debug("Creating mount configuration string.")
     mount_str = ""
     # src = env variable to fsmounts/rel_path
@@ -847,7 +881,7 @@ def add_task_to_job(
             s_time = t.strftime("%Y%m%d_%H%M%S")
             if not save_logs_rel_path.startswith("/"):
                 save_logs_rel_path = "/" + save_logs_rel_path
-            _folder = f"{save_logs_rel_path}/stdout_stderr/"
+            _folder = f"{save_logs_rel_path}/{logs_folder}/"
             sout = f"{_folder}/stdout_{job_id}_{task_id}_{s_time}.txt"
             full_cmd = f"""/bin/bash -c "mkdir -p {_folder}; {d_cmd_str} 2>&1 | tee {sout}" """
     else:
@@ -871,6 +905,7 @@ def add_task_to_job(
                 ),
                 user_identity=user_identity,
                 depends_on=task_deps,
+                exit_conditions=exit_conditions,
             )
             batch_client.task.add(job_id=job_id, task=task)
             print(f"Task '{id}' added to job '{job_id}'.")
@@ -888,6 +923,7 @@ def add_task_to_job(
             ),
             user_identity=user_identity,
             depends_on=task_deps,
+            exit_conditions=exit_conditions,
         )
         batch_client.task.add(job_id=job_id, task=task)
         logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
@@ -1152,6 +1188,7 @@ def get_deployment_config(
     config: str,
     credential: object,
     availability_zones: bool = False,
+    use_hpc_image: bool = False,
 ):
     """gets the deployment config based on the config information
 
@@ -1160,6 +1197,9 @@ def get_deployment_config(
         container_registry_url (str): container registry URL
         container_registry_server (str): container registry server
         config (str): config dict
+        credential (object): credential object
+        availability_zones (bool): whether to use availability zones. Default False.
+        use_hpc_image (bool): whether to use high performance compute images for each node. Default False.
 
     Returns:
         dict: dictionary containing info for container deployment. Uses ubuntu server with info obtained from config file.
@@ -1170,17 +1210,29 @@ def get_deployment_config(
     else:
         policy = "Regional"
 
+    if use_hpc_image:
+        image_ref = {
+            "publisher": "microsoft-dsvm",
+            "offer": "ubuntu-hpc",
+            "sku": "2204",
+            "version": "latest",
+        }
+        node_agent_sku = "batch.node.ubuntu 22.04"
+    else:
+        image_ref = {
+            "publisher": "microsoft-azure-batch",
+            "offer": "ubuntu-server-container",
+            "sku": "20-04-lts",
+            "version": "latest",
+        }
+        node_agent_sku = "batch.node.ubuntu 20.04"
+
     logger.debug("Getting deployment config.")
     deployment_config = {
         "virtualMachineConfiguration": {
-            "imageReference": {
-                "publisher": "microsoft-azure-batch",
-                "offer": "ubuntu-server-container",
-                "sku": "20-04-lts",
-                "version": "latest",
-            },
+            "imageReference": image_ref,
             "nodePlacementConfiguration": {"policy": policy},
-            "nodeAgentSkuId": "batch.node.ubuntu 20.04",
+            "nodeAgentSkuId": node_agent_sku,
             "containerConfiguration": {
                 "type": "dockercompatible",
                 "containerImageNames": [container_image_name],
@@ -1277,6 +1329,7 @@ def get_pool_parameters(
     max_autoscale_nodes: int = 3,
     task_slots_per_node: int = 1,
     availability_zones: bool = False,
+    use_hpc_image: bool = False,
 ):
     """creates a pool parameter dictionary to be used with pool creation.
 
@@ -1295,6 +1348,7 @@ def get_pool_parameters(
         use_default_autoscale_formula (bool, optional)
         max_autoscale_nodes (int): maximum number of nodes to use with autoscaling. Default 3.
         task_slots_per_node (int): number of task slots per node. Default is 1.
+        use_hpc_image (bool): whether to use a high performance compute image for each node. Default False.
 
     Returns:
         dict: dict of pool parameters for pool creation
@@ -1350,7 +1404,7 @@ def get_pool_parameters(
                 container_registry_server,
                 config,
                 credential,
-                availability_zones,
+                use_hpc_image,
             ),
             "networkConfiguration": get_network_config(config),
             "scaleSettings": scale_settings,
@@ -1813,6 +1867,43 @@ def get_pool_full_info(
     return result
 
 
+def check_env_req() -> bool:
+    """Checks if all necessary environment variables exist for the AzureClient.
+    Returns true if all required variables are found, false otherwise.
+
+    Returns:
+        bool: true if environment variables contain all required components, false otherwise
+    """
+    config_to_env_var_map = {
+        "Authentication.subscription_id": "AZURE_SUBSCRIPTION_ID",
+        "Authentication.resource_group": "AZURE_RESOURCE_GROUP",
+        "Authentication.user_assigned_identity": "AZURE_USER_ASSIGNED_IDENTITY",
+        "Authentication.tenant_id": "AZURE_TENANT_ID",
+        "Authentication.batch_application_id": "AZURE_BATCH_APPLICATION_ID",
+        "Authentication.batch_object_id": "AZURE_BATCH_OBJECT_ID",
+        "Authentication.sp_application_id": "AZURE_SP_APPLICATION_ID",
+        "Authentication.vault_url": "AZURE_VAULT_URL",
+        "Authentication.vault_sp_secret_id": "AZURE_VAULT_SP_SECRET_ID",
+        "Authentication.subnet_id": "AZURE_SUBNET_ID",
+        "Batch.batch_account_name": "AZURE_BATCH_ACCOUNT_NAME",
+        "Batch.batch_service_url": "AZURE_BATCH_SERVICE_URL",
+        "Batch.pool_vm_size": "AZURE_POOL_VM_SIZE",
+        "Storage.storage_account_name": "AZURE_STORAGE_ACCOUNT_NAME",
+        "Storage.storage_account_url": "AZURE_STORAGE_ACCOUNT_URL",
+    }
+    missing_vars = [
+        env_var
+        for env_var in config_to_env_var_map.values()
+        if not os.getenv(env_var)
+    ]
+
+    if not missing_vars:
+        logger.debug("All required environment variables are set.")
+    else:
+        logger.warning(f"Missing environment variables: {missing_vars}")
+    return missing_vars
+
+
 def check_config_req(config: str):
     """checks if the config file has all the necessary components for the client
     Returns true if all components exist in config.
@@ -1853,8 +1944,8 @@ def check_config_req(config: str):
         return True
     else:
         logger.warning(
-            str(list(req - loaded)),
-            "missing from the config file and will be required by client.",
+            "%s missing from the config file and will be required by client.",
+            str(list(req - loaded))
         )
         return False
 
@@ -1863,7 +1954,7 @@ def get_container_registry_client(
     endpoint: str, credential: object, audience: str
 ):
     return ContainerRegistryClient(
-        endpoint, DefaultAzureCredential(), audience=audience
+        endpoint, credential, audience=audience
     )
 
 

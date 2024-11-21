@@ -19,12 +19,13 @@ logger = logging.getLogger(__name__)
 
 
 class AzureClient:
-    def __init__(self, config_path: str, credential_method: str = "identity"):
+    def __init__(self, config_path: str, credential_method: str = "identity", use_env_vars: bool = False):
         """Azure Client for interacting with Azure Batch, Container Registries and Blob Storage
 
         Args:
             config_path (str): path to configuration toml file
             credential_method (str): how to authenticate to Azure. Choices are 'identity', 'sp', and 'env'. Default 'identity'.
+            use_env_vars (bool): set to True to load configuration from environment variables
 
             credential_method details:
                         - 'identity' uses managed identity linked to VM
@@ -54,33 +55,106 @@ class AzureClient:
         self.pool_parameters = None
         self.timeout = None
         self.save_logs_to_blob = None
+        self.logs_folder = "stdout_stderr"
 
         logger.debug("Attributes initialized in client.")
 
-        # load config
-        self.config = helpers.read_config(config_path)
-        logger.debug("config loaded")
+        if not config_path and not use_env_vars:
+            raise Exception(
+                "No configuration method specified. Please provide a config path or set `use_env_vars=True` to load settings from environment variables."
+            )
 
-        helpers.check_config_req(self.config)
+        # extract credentials using environment variables
+        elif use_env_vars:
+            try:
+                missing_vars = helpers.check_env_req()
+                if missing_vars:
+                    raise ValueError(
+                        f"Missing required environment variables: {', '.join(missing_vars)}"
+                    )
+
+                # Construct self.config with a nested structure
+                self.config = {
+                    "Authentication": {
+                        "subscription_id": os.getenv("AZURE_SUBSCRIPTION_ID"),
+                        "resource_group": os.getenv("AZURE_RESOURCE_GROUP"),
+                        "user_assigned_identity": os.getenv(
+                            "AZURE_USER_ASSIGNED_IDENTITY"
+                        ),
+                        "tenant_id": os.getenv("AZURE_TENANT_ID"),
+                        "batch_application_id": os.getenv(
+                            "AZURE_BATCH_APPLICATION_ID"
+                        ),
+                        "batch_object_id": os.getenv("AZURE_BATCH_OBJECT_ID"),
+                        "sp_application_id": os.getenv(
+                            "AZURE_SP_APPLICATION_ID"
+                        ),
+                        "vault_url": os.getenv("AZURE_VAULT_URL"),
+                        "vault_sp_secret_id": os.getenv(
+                            "AZURE_VAULT_SP_SECRET_ID"
+                        ),
+                        "subnet_id": os.getenv("AZURE_SUBNET_ID"),
+                    },
+                    "Batch": {
+                        "batch_account_name": os.getenv(
+                            "AZURE_BATCH_ACCOUNT_NAME"
+                        ),
+                        "batch_service_url": os.getenv(
+                            "AZURE_BATCH_SERVICE_URL"
+                        ),
+                        "pool_vm_size": os.getenv("AZURE_POOL_VM_SIZE"),
+                    },
+                    "Storage": {
+                        "storage_account_name": os.getenv(
+                            "AZURE_STORAGE_ACCOUNT_NAME"
+                        ),
+                        "storage_account_url": os.getenv(
+                            "AZURE_STORAGE_ACCOUNT_URL"
+                        ),
+                    },
+                }
+                logger.debug(
+                    "Config loaded from environment variables with nested structure."
+                )
+            except ValueError as e:
+                logger.error("Environment variable setup failed: %s", e)
+                raise e
+
+        else:
+            try:
+                # load config file
+                self.config = helpers.read_config(config_path)
+                logger.debug("config loaded")
+
+                # Check config requirements
+                if not helpers.check_config_req(self.config):
+                    print(
+                        "Configuration file is missing required keys. Some functionality may not work as expected."
+                    )
+            except FileNotFoundError:
+                logger.error(
+                    "Configuration file not found at path: %s", config_path
+                )
+                raise
+            except ValueError as e:
+                logger.error("Configuration file setup failed: %s", e)
+                raise
+
         # extract info from config
         try:
             self.account_name = self.config["Batch"]["batch_account_name"]
-            logger.debug("account name read in from config")
-        except Exception as e:
-            logger.warning("Batch account name not found in config.")
-            logger.warning(
-                "Please add the batch_account_name in the Batch section of the config."
-            )
-            raise e
+            if not self.account_name:
+                raise KeyError("Batch account name not found in config.")
+            logger.debug("Batch account name loaded: %s", self.account_name)
+        except Exception:
+            logger.warning("Could not find batch account name in config.")
 
         try:
             self.resource_group_name = self.config["Authentication"][
                 "resource_group"
             ]
-            logger.debug("resource group name read in from config")
-        except Exception as e:
-            logger.warning(e)
-            raise e
+        except Exception:
+            logger.warning("Could not find resource group name in config.")
 
         # get credentials
         if "identity" in self.credential_method.lower():
@@ -130,6 +204,7 @@ class AzureClient:
         )
 
         logger.debug(f"generated credentials from {credential_method}.")
+        
         # create blob service account
 
         self.blob_service_client = helpers.get_blob_service_client(
@@ -181,8 +256,9 @@ class AzureClient:
         low_priority_nodes=1,
         cache_blobfuse: bool = True,
         task_slots_per_node: int = 1,
-        availability_zones=False,
-    ) -> None:
+        availability_zones: bool = False,
+        use_hpc_image: bool = False,
+        ) -> None:
         """Sets the scaling mode of the client, either "fixed" or "autoscale".
         If "fixed" is selected, debug must be turned off.
         If "autoscale" is selected, an autoscale formula path must be provided.
@@ -198,6 +274,7 @@ class AzureClient:
             cache_blobfuse (bool): True to use blobfuse caching, False to download data from blobfuse every time. Defaults to True.
             task_slots_per_node (int): number of task slots per node. Default 1.
             availability_zones (bool): whether to use availability zones for the pool. True to use Availability Zones. False to stay Regional. Default False.
+            use_hpc_image (bool): whether to use a high performance compute image for nodes. Default False.
         """
         # check if debug and scaling mode match, otherwise alert the user
         if self.debug is True and mode == "autoscale":
@@ -254,6 +331,7 @@ class AzureClient:
                 max_autoscale_nodes=max_autoscale_nodes,
                 task_slots_per_node=task_slots_per_node,
                 availability_zones=availability_zones,
+                use_hpc_image=use_hpc_image,
             )
             logger.debug("pool parameters generated")
         else:
@@ -469,10 +547,9 @@ class AzureClient:
                 sleep(5.0)
 
         else:
-            logger.info(
-                f"Pool {pool_name} does not exist. New pool will be created."
-            )
-
+            logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
+            container_image_name=self.container_image_name
+            
         if "pool_id" not in self.config["Batch"]:
             self.config["Batch"]["pool_id"] = pool_name
 
@@ -586,9 +663,8 @@ class AzureClient:
                 sleep(5.0)
 
         else:
-            logger.info(
-                f"Pool {pool_name} does not exist. New pool will be created."
-            )
+            logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
+            container_image_name=self.container_image_name
 
         if "pool_id" not in self.config["Batch"]:
             self.config["Batch"]["pool_id"] = pool_name
@@ -858,8 +934,8 @@ class AzureClient:
         self,
         job_id: str,
         pool_name: str | None = None,
-        end_job_on_task_failure: bool = False,
         save_logs_to_blob: str | None = None,
+        logs_folder: str | None = None,
         task_retries: int = 0,
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
@@ -867,9 +943,9 @@ class AzureClient:
         Args:
             job_id (str): name of job
             pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
-            end_job_on_task_failure (bool): whether to end the job if a task fails. Default False.
             save_logs_to_blob (str): the name of the blob container. Must be mounted to the pool. Default None for no saving.
-            task_retries (int): the maximum number of retries for a task that fails. Default 3 retries.
+            logs_folder (str): the folder structure to use when saving logs to blob. Default None will save to /stdout_stderr/ folder in specified blob container.
+            task_retries (int): number of times to retry a task that fails. Default 0.
         """
         # make sure the job_id does not have spaces
         job_id_r = job_id.replace(" ", "")
@@ -886,12 +962,20 @@ class AzureClient:
 
         self.save_logs_to_blob = save_logs_to_blob
 
+        if logs_folder is None:
+            self.logs_folder = "stdout_stderr"
+        else:
+            if logs_folder.startswith("/"):
+                logs_folder = logs_folder[1:]
+            if logs_folder.endswith("/"):
+                logs_folder = logs_folder[:-1]
+            self.logs_folder = logs_folder
+
         # add the job to the pool
         logger.debug(f"Attempting to add job {job_id_r}.")
         helpers.add_job(
             job_id=job_id_r,
             pool_id=p_name,
-            end_job_on_task_failure=end_job_on_task_failure,
             batch_client=self.batch_client,
             task_retries=task_retries,
         )
@@ -905,6 +989,7 @@ class AzureClient:
         use_uploaded_files: bool = False,
         input_files: list[str] | None = None,
         depends_on: list[str] | None = None,
+        run_dependent_tasks_on_fail: bool = False,
         container: str = None,
     ) -> list[str]:
         """adds task to existing job.
@@ -920,6 +1005,7 @@ class AzureClient:
                 and create a task for each input file uploaded or specified in input_files. Default is False.
             input_files (list[str]): a list of file names. Each file will be assigned its own task and executed against the docker command provided. Default is [].
             depends_on (list[str]): a list of tasks this task depends on. Default is None.
+            run_dependent_tasks_on_fail (bool): whether to run the dependent tasks if parent task fails. Default is False.
             container (str): name of ACR container in form "registry_name/repo_name:tag_name". Default is None to use container attached to client.
 
 
@@ -1003,10 +1089,12 @@ class AzureClient:
             task_id_base=job_id,
             docker_command=docker_cmd,
             save_logs_rel_path=rel_mnt_path,
+            logs_folder=self.logs_folder,
             name_suffix=name_suffix,
             input_files=in_files,
             mounts=self.mounts,
             depends_on=depends_on,
+            run_dependent_tasks_on_fail=run_dependent_tasks_on_fail,
             batch_client=self.batch_client,
             full_container_name=container_name,
             task_id_max=self.task_id_max,

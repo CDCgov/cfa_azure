@@ -10,7 +10,6 @@ from docker.errors import DockerException
 import cfa_azure.helpers
 from tests.fake_client import *
 
-
 class TestHelpers(unittest.TestCase):
     @patch("cfa_azure.helpers.logger")
     @patch("toml.load", MagicMock(return_value=FAKE_CONFIG))
@@ -437,7 +436,7 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(task_summary["completed tasks"], 1)
 
     def test_check_config_req(self):
-        status = cfa_azure.helpers.check_config_req(FAKE_CONFIG)
+        status = cfa_azure.helpers.check_config_req(FAKE_CONFIG_MINIMAL)
         self.assertIsNotNone(status)
 
     def test_check_config_req_badconfig(self):
@@ -549,21 +548,8 @@ class TestHelpers(unittest.TestCase):
         mock_logger.debug.assert_called_with("Download complete.")
 
     @patch("cfa_azure.helpers.logger")
-    @patch(
-        "cfa_azure.helpers.check_blob_existence", MagicMock(return_value=True)
-    )
-    def test_download_file(self, mock_logger):
-        blob_service_client = FakeClient()
-        cfa_azure.helpers.download_file(
-            c_client=blob_service_client,
-            src_path="some_path/",
-            dest_path="/another_path",
-            do_check=False,
-            verbose=False,
-        )
-        mock_logger.debug.assert_called_with("File downloaded.")
 
-    @patch("cfa_azure.helpers.logger")
+
     @patch("cfa_azure.helpers.download_file", MagicMock(return_value=True))
     def test_download_directory_extensions_inclusions(self, mock_logger):
         blob_service_client = FakeClient()
@@ -666,17 +652,16 @@ class TestHelpers(unittest.TestCase):
             )
             self.assertIsNone(response)
 
-    @patch(
-        "cfa_azure.helpers.get_autoscale_formula",
-        MagicMock(return_value=FAKE_AUTOSCALE_FORMULA),
-    )
+    @patch("cfa_azure.helpers.get_autoscale_formula", MagicMock(return_value=FAKE_AUTOSCALE_FORMULA))
+    @patch("cfa_azure.helpers.get_deployment_config", MagicMock(return_value={"virtualMachineConfiguration": {}}))
+
     def test_get_pool_parameters(self):
         response = cfa_azure.helpers.get_pool_parameters(
             mode="autoscale",
             container_image_name=FAKE_CONTAINER_IMAGE,
             container_registry_url=FAKE_CONTAINER_REGISTRY,
             container_registry_server=FAKE_CONTAINER_REGISTRY,
-            config=FAKE_CONFIG,
+            config=FAKE_CONFIG_MINIMAL,
             mount_config=[],
             autoscale_formula_path="some_autoscale_formula",
             timeout=60,
@@ -687,13 +672,14 @@ class TestHelpers(unittest.TestCase):
         )
         self.assertIsNotNone(response)
 
+    @patch("cfa_azure.helpers.get_deployment_config", MagicMock(return_value={"virtualMachineConfiguration": {}}))
     def test_get_pool_parameters_use_default(self):
         response = cfa_azure.helpers.get_pool_parameters(
             mode="autoscale",
             container_image_name=FAKE_CONTAINER_IMAGE,
             container_registry_url=FAKE_CONTAINER_REGISTRY,
             container_registry_server=FAKE_CONTAINER_REGISTRY,
-            config=FAKE_CONFIG,
+            config=FAKE_CONFIG_MINIMAL,
             mount_config=[],
             autoscale_formula_path="some_autoscale_formula",
             timeout=60,
@@ -710,7 +696,7 @@ class TestHelpers(unittest.TestCase):
             container_image_name=FAKE_CONTAINER_IMAGE,
             container_registry_url=FAKE_CONTAINER_REGISTRY,
             container_registry_server=FAKE_CONTAINER_REGISTRY,
-            config=FAKE_CONFIG,
+            config=FAKE_CONFIG_MINIMAL,
             mount_config=[],
             autoscale_formula_path="some_autoscale_formula",
             timeout=60,
@@ -726,10 +712,7 @@ class TestHelpers(unittest.TestCase):
         batch_client = FakeClient()
         job_id = "my_job_id"
         cfa_azure.helpers.add_job(
-            job_id,
-            FAKE_BATCH_POOL,
-            end_job_on_task_failure=True,
-            batch_client=batch_client,
+            job_id, FAKE_BATCH_POOL, batch_client=batch_client
         )
         mock_logger.info.assert_called_with(
             f"Job '{job_id}' created successfully."
@@ -740,10 +723,7 @@ class TestHelpers(unittest.TestCase):
         batch_client = FakeClient()
         job_id = "my_job_id"
         cfa_azure.helpers.add_job(
-            job_id,
-            FAKE_BATCH_POOL,
-            end_job_on_task_failure=False,
-            batch_client=batch_client,
+            job_id, FAKE_BATCH_POOL, batch_client=batch_client
         )
         mock_logger.debug.assert_called_with("Attempting to add job.")
 

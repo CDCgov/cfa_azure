@@ -1,4 +1,5 @@
 # ruff: noqa: F403, F405
+
 import logging
 import unittest
 from unittest.mock import MagicMock, call, mock_open, patch
@@ -8,7 +9,6 @@ from docker.errors import DockerException
 
 import cfa_azure.helpers
 from tests.fake_client import *
-
 
 class TestHelpers(unittest.TestCase):
     @patch("cfa_azure.helpers.logger")
@@ -548,6 +548,8 @@ class TestHelpers(unittest.TestCase):
         mock_logger.debug.assert_called_with("Download complete.")
 
     @patch("cfa_azure.helpers.logger")
+
+
     @patch("cfa_azure.helpers.download_file", MagicMock(return_value=True))
     def test_download_directory_extensions_inclusions(self, mock_logger):
         blob_service_client = FakeClient()
@@ -652,6 +654,7 @@ class TestHelpers(unittest.TestCase):
 
     @patch("cfa_azure.helpers.get_autoscale_formula", MagicMock(return_value=FAKE_AUTOSCALE_FORMULA))
     @patch("cfa_azure.helpers.get_deployment_config", MagicMock(return_value={"virtualMachineConfiguration": {}}))
+
     def test_get_pool_parameters(self):
         response = cfa_azure.helpers.get_pool_parameters(
             mode="autoscale",

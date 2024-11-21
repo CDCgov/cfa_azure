@@ -19,6 +19,7 @@ The `cfa_azure` module is composed of three submodules: `batch`, `clients`, and 
 ### clients
 Classes:
 - AzureClient: a client object used for interacting with Azure. It initializes based on a supplied configuration file and creates various Azure clients under the hood. It can be used to upload containers, upload files, run jobs, and more.
+
 To customize the logging capabilities of cfa_azure, two environment variables can be set. These are LOG_LEVEL and LOG_OUTPUT.
 
 LOG_LEVEL: sets the logging level. Choices are:
@@ -39,7 +40,15 @@ export LOG_LEVEL="info"
 export LOG_OUTPUT="stdout"
 ```
 
+
+**Using Various Credential Methods**
+
+When instantiating a AzureClient object, there is an option set the `credential_method` to use. Previously, only a service principal could be used. Now, there is an option to choose `identity`, `sp`, or `env`. Setting `identity` will use the managed identity associated with the VM where the code is running. Setting `sp` will use a service principal for the credential. Setting `env` will use environment variables to create the credential. When choosing `env`, the following environment variables will need to be set: "AZURE_TENANT_ID", "AZURE_CLIENT_ID", and "AZURE_CLIENT_SECRET".
+
+By default, the managed identity option will be used. In whichever credential method is used, a secret is pulled from the keyvault using the credential to create a secretclientcredential for interaction with various Azure services.
+
 **Persisting stdout and stderr to Blob Storage**
+
 In certain situations, it is beneficial to save the stdout and stderr from each task to Blob Storage (like when using autoscale pools). It is possible to persist these to Blob Storage by specifying the blob container name in the `save_logs_to_blob` parameter when using `client.add_job()`. *Note that the blob container specified must be mounted to the pool being used for the job.
 For example, if we would like to persist stdout and stderr to the blob container "input-test" for a job named "persisting_test", we would use the following code:
 ```
@@ -47,6 +56,7 @@ client.add_job("persisting_test", save_logs_to_blob = "input-test")
 ```
 
 **Availability Zones**
+
 To make use of Azure's availability zone functionality there is a parameter available in the `set_pool_info()` method called `availability_zones`. To use availability zones when building a pool, set this parameter to True. If you want to stick with the default Regional configuration, this parameter can be left out or set to False. Turn availability zone on like the following:
 ```
 client.set_pool_info(
@@ -119,7 +129,6 @@ client.set_pool_info("autoscale",
   *There are N compute nodes actively running tasks in pool. Please wait for jobs to complete or retry with `force_update=True`.*
 
   As the message suggests, you can either wait for existing jobs to complete in the pool and retry the `update_containers()` operation. Or you can change the `force_update` parameter to `True and re-run the `update_containers()` operation to immediately recreate the pool with new containers.
-
 
  - add_task: adds task to existing job in pool. You can also specify which task it depends on.  By default, dependent tasks will only run if the parent task succeeds. However, this behavior can be overridden by specifying `run_dependent_tasks_on_fail=True` on the parent task. When this property is set to True, any runtime failures in parent task will be ignored. However, execution of dependent tasks will only begin after completion (regardless of success or failure) of the parent task.
 
@@ -195,6 +204,7 @@ client.set_pool_info("autoscale",
       input_files=["test_file_2.sh"]
   )
   ```
+
 
 ### helpers
 Functions:

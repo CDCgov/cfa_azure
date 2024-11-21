@@ -29,7 +29,7 @@ from azure.batch.models import (
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
-from azure.identity import ClientSecretCredential, DefaultAzureCredential
+from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
 from azure.storage.blob import BlobServiceClient, ContainerClient
@@ -133,31 +133,25 @@ def get_autoscale_formula(filepath: str = None, text_input: str = None):
         return text_input
 
 
-def get_sp_secret(config: dict):
+def get_sp_secret(config: dict, credential: object):
     """gets the user's secret from the keyvault based on config
 
     Args:
         config (dict): contains configuration info
+        credential (object): credential object from azure.identity
 
     Returns:
         str: service principal secret
 
     Example:
-        sp_secret = get_sp_secret(config)
+        sp_secret = get_sp_secret(config, DefaultAzureClient())
     """
-    logger.debug("Attempting to retrieve Azure credential.")
-    try:
-        user_credential = DefaultAzureCredential()
-        logger.debug("Credential obtained.")
-    except Exception as e:
-        logger.error("Error obtaining credential:", e)
-        raise e
 
     logger.debug("Attempting to establish secret client.")
     try:
         secret_client = SecretClient(
             vault_url=config["Authentication"]["vault_url"],
-            credential=user_credential,
+            credential=credential,
         )
         logger.debug("Secret client initialized.")
     except KeyError as e:
@@ -179,47 +173,21 @@ def get_sp_secret(config: dict):
         raise e
 
 
-def get_sp_credential(config: dict):
-    """gets the user's credentials based on their secret and config file
-
-    Args:
-        config (dict): contains configuration info
-
-    Returns:
-        class: client credential for Azure Blob Service Client
-    """
-    logger.debug("Attempting to obtain service principal credentials...")
-    sp_secret = get_sp_secret(config)
-    try:
-        sp_credential = ClientSecretCredential(
-            tenant_id=config["Authentication"]["tenant_id"],
-            client_id=config["Authentication"]["sp_application_id"],
-            client_secret=sp_secret,
-        )
-        logger.debug("Service principal credentials obtained successfully.")
-        return sp_credential
-    except KeyError as e:
-        logger.error(
-            f"Configuration error: '{e}' does not exist in the config file. Please add it in the Authentication section.",
-        )
-        raise e
-
-
-def get_blob_service_client(config: dict):
+def get_blob_service_client(config: dict, credential: object):
     """establishes Blob Service Client using credentials
 
     Args:
         config (dict): contains configuration info
+        credential (object): credential object from aazure.identity
 
     Returns:
         class: an instance of BlobServiceClient
     """
     logger.debug("Initializing Blob Service Client...")
-    sp_credential = get_sp_credential(config)
     try:
         blob_service_client = BlobServiceClient(
             account_url=config["Storage"]["storage_account_url"],
-            credential=sp_credential,
+            credential=credential,
         )
         logger.debug("Blob Service Client successfully created.")
         return blob_service_client
@@ -230,20 +198,20 @@ def get_blob_service_client(config: dict):
         raise e
 
 
-def get_batch_mgmt_client(config: dict):
+def get_batch_mgmt_client(config: dict, credential: object):
     """establishes a Batch Management Client based on credentials and config file
 
     Args:
         config (dict): config dictionary
+        credential (object): credential object from azure.identity
 
     Returns:
         class: an instance of the Batch Management Client
     """
     logger.debug("Initializing Batch Management Client...")
-    sp_credential = get_sp_credential(config)
     try:
         batch_mgmt_client = BatchManagementClient(
-            credential=sp_credential,
+            credential=credential,
             subscription_id=config["Authentication"]["subscription_id"],
         )
         logger.debug("Batch Management Client successfully created.")
@@ -426,11 +394,6 @@ def get_batch_pool_json(
     }
     if autoscale_formula_path:
         pool_parameters["properties"]["scaleSettings"] = {
-            # "fixedScale": {
-            #     "targetDedicatedNodes": 1,
-            #     "targetLowPriorityNodes": 0,
-            #     "resizeTimeout": "PT15M"
-            # }
             "autoScale": {
                 "evaluationInterval": autoscale_evaluation_interval,
                 "formula": get_autoscale_formula(
@@ -729,35 +692,23 @@ def upload_files_in_folder(
     return file_list
 
 
-def get_batch_service_client(config: dict):
+def get_batch_service_client(config: dict, credential: object):
     """creates and returns a Batch Service Client object
 
     Args:
         config (dict): config dictionary
+        credential (object): credential object from azure.identity
 
     Returns:
         object: Batch Service Client object
     """
-    logger.debug("Initializing Batch Service Client...")
-    logger.debug("Pulling in SP Secret for batch client.")
-    sp_secret = get_sp_secret(config)
+    # get batch credential
     logger.debug("Attempting to create Batch Service Client.")
-    try:
-        batch_client = BatchServiceClient(
-            credentials=ServicePrincipalCredentials(
-                client_id=config["Authentication"]["sp_application_id"],
-                tenant=config["Authentication"]["tenant_id"],
-                secret=sp_secret,
-                resource="https://batch.core.windows.net/",
-            ),
-            batch_url=config["Batch"]["batch_service_url"],
-        )
-        logger.debug("Batch Service Client initialized successfully.")
-        return batch_client
-    except Exception:
-        logger.warning("Could not establish batch client.")
-        print("Could not establish batch client.")
-        return None
+    batch_client = BatchServiceClient(
+        credentials=credential, batch_url=config["Batch"]["batch_service_url"]
+    )
+    logger.debug("Batch Service Client initialized successfully.")
+    return batch_client
 
 
 def list_nodes_by_pool(pool_name: str, config: dict, node_state: str = None):
@@ -776,15 +727,20 @@ def list_nodes_by_pool(pool_name: str, config: dict, node_state: str = None):
 
 
 def add_job(
-    job_id: str, pool_id: str, batch_client: object, task_retries: int = 0
+    job_id: str,
+    pool_id: str,
+    end_job_on_task_failure: bool,
+    batch_client: object,
+    task_retries: int = 0,
 ):
     """takes in a job ID and config to create a job in the pool
 
     Args:
         job_id (str): name of the job to run
         pool_id (str): name of pool
+        end_job_on_task_failure (bool): whether to end a running job if a task fails
         batch_client (object): batch client object
-        task_retries (int): number of times to retry a failing task. Default 0.
+        task_retries (int): number of times to retry the task if it fails. Default 3.
     """
     logger.debug(f"Attempting to create job '{job_id}'...")
     logger.debug("Adding job parameters to job.")
@@ -1092,13 +1048,13 @@ def monitor_tasks(
 
 
 def list_files_in_container(
-    container_name: str, sp_credential: str, config: dict
+    container_name: str, credential: str, config: dict
 ):
     """lists out files in blob container
 
     Args:
         container_name (str): the name of the container to get files
-        sp_credential (str): the service principal credential
+        credential (str):  credential object from azure.identity
         config (dict): configuration dictionary
 
     Returns:
@@ -1108,7 +1064,7 @@ def list_files_in_container(
     try:
         cc = ContainerClient(
             account_url=config["Storage"]["storage_account_url"],
-            credential=sp_credential,
+            credential=credential,
             container_name=container_name,
         )
         files = [f for f in cc.list_blob_names()]
@@ -1230,6 +1186,7 @@ def get_deployment_config(
     container_registry_url: str,
     container_registry_server: str,
     config: str,
+    credential: object,
     availability_zones: bool = False,
     use_hpc_image: bool = False,
 ):
@@ -1240,6 +1197,7 @@ def get_deployment_config(
         container_registry_url (str): container registry URL
         container_registry_server (str): container registry server
         config (str): config dict
+        credential (object): credential object
         availability_zones (bool): whether to use availability zones. Default False.
         use_hpc_image (bool): whether to use high performance compute images for each node. Default False.
 
@@ -1284,7 +1242,7 @@ def get_deployment_config(
                         "userName": config["Authentication"][
                             "sp_application_id"
                         ],
-                        "password": get_sp_secret(config),
+                        "password": get_sp_secret(config, credential),
                         "registryServer": container_registry_server,
                     }
                 ],
@@ -1361,6 +1319,7 @@ def get_pool_parameters(
     container_registry_server: str,
     config: dict,
     mount_config: list,
+    credential: object,
     autoscale_formula_path: str = None,
     autoscale_evaluation_interval: str = "PT5M",
     timeout: int = 60,
@@ -1381,6 +1340,7 @@ def get_pool_parameters(
         container_registry_server (str): container registry server
         config (dict): config dict
         mount_config (list): output from get_mount_config() regarding mounting of blob storage
+        credential (object): credential object from azure.identity
         autoscale_formula_path (str, optional): path to autoscale formula file if mode is 'autoscale'. Defaults to None.
         timeout (int, optional): length in minutes of timeout for tasks that run in this pool. Defaults to 60.
         dedicated_nodes (int, optional): number of dedicated nodes. Defaults to 1.
@@ -1443,7 +1403,7 @@ def get_pool_parameters(
                 container_registry_url,
                 container_registry_server,
                 config,
-                availability_zones,
+                credential,
                 use_hpc_image,
             ),
             "networkConfiguration": get_network_config(config),
@@ -1452,7 +1412,6 @@ def get_pool_parameters(
                 "targetDedicatedNodes": 1,
                 "nodeDeallocationOption": "Requeue",
                 "resizeTimeout": fixedscale_resize_timeout,
-                "startTime": "2023-07-05T13:18:25.7572321Z",
             },
             "currentDedicatedNodes": 1,
             "currentLowPriorityNodes": 0,
@@ -1991,14 +1950,16 @@ def check_config_req(config: str):
         return False
 
 
-def get_container_registry_client(endpoint: str, audience: str):
+def get_container_registry_client(
+    endpoint: str, credential: object, audience: str
+):
     return ContainerRegistryClient(
-        endpoint, DefaultAzureCredential(), audience=audience
+        endpoint, credential, audience=audience
     )
 
 
 def check_azure_container_exists(
-    registry_name: str, repo_name: str, tag_name: str
+    registry_name: str, repo_name: str, tag_name: str, credential: object
 ) -> str:
     """specify the container in ACR to use without packaging and uploading the docker container from local.
 
@@ -2006,6 +1967,7 @@ def check_azure_container_exists(
         registry_name (str): the name of the registry in Azure Container Registry
         repo_name (str): the name of the repo
         tag_name (str): the tag name
+        credential (object): credential object from azure.identity
 
     Returns:
         str: full name of container
@@ -2018,7 +1980,7 @@ def check_azure_container_exists(
     try:
         # check full_container_name exists in ACR
         cr_client = get_container_registry_client(
-            endpoint=endpoint, audience=audience
+            endpoint=endpoint, credential=credential, audience=audience
         )
         logger.debug("Container registry client created. Container exists.")
     except Exception as e:

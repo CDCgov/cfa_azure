@@ -4,7 +4,14 @@ import logging
 import os
 from time import sleep
 
+from azure.common.credentials import ServicePrincipalCredentials
 from azure.core.exceptions import HttpResponseError
+from azure.identity import (
+    ClientSecretCredential,
+    DefaultAzureCredential,
+    EnvironmentCredential,
+    ManagedIdentityCredential,
+)
 
 from cfa_azure import helpers
 
@@ -12,14 +19,24 @@ logger = logging.getLogger(__name__)
 
 
 class AzureClient:
-    def __init__(self, config_path: str = None, use_env_vars: bool = False):
-        """Azure Client for interacting with Azure Batch, Container Registries, and Blob Storage
+    def __init__(self, config_path: str, credential_method: str = "identity", use_env_vars: bool = False):
+        """Azure Client for interacting with Azure Batch, Container Registries and Blob Storage
 
         Args:
-            config_path (str): path to configuration file, required if not using environment variables
+            config_path (str): path to configuration toml file
+            credential_method (str): how to authenticate to Azure. Choices are 'identity', 'sp', and 'env'. Default 'identity'.
             use_env_vars (bool): set to True to load configuration from environment variables
-        """
 
+            credential_method details:
+                        - 'identity' uses managed identity linked to VM
+                        - 'sp' uses service principal from config/env
+                        - 'env' uses environment credential based on env variables
+
+        Returns:
+            AzureClient object
+        """
+        self.config_path = config_path
+        self.credential_method = credential_method
         self.debug = None
         self.scaling = None
         self.input_container_name = None
@@ -140,21 +157,71 @@ class AzureClient:
             logger.warning("Could not find resource group name in config.")
 
         # get credentials
-        self.sp_secret = helpers.get_sp_secret(self.config)
-        logger.debug("generated SP secret.")
-        self.sp_credential = helpers.get_sp_credential(self.config)
-        logger.debug("generated SP credential.")
+        if "identity" in self.credential_method.lower():
+            self.cred = ManagedIdentityCredential()
+        elif "sp" in self.credential_method.lower():
+            if "sp_secrets" not in self.config["Authentication"].keys():
+                sp_secret = helpers.get_sp_secret(
+                    self.config, DefaultAzureCredential()
+                )
+            self.cred = ClientSecretCredential(
+                tenant_id=self.config["Authentication"]["tenant_id"],
+                client_id=self.config["Authentication"]["sp_application_id"],
+                client_secret=sp_secret,
+            )
+        elif "env" in self.credential_method.lower():
+            keys = os.environ.keys()
+            if (
+                "AZURE_TENANT_ID" not in keys
+                or "AZURE_CLIENT_ID" not in keys
+                or "AZURE_CLIENT_SECRET" not in keys
+            ):
+                logger.error(
+                    "Could not find AZURE_TENANT_ID, AZURE_CLIENT_ID or AZURE_CLIENT_SECRET environment variables."
+                )
+                raise Exception(
+                    "Could not find AZURE_TENANT_ID, AZURE_CLIENT_ID or AZURE_CLIENT_SECRET environment variables."
+                )
+            else:
+                self.cred = EnvironmentCredential()
+        else:
+            raise Exception(
+                "please choose a credential_method from 'identity', 'sp', 'ext_user', 'env' and try again."
+            )
 
+        if "sp_secrets" not in self.config["Authentication"].keys():
+            sp_secret = helpers.get_sp_secret(self.config, self.cred)
+        self.secret_cred = ClientSecretCredential(
+            tenant_id=self.config["Authentication"]["tenant_id"],
+            client_id=self.config["Authentication"]["sp_application_id"],
+            client_secret=sp_secret,
+        )
+        self.batch_cred = ServicePrincipalCredentials(
+            client_id=self.config["Authentication"]["sp_application_id"],
+            tenant=self.config["Authentication"]["tenant_id"],
+            secret=sp_secret,
+            resource="https://batch.core.windows.net/",
+        )
+
+        logger.debug(f"generated credentials from {credential_method}.")
+        
         # create blob service account
-        self.blob_service_client = helpers.get_blob_service_client(self.config)
+
+        self.blob_service_client = helpers.get_blob_service_client(
+            self.config, self.cred
+        )
         logger.debug("generated Blob Service Client.")
 
         # create batch mgmt client
-        self.batch_mgmt_client = helpers.get_batch_mgmt_client(self.config)
+        self.batch_mgmt_client = helpers.get_batch_mgmt_client(
+            self.config, self.secret_cred
+        )
         logger.debug("generated Batch Management Client.")
 
         # create batch service client
-        self.batch_client = helpers.get_batch_service_client(self.config)
+        self.batch_client = helpers.get_batch_service_client(
+            self.config, self.batch_cred
+        )
         logger.info("Client initialized! Happy coding!")
 
     def set_debugging(self, debug: bool) -> None:
@@ -191,7 +258,7 @@ class AzureClient:
         task_slots_per_node: int = 1,
         availability_zones: bool = False,
         use_hpc_image: bool = False,
-    ) -> None:
+        ) -> None:
         """Sets the scaling mode of the client, either "fixed" or "autoscale".
         If "fixed" is selected, debug must be turned off.
         If "autoscale" is selected, an autoscale formula path must be provided.
@@ -255,6 +322,7 @@ class AzureClient:
                 container_registry_server=self.container_registry_server,
                 config=self.config,
                 mount_config=self.mount_config,
+                credential=self.secret_cred,
                 autoscale_formula_path=autoscale_formula_path,
                 timeout=timeout,
                 dedicated_nodes=dedicated_nodes,
@@ -481,6 +549,7 @@ class AzureClient:
         else:
             logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
             container_image_name=self.container_image_name
+            
         if "pool_id" not in self.config["Batch"]:
             self.config["Batch"]["pool_id"] = pool_name
 
@@ -634,6 +703,7 @@ class AzureClient:
             container_registry_server=self.container_registry_server,
             config=self.config,
             mount_config=mount_config,
+            credential=self.cred,
         )
         self.create_pool(pool_name)
         return pool_name
@@ -962,7 +1032,7 @@ class AzureClient:
             repo = repo_tag.split(":")[0]
             tag = repo_tag.split(":")[-1]
             container_name = helpers.check_azure_container_exists(
-                registry, repo, tag
+                registry, repo, tag, credential=self.cred
             )
             if container_name is None:
                 raise ValueError(f"{container} does not exist.")
@@ -1155,7 +1225,7 @@ class AzureClient:
         """
         # check full_container_name exists in ACR
         container_name = helpers.check_azure_container_exists(
-            registry_name, repo_name, tag_name
+            registry_name, repo_name, tag_name, credential=self.cred
         )
         if container_name is not None:
             self.container_registry_server = f"{registry_name}.azurecr.io"

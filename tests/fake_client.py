@@ -1,3 +1,5 @@
+# ruff: noqa: F403, F405
+
 import json
 from datetime import datetime, timedelta
 
@@ -242,10 +244,6 @@ class FakeClient:
             @property
             def vm_size(self):
                 return FAKE_POOL_SIZE
-            
-            @property
-            def scale_settings(self):
-                return self.FakeScaleSettings()
 
             def get(self):
                 return True

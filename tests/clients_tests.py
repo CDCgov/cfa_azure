@@ -1,5 +1,7 @@
+# ruff: noqa: F403, F405
+
 import unittest
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import cfa_azure.clients
 import cfa_azure.helpers
@@ -543,7 +545,7 @@ class TestClients(unittest.TestCase):
         "cfa_azure.helpers.create_batch_pool",
         MagicMock(return_value=FAKE_BATCH_POOL),
     )
-    def test_update_containers_new_pool(self):
+    def test_update_containers_new_pool2(self):
         pool_name = self.azure_client.update_containers(
             pool_name=FAKE_BATCH_POOL,
             input_container_name=FAKE_INPUT_CONTAINER,

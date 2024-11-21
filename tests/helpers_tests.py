@@ -1,3 +1,5 @@
+# ruff: noqa: F403, F405
+
 import logging
 import unittest
 from unittest.mock import MagicMock, call, mock_open, patch

@@ -19,11 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class AzureClient:
-    def __init__(
-        self,
-        config_path: str,
-        credential_method: str = "identity"
-    ):
+    def __init__(self, config_path: str, credential_method: str = "identity"):
         """Azure Client for interacting with Azure Batch, Container Registries and Blob Storage
 
         Args:
@@ -477,7 +473,7 @@ class AzureClient:
                 f"Pool {pool_name} does not exist. New pool will be created."
             )
 
-        if not "pool_id" in self.config["Batch"]:
+        if "pool_id" not in self.config["Batch"]:
             self.config["Batch"]["pool_id"] = pool_name
 
         # Recreate the pool
@@ -594,7 +590,7 @@ class AzureClient:
                 f"Pool {pool_name} does not exist. New pool will be created."
             )
 
-        if not "pool_id" in self.config["Batch"]:
+        if "pool_id" not in self.config["Batch"]:
             self.config["Batch"]["pool_id"] = pool_name
 
         # Recreate the pool

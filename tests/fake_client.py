@@ -1,3 +1,5 @@
+# ruff: noqa: F403, F405
+
 import json
 from datetime import datetime, timedelta
 
@@ -19,7 +21,7 @@ FAKE_INPUT_CONTAINER = "test_input_container"
 FAKE_OUTPUT_CONTAINER = "test_output_container"
 FAKE_POOL_SIZE = 10
 FAKE_RESOURCE_GROUP = "Test Resource Group"
-FAKE_SECRET = "fake_secret"
+FAKE_SECRET = "fake_secret"  # pragma: allowlist secret
 FAKE_TAGS = ["fake_tag_1", "fake_tag_2", "latest"]
 
 FAKE_YAML_CONTENT = {
@@ -52,7 +54,7 @@ FAKE_CONFIG = {
         "container_account_name": "Test Account",
         "container_image_name": FAKE_CONTAINER_IMAGE,
         "container_name": FAKE_INPUT_CONTAINER,
-        "container_registry_password": "Test ACR Password",
+        "container_registry_password": "Test ACR Password",  # pragma: allowlist secret
         "container_registry_url": FAKE_CONTAINER_REGISTRY,
         "container_registry_username": "Test ACR Username",
     },
@@ -89,9 +91,6 @@ class FakeClient:
             self.name = tag
 
     class FakeBlob:
-        def __init__(self):
-            self.name = "blob_name"
-
         def __init__(self, name):
             self.name = name
 

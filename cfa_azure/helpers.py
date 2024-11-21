@@ -19,13 +19,7 @@ import yaml
 from azure.batch import BatchServiceClient
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
-from azure.identity import (
-    ClientSecretCredential,
-    DefaultAzureCredential,
-    DeviceCodeCredential,
-    EnvironmentCredential,
-    ManagedIdentityCredential,
-)
+from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
 from azure.storage.blob import BlobServiceClient, ContainerClient
@@ -660,7 +654,7 @@ def upload_files_in_folder(
         if exclude_extensions is not None:
             # find files that don't contain the specified extensions
             for _file in file_list:
-                if not os.path.splitext(_file)[1] in exclude_extensions:
+                if os.path.splitext(_file)[1] not in exclude_extensions:
                     flist.append(_file)
         else:  # this is for no specified extensions to include of exclude
             flist = file_list
@@ -1523,7 +1517,7 @@ def download_directory(
         if exclude_extensions is not None:
             # find files that don't contain the specified extensions
             for _file in blob_list:
-                if not os.path.splitext(_file)[1] in exclude_extensions:
+                if os.path.splitext(_file)[1] not in exclude_extensions:
                     flist.append(_file)
         else:  # this is for no specified extensions to include or exclude
             flist = blob_list
@@ -2062,11 +2056,11 @@ def format_extensions(extension):
     if isinstance(extension, str):
         extension = [extension]
     ext = []
-    for l in extension:
-        if l.startswith("."):
-            ext.append(l)
+    for _ext in extension:
+        if _ext.startswith("."):
+            ext.append(_ext)
         else:
-            ext.append("." + l)
+            ext.append("." + _ext)
     return ext
 
 

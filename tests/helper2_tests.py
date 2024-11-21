@@ -1,10 +1,7 @@
-import json
-import unittest
-from unittest.mock import MagicMock, call, mock_open, patch
+# ruff: noqa: F403, F405
 
-import docker
-from azure.core.exceptions import HttpResponseError
-from callee import Contains
+import unittest
+from unittest.mock import MagicMock, patch
 
 import cfa_azure.clients
 import cfa_azure.helpers

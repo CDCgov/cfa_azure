@@ -43,13 +43,37 @@ export LOG_OUTPUT="stdout"
 
 **Using Various Credential Methods**
 
-When instantiating a AzureClient object, there is an option set the `credential_method` to use. Previously, only a service principal could be used. Now, there is an option to choose `identity`, `sp`, or `env`. Setting `identity` will use the managed identity associated with the VM where the code is running. Setting `sp` will use a service principal for the credential. Setting `env` will use environment variables to create the credential. When choosing `env`, the following environment variables will need to be set: "AZURE_TENANT_ID", "AZURE_CLIENT_ID", and "AZURE_CLIENT_SECRET".
+When instantiating a AzureClient object, there is an option to set which `credential_method` to use. Previously, only a service principal could be used. Now, there are three an options to choose `identity`, `sp`, or `env`. 
+- `identity`: Uses the managed identity associated with the VM where the code is running. 
+- `sp`: Uses a service principal for the credential. The following values must be set in the configuration file: tenant_id, sp_application_id, and the corresponding secret fetched from Azure Key Vault.
+- `env`: Uses environment variables to create the credential. When choosing `env`, the following environment variables will need to be set: `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET`.
 
-By default, the managed identity option will be used. In whichever credential method is used, a secret is pulled from the keyvault using the credential to create a secretclientcredential for interaction with various Azure services.
+You can also use `use_env_vars=True` to allow the configuration to be loaded directly from environment variables, which may be helpful in containerized environments.
+
+By default, the managed identity option will be used. In whichever credential method is used, a secret is pulled from the key vault using the credential to create a secret client credential for interaction with various Azure services.
+
+**Example:**
+```
+from cfa_azure.clients import AzureClient
+
+# Using Managed Identity
+client = AzureClient(config_path="./configuration.toml", credential_method="identity")
+
+# Using Service Principal (credentials from the config file)
+client = AzureClient(config_path="./configuration.toml", credential_method="sp")
+
+# Using Environment Variables
+import os
+os.environ["AZURE_TENANT_ID"] = "your-tenant-id"
+os.environ["AZURE_CLIENT_ID"] = "your-client-id"
+os.environ["AZURE_CLIENT_SECRET"] = "your-client-secret"
+client = AzureClient(credential_method="env", use_env_vars=True)
+```
 
 **Persisting stdout and stderr to Blob Storage**
 
 In certain situations, it is beneficial to save the stdout and stderr from each task to Blob Storage (like when using autoscale pools). It is possible to persist these to Blob Storage by specifying the blob container name in the `save_logs_to_blob` parameter when using `client.add_job()`. *Note that the blob container specified must be mounted to the pool being used for the job.
+
 For example, if we would like to persist stdout and stderr to the blob container "input-test" for a job named "persisting_test", we would use the following code:
 ```
 client.add_job("persisting_test", save_logs_to_blob = "input-test")
@@ -77,14 +101,25 @@ client.set_pool_info("autoscale",
 ```
 
 ### Functions
-- create_pool: creates a new Azure batch pool using default autoscale mode
-  Example:
+- `create_pool`: creates a new Azure batch pool using default autoscale mode
+  **Example:**
   ```
   client = AzureClient("./configuration.toml")
   client.create_pool("my-test-pool")
   ```
-- update_scale_settings: modifies the scaling mode (fixed or autoscale) for an existing pool
-  Example:
+- `update_containers`: modifies the containers mounted on an existing Azure batch pool. It essentially recreates the pool with new mounts. Use force_update=True to recreate the pool without waiting for running tasks to complete.
+- `upload_files_to_container`: uploads files from a specified folder to an Azure Blob container. It also includes options like `force_upload` to allow or deny large file uploads without confirmation.
+  **Example:**
+```
+client.upload_files_to_container(
+    folder_names=["/path/to/folder"],
+    input_container_name="my-input-container",
+    blob_service_client=client.blob_service_client,
+    force_upload=True
+)
+```
+- `update_scale_settings`: modifies the scaling mode (fixed or autoscale) for an existing pool
+ **Example:**:
   ```
   # Specify new autoscale formula that will be evaluated every 30 minutes
   client.scaling = "autoscale"
@@ -108,7 +143,7 @@ client.set_pool_info("autoscale",
   client.update_scale_settings(low_priority_nodes=15, node_deallocation_option='Terminate')
   ```
 - update_containers: modifies the containers mounted on an existing Azure batch pool. It essentially recreates the pool with new mounts.
-  Example:
+ **Example:**:
   ```
   # First create a pool
   client = AzureClient("./configuration.toml")
@@ -130,9 +165,10 @@ client.set_pool_info("autoscale",
 
   As the message suggests, you can either wait for existing jobs to complete in the pool and retry the `update_containers()` operation. Or you can change the `force_update` parameter to `True and re-run the `update_containers()` operation to immediately recreate the pool with new containers.
 
- - add_task: adds task to existing job in pool. You can also specify which task it depends on.  By default, dependent tasks will only run if the parent task succeeds. However, this behavior can be overridden by specifying `run_dependent_tasks_on_fail=True` on the parent task. When this property is set to True, any runtime failures in parent task will be ignored. However, execution of dependent tasks will only begin after completion (regardless of success or failure) of the parent task.
+### Running Jobs and Tasks
+ - `add_task`: adds task to existing job in pool. You can also specify which task it depends on.  By default, dependent tasks will only run if the parent task succeeds. However, this behavior can be overridden by specifying `run_dependent_tasks_on_fail=True` on the parent task. When this property is set to True, any runtime failures in parent task will be ignored. However, execution of dependent tasks will only begin after completion (regardless of success or failure) of the parent task.
 
-  Example: Run tasks in parallel without any dependencies.
+ **Example:**: Run tasks in parallel without any dependencies.
   ```
   task_1 = client.add_task(
       "test_job_id",
@@ -146,7 +182,7 @@ client.set_pool_info("autoscale",
       input_files=["test_file_2.sh"]
   )
   ```
- Example: Run tasks sequentially and terminate the job if parent task fails
+**Example:**: Run tasks sequentially and terminate the job if parent task fails
   ```
   parent_task = client.add_task(
       "test_job_id",
@@ -162,7 +198,7 @@ client.set_pool_info("autoscale",
       input_files=["test_file_2.sh"]
   )
   ```
- Example: Run tasks sequentially with 1-to-many dependency. Run the child tasks even if parent task fails.
+**Example:**: Run tasks sequentially with 1-to-many dependency. Run the child tasks even if parent task fails.
   ```
   parent_task = client.add_task(
       "test_job_id",
@@ -184,7 +220,7 @@ client.set_pool_info("autoscale",
       input_files=["test_file_3.sh"]
   )
   ```
- Example: Create many-to-1 dependency with 2 parent tasks that run before child task. Second parent task is optional: job should not terminate if it fails.
+**Example:**: Create many-to-1 dependency with 2 parent tasks that run before child task. Second parent task is optional: job should not terminate if it fails.
   ```
   parent_task_1 = client.add_task(
       "test_job_id",
@@ -207,27 +243,109 @@ client.set_pool_info("autoscale",
 
 
 ### helpers
-Functions:
-- read_config: reads in a configuration toml file to a python object
-- create_container: creates an Azure Blob container
-- get_autoscale_formula: finds and reads autoscale_formula.txt from working directory or subdirectory
-- get_sp_secret: retrieves the user's service principal secret
-- get_sp_credential: retrieves the service principal credential
-- get_blob_service_client: creates a Blob Service Client for interacting with Azure Blob
-- get_batch_mgmt_client: creates a Batch Management Client for interacting with Azure Batch
-- create_blob_containers: uses create_container() to create input and output containers in Azure Blob
-- get_batch_pool_json: creates a dict based on config for working in Azure
-- create_batch_pool: creates a Azure Batch Pool based on info stored in the config file
-- list_containers: lists the containers in Azure Blob
-- upload_files: uploads all files in specified folder to the specified container
-- get_batch_service_client: creates a Batch Service Client objectfor interacting with Batch jobs
-- add_job: creates a job in Azure Batch
-- add_task_to_job: adds a task to the specified job based on user-input Docker command
-- monitor_tasks: monitors the tasks running in a job
-- list_files_in_container: lists out all files stored in the specified Azure container
-- df_to_yaml: converts a pandas dataframe to yaml file
-- yaml_to_df: converts a yaml file to pandas dataframe
-- edit_yaml_r0: takes in a yaml file and produces replicate yaml files with the r0 changed based on the start, stop, and step provided
+The `helpers` module provides a collection of utility functions that helps manage Azure resources and perform key tasks, such as interacting with Blob storage, Azure Batch, configuration management, and data transformations. Below is an expanded overview of each function.
+
+**Functions:**
+- `read_config`: reads in a configuration toml file and returns it as a Python dictionary
+**Example**
+```
+read_config("/path/to/config.toml")
+```
+- `create_container`: creates an Azure Blob container if it doesn't already exist
+**Example**
+```
+create_container("my-container", blob_service_client)
+```
+- `get_autoscale_formula`: finds and reads `autoscale_formula.txt` from working directory or subdirectory
+**Example**
+```
+get_autoscale_formula(filepath="/path/to/formula.txt")
+```
+- `get_sp_secret`: retrieves the user's service principal secret from the key vault based on the provided config file
+**Example**
+```
+get_sp_secret(config, DefaultAzureCredential())
+```
+- `get_sp_credential`: retrieves the service principal credential
+**Example**
+```
+get_sp_credential(config)
+```
+- `get_blob_service_client`: creates a Blob Service Client for interacting with Azure Blob
+**Example**
+```
+
+```
+- `get_batch_mgmt_client`: creates a Batch Management Client for interacting with Azure Batch, such as pools and jobs
+**Example**
+```
+
+```
+- `create_blob_containers`: uses create_container() to create input and output containers in Azure Blob
+**Example**
+```
+create_blob_containers(blob_service_client, "input-container", "output-container")
+```
+- `get_batch_pool_json`: creates a dict based on config for configuring an Azure Batch pool
+**Example**
+```
+pool_config = get_batch_pool_json("input-container", "output-container", config)
+```
+- `create_batch_pool`: creates a Azure Batch Pool based on info using the provided configuration details
+**Example**
+```
+create_batch_pool(batch_mgmt_client, pool_config)
+```
+- `list_containers`: lists the containers in Azure Blob Storage Account
+**Example**
+```
+list_containers(blob_service_client)
+```
+- `upload_files_in_folder`: uploads all files in specified folder to the specified container
+**Example**
+```
+upload_files_in_folder("/path/to/folder", "container-name", blob_service_client)
+```
+- `get_batch_service_client`: creates a Batch Service Client object for interacting with Batch jobs
+**Example**
+```
+batch_client = get_batch_service_client(config, DefaultAzureCredential())
+```
+- `add_job`: creates a new job to the specified Azure Batch pool
+**Example**
+```
+add_job("job-id", "pool-id", True, batch_client)
+```
+- `add_task_to_job`: adds a task to the specified job based on user-input Docker command
+**Example**
+```
+add_task_to_job("job-id", "task-id", "docker-command", batch_client)
+```
+- `monitor_tasks`: monitors the tasks running in a job
+**Example**
+```
+monitor_tasks("example-job-id", batch_client)
+```
+- `list_files_in_container`: lists out all files stored in the specified Azure container
+**Example**
+```
+list_files_in_container(container_client)
+```
+- `df_to_yaml`: converts a pandas dataframe to yaml file, which is helpful for configuration and metadata storage
+**Example**
+```
+df_to_yaml(dataframe, "output.yaml")
+```
+- `yaml_to_df`: converts a yaml file to pandas dataframe
+**Example**
+```
+yaml_to_df("input.yaml")
+```
+- `edit_yaml_r0`: takes in a YAML file and produces replicate YAML files with the `r0` changed based on the specified range (i.e. start, stop, and step)
+**Example**
+```
+edit_yaml_r0("input.yaml", start=1, stop=5, step=1)
+```
 
 ## Public Domain Standard Notice
 This repository constitutes a work of the United States Government and is not

@@ -107,7 +107,7 @@ client.set_pool_info("autoscale",
   # Switch to fixed scaling mode with 15 spot EC2 nodes and forced termination of current jobs
   client.update_scale_settings(low_priority_nodes=15, node_deallocation_option='Terminate')
   ```
-- update_containers: modifies the containers mounted on an existing Azure batch pool. It essentially recreates the pool with new mounts.
+- update_containers: modifies the Azure blob storage containers mounted on an existing Azure batch pool. It essentially recreates the pool with new mounts.
   Example:
   ```
   # First create a pool

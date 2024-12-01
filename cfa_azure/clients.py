@@ -296,17 +296,27 @@ class AzureClient:
             use_default_autoscale_formula = False
             logger.debug("Autoscale formula provided by user.")
 
-        blob_config = []
+        self.mount_config = []
         if self.mounts:
             for mount in self.mounts:
-                blob_config.append(
-                    helpers.get_blob_config(
-                        mount[0], mount[1], cache_blobfuse, self.config
+                if mount['type'] == helpers.MountType.Blob:
+                    self.mount_config.append(
+                        helpers.get_blob_config(
+                            container_name=mount['container_name'],
+                            rel_mount_path=mount['rel_mount_path'],
+                            cache_blobfuse=cache_blobfuse, 
+                            config=self.config
+                        )
                     )
-                )
-                logger.debug(f"mount {mount} added to blob configuration.")
-
-        self.mount_config = helpers.get_mount_config(blob_config)
+                    logger.debug(f"mount {mount} added to blob configuration.")
+                else:
+                    self.mount_config.append(
+                        helpers.get_nfs_config(
+                            source=mount["source"], rel_mount_path=mount["rel_mount_path"]
+                        )
+                    )
+                    logger.debug(f"mount {mount} added to NFS configuration.")
+        
         logger.debug("mount config saved to client.")
         if mode == "fixed" or mode == "autoscale":
             self.scaling = mode
@@ -349,7 +359,13 @@ class AzureClient:
         self.input_container_name = name
         self.input_mount_dir = helpers.format_rel_path(input_mount_dir)
         # add to self.mounts
-        self.mounts.append((name, self.input_mount_dir))
+        self.mounts.append(
+            {
+                'type': helpers.MountType.Blob, 
+                'container_name': name, 
+                'rel_mount_path': self.input_mount_dir
+            }
+        )
         logger.debug(
             f"Mounted {name} with relative mount dir {self.input_mount_dir}."
         )
@@ -371,7 +387,13 @@ class AzureClient:
         self.output_container_name = name
         self.output_mount_dir = helpers.format_rel_path(output_mount_dir)
         # add to self.mounts
-        self.mounts.append((name, self.output_mount_dir))
+        self.mounts.append(
+            {
+                'type': helpers.MountType.Blob, 
+                'container_name': name, 
+                'rel_mount_path': self.output_mount_dir
+            }
+        )
         logger.debug(
             f"Mounted {name} with relative mount dir {self.output_mount_dir}."
         )
@@ -390,7 +412,13 @@ class AzureClient:
         """
         rel_mount_dir = helpers.format_rel_path(rel_mount_dir)
         # add to self.mounts
-        self.mounts.append((name, rel_mount_dir))
+        self.mounts.append(
+            {
+                'type': helpers.MountType.Blob, 
+                'container_name': name, 
+                'rel_mount_path': rel_mount_dir
+            }
+        )
         logger.debug(
             f"Mounted {name} with relative mount dir {rel_mount_dir}."
         )
@@ -426,7 +454,13 @@ class AzureClient:
             self.input_container_name = name
             self.input_mount_dir = input_mount_dir
             self.in_cont_client = container_client
-            self.mounts.append((name, input_mount_dir))
+            self.mounts.append(
+                {
+                    'type': helpers.MountType.Blob, 
+                    'container_name': name, 
+                    'rel_mount_path': input_mount_dir
+                }
+            )
             logger.debug(f"Added input Blob container {name} to AzureClient.")
 
     def set_output_container(
@@ -454,7 +488,13 @@ class AzureClient:
             self.output_container_name = name
             self.output_mount_dir = output_mount_dir
             self.out_cont_client = container_client
-            self.mounts.append((name, output_mount_dir))
+            self.mounts.append(
+                {
+                    'type': helpers.MountType.Blob, 
+                    'container_name': name, 
+                    'rel_mount_path': output_mount_dir
+                }
+            )
             logger.debug(f"Added output Blob container {name} to AzureClient.")
 
     def set_blob_container(self, name: str, rel_mount_dir: str) -> None:
@@ -477,7 +517,13 @@ class AzureClient:
                 f"Container [{name}] does not exist. Please create it if desired."
             )
         else:
-            self.mounts.append((name, rel_mount_dir))
+            self.mounts.append(
+                {
+                    'type': helpers.MountType.Blob, 
+                    'container_name': name, 
+                    'rel_mount_path': rel_mount_dir
+                }
+            )
             logger.debug(f"Added Blob container {name} to AzureClient.")
 
     def update_containers(
@@ -831,6 +877,7 @@ class AzureClient:
         )
         print("Verify the size of the VM is appropriate for the use case.")
         print("**Please use smaller VMs for dev/testing.**")
+        print(self.pool_parameters)
         try:
             self.batch_mgmt_client.pool.create(
                 resource_group_name=self.resource_group_name,
@@ -1415,12 +1462,13 @@ class AzureClient:
             logger.debug("Looping through mounts.")
             filenames = []
             for mount in self.mounts:
-                _files = helpers.list_blobs_flat(
-                    container_name=mount[0],
-                    blob_service_client=self.blob_service_client,
-                    verbose=False,
-                )
-                filenames += _files
+                if mount['type'] == helpers.MountType.Blob:
+                    _files = helpers.list_blobs_flat(
+                        container_name=mount['container_name'],
+                        blob_service_client=self.blob_service_client,
+                        verbose=False,
+                    )
+                    filenames += _files
         return filenames
 
     def delete_blob_file(self, blob_name, container_name):

@@ -36,6 +36,12 @@ from azure.storage.blob import BlobServiceClient, ContainerClient
 from docker.errors import DockerException
 from yaml import SafeLoader, dump, load
 
+from enum import Enum, auto
+
+class MountType(Enum):
+    Blob = auto()
+    NFS = auto()
+
 logger = logging.getLogger(__name__)
 
 
@@ -262,8 +268,8 @@ def create_blob_containers(
 
 
 def get_batch_pool_json(
-    input_container_name: str,
-    output_container_name: str,
+    input_container_name:str,
+    output_container_name:str,
     config: dict,
     autoscale_formula_path: str = None,
     autoscale_evaluation_interval: str = "PT5M",
@@ -1232,24 +1238,52 @@ def get_deployment_config(
         "virtualMachineConfiguration": {
             "imageReference": image_ref,
             "nodePlacementConfiguration": {"policy": policy},
-            "nodeAgentSkuId": node_agent_sku,
-            "containerConfiguration": {
-                "type": "dockercompatible",
-                "containerImageNames": [container_image_name],
-                "containerRegistries": [
-                    {
-                        "registryUrl": container_registry_url,
-                        "userName": config["Authentication"][
-                            "sp_application_id"
-                        ],
-                        "password": get_sp_secret(config, credential),
-                        "registryServer": container_registry_server,
-                    }
-                ],
-            },
+            "nodeAgentSkuId": node_agent_sku
         }
     }
+    if container_image_name and container_registry_url and container_registry_server:
+        deployment_config['virtualMachineConfiguration']['containerConfiguration'] = {
+            "type": "dockercompatible",
+            "containerImageNames": [container_image_name],
+            "containerRegistries": [
+                {
+                    "registryUrl": container_registry_url,
+                    "userName": config["Authentication"][
+                        "sp_application_id"
+                    ],
+                    "password": get_sp_secret(config, credential),
+                    "registryServer": container_registry_server,
+                }
+            ]
+        }
     return deployment_config
+
+
+def get_nfs_config(
+    source: str,
+    rel_mount_path: str
+):
+    """gets the blob storage configuration based on the config information
+
+    Args:
+        source (str): URI of the file system to mount
+        rel_mount_path (str): relative mount path
+
+    Returns:
+        dict: dictionary containing info for NFS storage configuration. Used as input to get_nfs_mount_config().
+    """
+    logger.debug(
+        f"Generating NFS configuration for source '{source}' with mount path '{rel_mount_path}'..."
+    )
+    nfs_config = {
+        "nfsMountConfiguration": {
+            "source": source,
+            "relativeMountPath": rel_mount_path,
+            "mount_options": "nfsvers=4.2"
+        }
+    }
+    logger.debug("Generated NFS configuration.")
+    return nfs_config
 
 
 def get_blob_config(
@@ -1267,7 +1301,7 @@ def get_blob_config(
         config (dict): config dict
 
     Returns:
-        dict: dictionary containing info for blob storage configuration. Used as input to get_mount_config().
+        dict: dictionary containing info for blob storage configuration.
     """
     logger.debug(
         f"Generating blob configuration for container '{container_name}' with mount path '{rel_mount_path}'..."
@@ -1294,22 +1328,6 @@ def get_blob_config(
     }
     logger.debug("Generated Blob configuration.")
     return blob_config
-
-
-def get_mount_config(blob_config: list[str]):
-    """takes blob configurations as input and combines them to create a mount configuration.
-
-    Args:
-        Blob configurations, usually from get_blob_config(). Usually one for input blob and one for output blob.
-
-    Returns:
-        list: mount configuration to used with get_pool_parameters.
-    """
-    _mount_config = []
-    for blob in blob_config:
-        _mount_config.append(blob)
-    logger.debug("Generated mount configuration.")
-    return _mount_config
 
 
 def get_pool_parameters(
@@ -2268,12 +2286,23 @@ def get_pool_mounts(
     mounts = []
     mc = pool_info.as_dict()["mount_configuration"]
     for m in mc:
-        mounts.append(
-            (
-                m["azure_blob_file_system_configuration"]["container_name"],
-                m["azure_blob_file_system_configuration"][
-                    "relative_mount_path"
-                ],
+        if 'azure_blob_file_system_configuration' in m:
+            mounts.append(
+                {
+                    'type': MountType.Blob,
+                    'container_name': m["azure_blob_file_system_configuration"]["container_name"],
+                    'relative_mount_path': m["azure_blob_file_system_configuration"]["relative_mount_path"]
+                }
             )
-        )
+        elif 'nfs_mount_configuration' in m:
+            mounts.append(
+                {
+                    'type': MountType.NFS,
+                    'source': m["nfs_mount_configuration"]["source"],
+                    'relative_mount_path': m["nfs_mount_configuration"]["relative_mount_path"]
+                }
+            )
+        else:
+            continue
+
     return mounts

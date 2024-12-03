@@ -386,10 +386,6 @@ get_rel_mnt_path("blob_name", "pool_name", "resource_group_name", "account_name"
 ```
 get_pool_mounts("pool_name", "resource_group_name", "account_name", batch_mgmt_client)
 ```
-- `get_pool_full_info`: retrieves the full information of a specified Azure Batch pool
-```
-get_pool_full_info("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
-```
 - `check_env_req`: checks if all necessary environment variables exist for the Azure client
 ```
 check_env_req()

@@ -12,6 +12,7 @@ FAKE_BLOBS = ["some_path/fake_blob_1.txt", "some_path/fake_blob_2.csv"]
 FAKE_BLOB_CONTENT = "Test Blob Content"
 FAKE_CONTAINER_IMAGE = "Test Container Image"
 FAKE_CONTAINER_REGISTRY = "Test Container Registry"
+FAKE_CREDENTIAL = "Test Credential"
 FAKE_FOLDER = "/test_folder"
 FAKE_FOLDER_CONTENTS = [
     f"{FAKE_FOLDER}/test_file.csv",
@@ -244,6 +245,20 @@ class FakeClient:
             @property
             def vm_size(self):
                 return FAKE_POOL_SIZE
+
+            @property
+            def scale_settings(self):
+                return dict2obj({
+                    "fixed_scale": {
+                        "targetDedicatedNodes": 10,
+                        "targetLowPriorityNodes": 5,
+                        "resizeTimeout": 10,
+                    },
+                    "auto_scale": {
+                        "evaluationInterval": 10,
+                        "formula": FAKE_AUTOSCALE_FORMULA
+                    }
+                })
 
             def get(self):
                 return True

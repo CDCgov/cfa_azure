@@ -16,7 +16,6 @@ class TestBatch(unittest.TestCase):
         "cfa_azure.helpers.read_config", MagicMock(return_value=FAKE_CONFIG)
     )
     @patch("cfa_azure.helpers.get_sp_secret", MagicMock(return_value=True))
-    @patch("cfa_azure.helpers.get_sp_credential", MagicMock(return_value=True))
     @patch(
         "cfa_azure.helpers.get_blob_service_client",
         MagicMock(return_value=True),
@@ -57,7 +56,6 @@ class TestBatch(unittest.TestCase):
         "cfa_azure.helpers.read_config", MagicMock(return_value=FAKE_CONFIG)
     )
     @patch("cfa_azure.helpers.get_sp_secret", MagicMock(return_value=True))
-    @patch("cfa_azure.helpers.get_sp_credential", MagicMock(return_value=True))
     @patch(
         "cfa_azure.helpers.get_blob_service_client",
         MagicMock(return_value=True),
@@ -97,7 +95,6 @@ class TestBatch(unittest.TestCase):
     @patch("builtins.print")
     @patch("toml.load", MagicMock(return_value=FAKE_CONFIG))
     @patch("cfa_azure.helpers.get_sp_secret", MagicMock(return_value=True))
-    @patch("cfa_azure.helpers.get_sp_credential", MagicMock(return_value=True))
     @patch(
         "cfa_azure.helpers.get_batch_service_client",
         MagicMock(return_value=FakeClient()),
@@ -124,7 +121,33 @@ class TestBatch(unittest.TestCase):
     @patch("builtins.print")
     @patch("toml.load", MagicMock(return_value=FAKE_CONFIG))
     @patch("cfa_azure.helpers.get_sp_secret", MagicMock(return_value=True))
-    @patch("cfa_azure.helpers.get_sp_credential", MagicMock(return_value=True))
+    @patch(
+        "cfa_azure.helpers.get_batch_service_client",
+        MagicMock(return_value=FakeClient()),
+    )
+    @patch("cfa_azure.helpers.add_job", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.add_task_to_job", MagicMock(return_value=True))
+    @patch("cfa_azure.helpers.monitor_tasks", MagicMock(return_value=True))
+    @patch(
+        "cfa_azure.helpers.list_files_in_container",
+        MagicMock(return_value=FAKE_FOLDER_CONTENTS),
+    )
+    def test_run_job_missing_files(self, mock_print):
+        cfa_azure.batch.run_job(
+            "test_job_id",
+            "test_task_id",
+            "docker run something",
+            FAKE_INPUT_CONTAINER,
+            FAKE_OUTPUT_CONTAINER,
+            input_files=['test_file.csv']
+        )
+        mock_print.assert_called_with(
+            "Not all input files exist in container. Closing job."
+        )
+
+    @patch("builtins.print")
+    @patch("toml.load", MagicMock(return_value=FAKE_CONFIG))
+    @patch("cfa_azure.helpers.get_sp_secret", MagicMock(return_value=True))
     @patch(
         "cfa_azure.helpers.get_batch_service_client",
         MagicMock(return_value=FakeClient()),

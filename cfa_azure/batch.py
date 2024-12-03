@@ -4,7 +4,7 @@ import subprocess as sp
 import toml
 
 from cfa_azure import helpers
-
+from azure.identity import DefaultAzureCredential
 
 def create_pool(
     pool_id: str,
@@ -35,8 +35,8 @@ def create_pool(
 
     # Get credentials
     print("Retrieving service principal credentials...")
-    sp_secret = helpers.get_sp_secret(config)
-    sp_credential = helpers.get_sp_credential(sp_secret, config)
+    sp_credential=DefaultAzureCredential()
+    sp_secret = helpers.get_sp_secret(config=config, credential=sp_credential)
 
     # Create blob service account
     print("Setting up Blob service client...")
@@ -157,8 +157,8 @@ def run_job(
     config = toml.load(config_path)
 
     # Get credentials
-    sp_secret = helpers.get_sp_secret()
-    sp_credential = helpers.get_sp_credential(sp_secret)
+    sp_credential = DefaultAzureCredential()
+    sp_secret = helpers.get_sp_secret(config=config, credential=sp_credential)
 
     # Check input_files
     print("Checking input files against container contents...")

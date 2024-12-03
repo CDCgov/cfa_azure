@@ -252,19 +252,17 @@ class FakeClient:
 
             @property
             def scale_settings(self):
-                return dict2obj(
-                    {
-                        "fixed_scale": {
-                            "targetDedicatedNodes": 10,
-                            "targetLowPriorityNodes": 5,
-                            "resizeTimeout": 10,
-                        },
-                        "auto_scale": {
-                            "evaluationInterval": 10,
-                            "formula": FAKE_AUTOSCALE_FORMULA,
-                        },
+                return dict2obj({
+                    "fixed_scale": {
+                        "targetDedicatedNodes": 10,
+                        "targetLowPriorityNodes": 5,
+                        "resizeTimeout": 10,
+                    },
+                    "auto_scale": {
+                        "evaluationInterval": 10,
+                        "formula": FAKE_AUTOSCALE_FORMULA
                     }
-                )
+                })
 
             def get(self):
                 return True

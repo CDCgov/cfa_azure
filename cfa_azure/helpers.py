@@ -1563,7 +1563,7 @@ def download_directory(
         src_path += "/"
     for blob in c_client.list_blobs(name_starts_with=src_path):
         b = blob.name
-        if b.split(src_path)[0] == "":
+        if b.split(src_path)[0] == "" and "." in b:
             blob_list.append(b)
 
     flist = []

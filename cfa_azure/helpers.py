@@ -1559,7 +1559,7 @@ def download_directory(
         src_path += "/"
     for blob in c_client.list_blobs(name_starts_with=src_path):
         b = blob.name
-        if b.split(src_path)[0] == "":
+        if b.split(src_path)[0] == "" and "." in b:
             blob_list.append(b)
 
     flist = []
@@ -1738,9 +1738,12 @@ def upload_docker_image(
     if tag is None:
         tag = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
+<<<<<<< HEAD
 =======
     """    
 >>>>>>> 0afcba7 (Updated unit tests for added coverage)
+=======
+>>>>>>> 3786cc8 (fix download_directory function (#180))
     full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
 
     # check if docker is running

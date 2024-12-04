@@ -830,3 +830,45 @@ class TestHelpers(unittest.TestCase):
             pool_name=FAKE_BATCH_POOL, config=FAKE_CONFIG
         )
         self.assertEqual(len(compute_nodes), 4)
+
+    @patch("docker.from_env", MagicMock(return_value=FakeClient()))
+    @patch("os.path.exists", MagicMock(return_value=True))
+    @patch("subprocess.run", MagicMock(return_value=True))
+    def test_upload_docker_image(self):
+        full_container_name = cfa_azure.helpers.upload_docker_image(
+            image_name=FAKE_CONTAINER_IMAGE, 
+            registry_name=FAKE_CONTAINER_REGISTRY,
+            repo_name="Fake Repo",
+            tag="latest", 
+            use_device_code=False
+        )
+        self.assertIsNotNone(full_container_name)
+
+    @patch("docker.from_env", MagicMock(side_effect=DockerException))
+    @patch("os.path.exists", MagicMock(return_value=True))
+    @patch("subprocess.run", MagicMock(return_value=True))
+    def test_upload_docker_image_exception(self):
+        with self.assertRaises(DockerException) as docexc:
+            cfa_azure.helpers.upload_docker_image(
+                image_name=FAKE_CONTAINER_IMAGE, 
+                registry_name=FAKE_CONTAINER_REGISTRY,
+                repo_name="Fake Repo",
+                tag="latest", 
+                use_device_code=False
+            )
+            self.assertEqual(
+                "Make sure Docker is running.",
+                str(docexc.exception),
+            )
+
+    @patch("docker.from_env", MagicMock(return_value=FakeClient()))
+    @patch("os.path.exists", MagicMock(return_value=True))
+    @patch("subprocess.run", MagicMock(return_value=True))
+    def test_upload_docker_image_notag(self):
+        full_container_name = cfa_azure.helpers.upload_docker_image(
+            image_name=FAKE_CONTAINER_IMAGE, 
+            registry_name=FAKE_CONTAINER_REGISTRY,
+            repo_name="Fake Repo",
+            use_device_code=False
+        )
+        self.assertIsNotNone(full_container_name)

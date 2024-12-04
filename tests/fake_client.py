@@ -117,6 +117,9 @@ class FakeClient:
         def __init__(self, tag):
             self.name = tag
 
+        def tag(self, tag_name):
+            return tag_name
+
     class FakeBlob:
         def __init__(self, name):
             self.name = name
@@ -287,6 +290,10 @@ class FakeClient:
     def compute_node(self) -> FakeComputeNodeList:
         return self.FakeComputeNodeList()
 
+    @property
+    def images(self):
+        return { FAKE_CONTAINER_IMAGE: FakeClient.FakeTag("fake_tag_1") }
+    
     def get_container_client(self, container):
         return self.FakeContainerClient()
 

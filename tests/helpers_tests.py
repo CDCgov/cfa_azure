@@ -10,6 +10,7 @@ from docker.errors import DockerException
 import cfa_azure.helpers
 from tests.fake_client import *
 
+
 class TestHelpers(unittest.TestCase):
     @patch("cfa_azure.helpers.logger")
     @patch("toml.load", MagicMock(return_value=FAKE_CONFIG))
@@ -548,8 +549,6 @@ class TestHelpers(unittest.TestCase):
         mock_logger.debug.assert_called_with("Download complete.")
 
     @patch("cfa_azure.helpers.logger")
-
-
     @patch("cfa_azure.helpers.download_file", MagicMock(return_value=True))
     def test_download_directory_extensions_inclusions(self, mock_logger):
         blob_service_client = FakeClient()
@@ -652,9 +651,14 @@ class TestHelpers(unittest.TestCase):
             )
             self.assertIsNone(response)
 
-    @patch("cfa_azure.helpers.get_autoscale_formula", MagicMock(return_value=FAKE_AUTOSCALE_FORMULA))
-    @patch("cfa_azure.helpers.get_deployment_config", MagicMock(return_value={"virtualMachineConfiguration": {}}))
-
+    @patch(
+        "cfa_azure.helpers.get_autoscale_formula",
+        MagicMock(return_value=FAKE_AUTOSCALE_FORMULA),
+    )
+    @patch(
+        "cfa_azure.helpers.get_deployment_config",
+        MagicMock(return_value={"virtualMachineConfiguration": {}}),
+    )
     def test_get_pool_parameters(self):
         response = cfa_azure.helpers.get_pool_parameters(
             mode="autoscale",
@@ -672,7 +676,10 @@ class TestHelpers(unittest.TestCase):
         )
         self.assertIsNotNone(response)
 
-    @patch("cfa_azure.helpers.get_deployment_config", MagicMock(return_value={"virtualMachineConfiguration": {}}))
+    @patch(
+        "cfa_azure.helpers.get_deployment_config",
+        MagicMock(return_value={"virtualMachineConfiguration": {}}),
+    )
     def test_get_pool_parameters_use_default(self):
         response = cfa_azure.helpers.get_pool_parameters(
             mode="autoscale",

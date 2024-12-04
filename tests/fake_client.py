@@ -293,8 +293,8 @@ class FakeClient:
 
     @property
     def images(self):
-        return {FAKE_CONTAINER_IMAGE: FakeClient.FakeTag("fake_tag_1")}
-
+        return { FAKE_CONTAINER_IMAGE: FakeClient.FakeTag("fake_tag_1") }
+    
     def get_container_client(self, container):
         return self.FakeContainerClient()
 

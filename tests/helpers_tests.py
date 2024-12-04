@@ -846,11 +846,11 @@ class TestHelpers(unittest.TestCase):
     @patch("subprocess.run", MagicMock(return_value=True))
     def test_upload_docker_image(self):
         full_container_name = cfa_azure.helpers.upload_docker_image(
-            image_name=FAKE_CONTAINER_IMAGE,
+            image_name=FAKE_CONTAINER_IMAGE, 
             registry_name=FAKE_CONTAINER_REGISTRY,
             repo_name="Fake Repo",
-            tag="latest",
-            use_device_code=False,
+            tag="latest", 
+            use_device_code=False
         )
         self.assertIsNotNone(full_container_name)
 
@@ -860,11 +860,11 @@ class TestHelpers(unittest.TestCase):
     def test_upload_docker_image_exception(self):
         with self.assertRaises(DockerException) as docexc:
             cfa_azure.helpers.upload_docker_image(
-                image_name=FAKE_CONTAINER_IMAGE,
+                image_name=FAKE_CONTAINER_IMAGE, 
                 registry_name=FAKE_CONTAINER_REGISTRY,
                 repo_name="Fake Repo",
-                tag="latest",
-                use_device_code=False,
+                tag="latest", 
+                use_device_code=False
             )
             self.assertEqual(
                 "Make sure Docker is running.",
@@ -876,9 +876,9 @@ class TestHelpers(unittest.TestCase):
     @patch("subprocess.run", MagicMock(return_value=True))
     def test_upload_docker_image_notag(self):
         full_container_name = cfa_azure.helpers.upload_docker_image(
-            image_name=FAKE_CONTAINER_IMAGE,
+            image_name=FAKE_CONTAINER_IMAGE, 
             registry_name=FAKE_CONTAINER_REGISTRY,
             repo_name="Fake Repo",
-            use_device_code=False,
+            use_device_code=False
         )
         self.assertIsNotNone(full_container_name)

@@ -1741,11 +1741,7 @@ def upload_docker_image(
 
     Returns:
         str: full container name
-    """
-    # Generate a unique tag if none provided
-    if tag is None:
-        tag = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-
+    """    
     full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
 
     # check if docker is running

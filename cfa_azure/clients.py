@@ -19,7 +19,12 @@ logger = logging.getLogger(__name__)
 
 
 class AzureClient:
-    def __init__(self, config_path: str, credential_method: str = "identity", use_env_vars: bool = False):
+    def __init__(
+        self,
+        config_path: str,
+        credential_method: str = "identity",
+        use_env_vars: bool = False,
+    ):
         """Azure Client for interacting with Azure Batch, Container Registries and Blob Storage
 
         Args:
@@ -204,7 +209,7 @@ class AzureClient:
         )
 
         logger.debug(f"generated credentials from {credential_method}.")
-        
+
         # create blob service account
 
         self.blob_service_client = helpers.get_blob_service_client(
@@ -258,7 +263,7 @@ class AzureClient:
         task_slots_per_node: int = 1,
         availability_zones: bool = False,
         use_hpc_image: bool = False,
-        ) -> None:
+    ) -> None:
         """Sets the scaling mode of the client, either "fixed" or "autoscale".
         If "fixed" is selected, debug must be turned off.
         If "autoscale" is selected, an autoscale formula path must be provided.
@@ -547,9 +552,11 @@ class AzureClient:
                 sleep(5.0)
 
         else:
-            logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
-            container_image_name=self.container_image_name
-            
+            logger.info(
+                f"Pool {pool_name} does not exist. New pool will be created."
+            )
+            container_image_name = self.container_image_name
+
         if "pool_id" not in self.config["Batch"]:
             self.config["Batch"]["pool_id"] = pool_name
 
@@ -663,8 +670,10 @@ class AzureClient:
                 sleep(5.0)
 
         else:
-            logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
-            container_image_name=self.container_image_name
+            logger.info(
+                f"Pool {pool_name} does not exist. New pool will be created."
+            )
+            container_image_name = self.container_image_name
 
         if "pool_id" not in self.config["Batch"]:
             self.config["Batch"]["pool_id"] = pool_name
@@ -978,7 +987,7 @@ class AzureClient:
         helpers.add_job(
             job_id=job_id_r,
             pool_id=p_name,
-            end_job_on_task_failure = end_job_on_task_failure,
+            end_job_on_task_failure=end_job_on_task_failure,
             batch_client=self.batch_client,
             task_retries=task_retries,
         )

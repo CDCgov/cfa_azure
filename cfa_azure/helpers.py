@@ -24,12 +24,10 @@ from azure.batch.models import (
     ExitOptions,
     JobAction,
     JobConstraints,
-    OnTaskFailure
+    OnTaskFailure,
 )
-from azure.common.credentials import ServicePrincipalCredentials
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
-from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
 from azure.storage.blob import BlobServiceClient, ContainerClient
@@ -1740,7 +1738,7 @@ def upload_docker_image(
     # Generate a unique tag if none provided
     if tag is None:
         tag = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    
+
     full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
 
     # check if docker is running
@@ -1763,7 +1761,9 @@ def upload_docker_image(
     except docker.errors.ImageNotFound:
         # Log available images to guide the user
         available_images = [img.tags for img in docker_env.images.list()]
-        logger.error(f"Image {image_name} does not exist. Available images are: {available_images}")
+        logger.error(
+            f"Image {image_name} does not exist. Available images are: {available_images}"
+        )
         raise
 
     # Log in to ACR and upload container to registry
@@ -1777,7 +1777,7 @@ def upload_docker_image(
     sp.run(f"az acr login --name {registry_name}", shell=True)
     logger.debug("Pushing Docker container to ACR.")
     sp.run(f"docker push {full_container_name}", shell=True)
-    
+
     return full_container_name
 
 
@@ -1944,7 +1944,7 @@ def check_config_req(config: str):
     else:
         logger.warning(
             "%s missing from the config file and will be required by client.",
-            str(list(req - loaded))
+            str(list(req - loaded)),
         )
         return False
 
@@ -1952,9 +1952,7 @@ def check_config_req(config: str):
 def get_container_registry_client(
     endpoint: str, credential: object, audience: str
 ):
-    return ContainerRegistryClient(
-        endpoint, credential, audience=audience
-    )
+    return ContainerRegistryClient(endpoint, credential, audience=audience)
 
 
 def check_azure_container_exists(

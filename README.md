@@ -43,14 +43,14 @@ export LOG_OUTPUT="stdout"
 
 **Using Various Credential Methods**
 
-When instantiating a AzureClient object, there is an option to set which `credential_method` to use. Previously, only a service principal could be used. Now, there are three an options to choose `identity`, `sp`, or `env`. 
-- `identity`: Uses the managed identity associated with the VM where the code is running. 
+When instantiating a AzureClient object, there is an option to set which `credential_method` to use. Previously, only a service principal could be used. Now, there are three an options to choose `identity`, `sp`, or `env`.
+- `identity`: Uses the managed identity associated with the VM where the code is running.
 - `sp`: Uses a service principal for the credential. The following values must be set in the configuration file: tenant_id, sp_application_id, and the corresponding secret fetched from Azure Key Vault.
 - `env`: Uses environment variables to create the credential. When choosing `env`, the following environment variables will need to be set: `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET`.
 
 You can also use `use_env_vars=True` to allow the configuration to be loaded directly from environment variables, which may be helpful in containerized environments.
 
-By default, the managed identity option will be used. In whichever credential method is used, a secret is pulled from the key vault using the credential to create a secret client credential for interaction with various Azure services.  
+By default, the managed identity option will be used. In whichever credential method is used, a secret is pulled from the key vault using the credential to create a secret client credential for interaction with various Azure services.
 
 **Example:**
 ```
@@ -66,7 +66,7 @@ client = AzureClient(config_path="./configuration.toml", credential_method="sp")
 import os
 os.environ["AZURE_TENANT_ID"] = "your-tenant-id"
 os.environ["AZURE_CLIENT_ID"] = "your-client-id"
-os.environ["AZURE_CLIENT_SECRET"] = "your-client-secret"
+os.environ["AZURE_CLIENT_SECRET"] = "your-client-secret" #pragma: allowlist secret
 client = AzureClient(credential_method="env", use_env_vars=True)
 ```
 
@@ -101,7 +101,7 @@ client.set_pool_info("autoscale",
 ```
 
 ### Functions
-- `create_pool`: creates a new Azure batch pool using default autoscale mode  
+- `create_pool`: creates a new Azure batch pool using default autoscale mode
   **Example:**
   ```
   client = AzureClient("./configuration.toml")
@@ -118,7 +118,7 @@ client.upload_files_to_container(
     force_upload=True
 )
 ```
-- `update_scale_settings`: modifies the scaling mode (fixed or autoscale) for an existing pool  
+- `update_scale_settings`: modifies the scaling mode (fixed or autoscale) for an existing pool
  **Example:**
   ```
   # Specify new autoscale formula that will be evaluated every 30 minutes
@@ -142,7 +142,7 @@ client.upload_files_to_container(
   # Switch to fixed scaling mode with 15 spot EC2 nodes and forced termination of current jobs
   client.update_scale_settings(low_priority_nodes=15, node_deallocation_option='Terminate')
   ```
-- update_containers: modifies the containers mounted on an existing Azure batch pool. It essentially recreates the pool with new mounts.  
+- update_containers: modifies the containers mounted on an existing Azure batch pool. It essentially recreates the pool with new mounts.
  **Example:**
   ```
   # First create a pool
@@ -248,83 +248,83 @@ Please view [this documentation](automation_README.md) on getting started with t
 The `helpers` module provides a collection of functions that helps manage Azure resources and perform key tasks, such as interacting with Blob storage, Azure Batch, configuration management, and data transformations. Below is an expanded overview of each function.
 
 **Functions:**
-- `read_config`: reads in a configuration toml file and returns it as a Python dictionary  
+- `read_config`: reads in a configuration toml file and returns it as a Python dictionary
 ```
 read_config("/path/to/config.toml")
 ```
-- `create_container`: creates an Azure Blob container if it doesn't already exist  
+- `create_container`: creates an Azure Blob container if it doesn't already exist
 ```
-create_container("my-container", blob_service_client)  
+create_container("my-container", blob_service_client)
 ```
 - `get_autoscale_formula`: finds and reads `autoscale_formula.txt` from working directory or subdirectory
 ```
-get_autoscale_formula(filepath="/path/to/formula.txt")  
+get_autoscale_formula(filepath="/path/to/formula.txt")
 ```
 - `get_sp_secret`: retrieves the user's service principal secret from the key vault based on the provided config file
 ```
-get_sp_secret(config, DefaultAzureCredential())  
+get_sp_secret(config, DefaultAzureCredential())
 ```
-- `get_sp_credential`: retrieves the service principal credential  
+- `get_sp_credential`: retrieves the service principal credential
 ```
 get_sp_credential(config)
 ```
-- `get_blob_service_client`: creates a Blob Service Client for interacting with Azure Blob  
+- `get_blob_service_client`: creates a Blob Service Client for interacting with Azure Blob
 ```
 blob_service_client = get_blob_service_client(config, DefaultAzureCredential())
 ```
-- `get_batch_mgmt_client`: creates a Batch Management Client for interacting with Azure Batch, such as pools and jobs  
+- `get_batch_mgmt_client`: creates a Batch Management Client for interacting with Azure Batch, such as pools and jobs
 ```
-batch_mgmt_client = get_batch_mgmt_client(config, DefaultAzureCredential())  
+batch_mgmt_client = get_batch_mgmt_client(config, DefaultAzureCredential())
 ```
-- `create_blob_containers`: uses create_container() to create input and output containers in Azure Blob  
+- `create_blob_containers`: uses create_container() to create input and output containers in Azure Blob
 ```
 create_blob_containers(blob_service_client, "input-container", "output-container")
 ```
-- `get_batch_pool_json`: creates a dict based on config for configuring an Azure Batch pool  
+- `get_batch_pool_json`: creates a dict based on config for configuring an Azure Batch pool
 ```
 pool_config = get_batch_pool_json("input-container", "output-container", config)
 ```
-- `create_batch_pool`: creates a Azure Batch Pool based on info using the provided configuration details  
+- `create_batch_pool`: creates a Azure Batch Pool based on info using the provided configuration details
 ```
 create_batch_pool(batch_mgmt_client, pool_config)
 ```
-- `list_containers`: lists the containers in Azure Blob Storage Account  
+- `list_containers`: lists the containers in Azure Blob Storage Account
 ```
 list_containers(blob_service_client)
 ```
-- `upload_files_in_folder`: uploads all files in specified folder to the specified container  
+- `upload_files_in_folder`: uploads all files in specified folder to the specified container
 ```
 upload_files_in_folder("/path/to/folder", "container-name", blob_service_client)
 ```
-- `get_batch_service_client`: creates a Batch Service Client object for interacting with Batch jobs  
+- `get_batch_service_client`: creates a Batch Service Client object for interacting with Batch jobs
 ```
 batch_client = get_batch_service_client(config, DefaultAzureCredential())
 ```
-- `add_job`: creates a new job to the specified Azure Batch pool  
+- `add_job`: creates a new job to the specified Azure Batch pool
 ```
 add_job("job-id", "pool-id", True, batch_client)
 ```
-- `add_task_to_job`: adds a task to the specified job based on user-input Docker command  
+- `add_task_to_job`: adds a task to the specified job based on user-input Docker command
 ```
 add_task_to_job("job-id", "task-id", "docker-command", batch_client)
 ```
-- `monitor_tasks`: monitors the tasks running in a job  
+- `monitor_tasks`: monitors the tasks running in a job
 ```
 monitor_tasks("example-job-id", batch_client)
 ```
-- `list_files_in_container`: lists out all files stored in the specified Azure container  
+- `list_files_in_container`: lists out all files stored in the specified Azure container
 ```
 list_files_in_container(container_client)
 ```
-- `df_to_yaml`: converts a pandas dataframe to yaml file, which is helpful for configuration and metadata storage  
+- `df_to_yaml`: converts a pandas dataframe to yaml file, which is helpful for configuration and metadata storage
 ```
 df_to_yaml(dataframe, "output.yaml")
 ```
-- `yaml_to_df`: converts a yaml file to pandas dataframe  
+- `yaml_to_df`: converts a yaml file to pandas dataframe
 ```
 yaml_to_df("input.yaml")
 ```
-- `edit_yaml_r0`: takes in a YAML file and produces replicate YAML files with the `r0` changed based on the specified range (i.e. start, stop, and step)  
+- `edit_yaml_r0`: takes in a YAML file and produces replicate YAML files with the `r0` changed based on the specified range (i.e. start, stop, and step)
 ```
 edit_yaml_r0("input.yaml", start=1, stop=5, step=1)
 ```

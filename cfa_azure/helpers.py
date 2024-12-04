@@ -1742,6 +1742,7 @@ def upload_docker_image(
     Returns:
         str: full container name
     """    
+
     full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
 
     # check if docker is running

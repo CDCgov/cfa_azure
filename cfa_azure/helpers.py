@@ -746,6 +746,7 @@ def add_job(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
         uses_task_dependencies=True,
+        on_all_tasks_complete = 'terminateJob',
         on_task_failure=OnTaskFailure.perform_exit_options_job_action,
         constraints=JobConstraints(max_task_retry_count=task_retries),
     )

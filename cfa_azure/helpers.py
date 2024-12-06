@@ -25,6 +25,7 @@ from azure.batch.models import (
     JobAction,
     JobConstraints,
     OnTaskFailure,
+    OnAllTasksComplete,
 )
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -730,6 +731,7 @@ def add_job(
     end_job_on_task_failure: bool,
     batch_client: object,
     task_retries: int = 0,
+    mark_complete: bool = False
 ):
     """takes in a job ID and config to create a job in the pool
 
@@ -739,16 +741,21 @@ def add_job(
         end_job_on_task_failure (bool): whether to end a running job if a task fails
         batch_client (object): batch client object
         task_retries (int): number of times to retry the task if it fails. Default 3.
+        mark_complete (bool): whether to mark the job complete after tasks finish running. Default False.
     """
     logger.debug(f"Attempting to create job '{job_id}'...")
     logger.debug("Adding job parameters to job.")
+    if mark_complete:
+        job_constraints = JobConstraints(max_task_retry_count=task_retries,
+                        on_all_tasks_complete=OnAllTasksComplete.terminate_job)
+    else:
+        job_constraints = JobConstraints(max_task_retry_count=task_retries)
     job = batchmodels.JobAddParameter(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
         uses_task_dependencies=True,
-        on_all_tasks_complete = 'terminateJob',
         on_task_failure=OnTaskFailure.perform_exit_options_job_action,
-        constraints=JobConstraints(max_task_retry_count=task_retries),
+        constraints=job_constraints,
     )
     logger.debug("Attempting to add job.")
     try:

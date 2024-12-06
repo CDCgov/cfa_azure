@@ -2172,6 +2172,7 @@ def mark_job_completed_after_tasks_run(
             id=job_id,
             pool_info=batchmodels.PoolInformation(pool_id=pool_id),
             on_all_tasks_complete="terminateJob",
+            on_task_failure="noAction"
         )
         batch_client.job.update(job_id=job_id, job_update_parameter=job_term)
         print(

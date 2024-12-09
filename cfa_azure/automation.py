@@ -36,7 +36,7 @@ def run_experiment(exp_config: str, auth_config: str):
             account_name=client.account_name,
             pool_name = exp_toml['setup']['pool_name'],
             batch_mgmt_client=client.batch_mgmt_client):
-            print(f"pool name {exp_toml['setp']['pool_name']} does not exist in the Azure environment.")
+            print(f"pool name {exp_toml['setup']['pool_name']} does not exist in the Azure environment.")
             return None
         pool_name = exp_toml['setup']['pool_name']
     else:

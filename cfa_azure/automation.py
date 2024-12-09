@@ -38,6 +38,7 @@ def run_experiment(exp_config: str, auth_config: str):
             batch_mgmt_client=client.batch_mgmt_client):
             print(f"pool name {exp_toml['setp']['pool_name']} does not exist in the Azure environment.")
             return None
+        pool_name = exp_toml['setup']['pool_name']
     else:
         print("could not find 'pool_name' key in 'setup' section of exp toml.")
         print("please specify a pool name to use.")
@@ -45,7 +46,7 @@ def run_experiment(exp_config: str, auth_config: str):
 
     #upload files if the section exists
     if 'upload' in exp_toml.keys():
-        contaienr_name = exp_toml['upload']['container_name']
+        container_name = exp_toml['upload']['container_name']
         if 'location_in_blob' in exp_toml['upload'].keys():
             location_in_blob = exp_toml['upload']['location_in_blob']
         else:
@@ -53,18 +54,41 @@ def run_experiment(exp_config: str, auth_config: str):
         if 'folders' in exp_toml['upload'].keys():
             client.upload_files_in_folder(folder_names=exp_toml['upload']['folders'],
                                           location_in_blob=location_in_blob,
-                                          container_name=contaienr_name)
+                                          container_name=container_name)
         if 'files' in exp_toml['upload'].keys():
             client.upload_files(files=exp_toml['upload']['files'],
                                 location_in_blob=location_in_blob,
-                                contaienr_name=container_name)
+                                container_name=container_name)
 
     #create the job
     job_id = exp_toml['job']['name']
-    
-    client.add(job_id, )
+    if 'save_logs_to_blob' in exp_toml['job'].keys():
+        save_logs_to_blob = exp_toml['job']['save_logs_to_blob']
+    else:
+        save_logs_to_blob = None
+    if 'logs_folder' in exp_toml['job'].keys():
+        logs_folder = exp_toml['job']['logs_folder']
+    else:
+        logs_folder = None
+    if 'task_retries' in exp_toml['job'].keys():
+        task_retries = exp_toml['job']['task_retries']
+    else:
+        task_retries = 0
+        
+    client.add_job(job_id = job_id,
+                   pool_name = pool_name,
+                   save_logs_to_blob=save_logs_to_blob,
+                   logs_folder=logs_folder,
+                   task_retries=task_retries)
 
     #create the tasks for the experiment
+    #get the container to use if necessary
+    if 'container' in exp_toml['job'].keys():
+        container = exp_toml['job']['container']
+    else:
+        container = None
+
+    #submit the experiment tasks
     ex = exp_toml['experiment']
     var_list = [key for key in ex.keys() if key != "base_cmd"]
     var_values=[]
@@ -74,6 +98,11 @@ def run_experiment(exp_config: str, auth_config: str):
     v_v = list(itertools.product(*var_values))
 
     for params in v_v:
-        client.add_task(job_id,
-            ex['base_cmd'].format(*params)
+        client.add_task(job_id = job_id,
+            docker_cmd = ex['base_cmd'].format(*params),
+            container = container
         )
+
+    if 'monitor_job' in exp_toml['job'].keys():
+        if exp_toml['job']['monitor_job'] is True:
+            client.monitor_job(job_id)

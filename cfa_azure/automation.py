@@ -1,5 +1,6 @@
 import toml
 import itertools
+import pandas as pd
 from cfa_azure.clients import AzureClient
 from cfa_azure import helpers
 
@@ -195,12 +196,33 @@ def run_tasks(task_config: str, auth_config: str):
         container = None
 
     #submit the tasks
-
-    for params in v_v:
-        client.add_task(job_id = job_id,
-            docker_cmd = ex['base_cmd'].format(*params),
+    tt = task_toml['task']
+    df = pd.json_normalize(tt)
+    df.insert(0, "task_id", pd.Series("", index = range(df.shape[0])))
+    #when kicking off a task we save the taskid to the row in df
+    for i, item in enumerate(tt):
+        if 'depends_on' in item.keys():
+            d_list = []
+            for d in item['depends_on']:
+                d_task = df[df["name"]==d]["task_id"].values[0]
+                d_list.append(d_task)
+        else:
+            d_list = None
+        #check for other attributes
+        if 'run_dependent_tasks_on_fail' in item.keys():
+            run_dependent_tasks_on_fail = item['run_dependent_tasks_on_fail']
+        else:
+            run_dependent_task_on_fail = False
+        #submit the task
+        tid = client.add_task(
+            job_id = job_id,
+            docker_cmd = item['cmd'],
+            depends_on = d_list,
+            run_dependent_tasks_on_fail = run_dependent_task_on_fail,
             container = container
         )
+        df.loc[i, 'task_id'] = tid
+
 
     if 'monitor_job' in exp_toml['job'].keys():
         if task_toml['job']['monitor_job'] is True:

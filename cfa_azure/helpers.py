@@ -24,8 +24,8 @@ from azure.batch.models import (
     ExitOptions,
     JobAction,
     JobConstraints,
-    OnAllTasksComplete,
-    OnTaskFailure
+    OnTaskFailure,
+    OnAllTasksComplete
 )
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -757,7 +757,7 @@ def add_job(
         uses_task_dependencies=True,
         on_all_tasks_complete=on_all_tasks_complete,
         on_task_failure=OnTaskFailure.perform_exit_options_job_action,
-        constraints=job_constraints,
+        constraints=job_constraints
     )
     logger.debug("Attempting to add job.")
     try:
@@ -934,7 +934,8 @@ def add_task_to_job(
         )
         batch_client.task.add(job_id=job_id, task=task)
         logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
-        return task_id
+        tasks.append(task_id)
+    return tasks
 
 
 def monitor_tasks(

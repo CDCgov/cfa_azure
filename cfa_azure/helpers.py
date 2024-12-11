@@ -2156,26 +2156,6 @@ def format_extensions(extension):
     return ext
 
 
-def mark_job_completed_after_tasks_run(
-    job_id: str,
-    pool_id: str,
-    batch_client: object,
-    mark_complete: bool = True,
-):
-    if mark_complete:
-        logger.debug("setting terminateJob when all tasks complete for job.")
-        job_term = batchmodels.JobUpdateParameter(
-            id=job_id,
-            pool_info=batchmodels.PoolInformation(pool_id=pool_id),
-            on_all_tasks_complete="terminateJob",
-            on_task_failure="noAction"
-        )
-        batch_client.job.update(job_id=job_id, job_update_parameter=job_term)
-        print(
-            "Job will be marked complete when all tasks finish, even if task(s) fails."
-        )
-
-
 def check_autoscale_parameters(
     mode: str,
     dedicated_nodes: int = None,

@@ -25,7 +25,7 @@ from azure.batch.models import (
     JobAction,
     JobConstraints,
     OnTaskFailure,
-    OnAllTasksComplete,
+    OnAllTasksComplete
 )
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -745,17 +745,15 @@ def add_job(
     """
     logger.debug(f"Attempting to create job '{job_id}'...")
     logger.debug("Adding job parameters to job.")
-    if mark_complete:
-        job_constraints = JobConstraints(max_task_retry_count=task_retries,
-                        on_all_tasks_complete=OnAllTasksComplete.terminate_job)
-    else:
-        job_constraints = JobConstraints(max_task_retry_count=task_retries)
+    on_all_tasks_complete = OnAllTasksComplete.terminate_job if mark_complete else OnAllTasksComplete.no_action
+    job_constraints = JobConstraints(max_task_retry_count=task_retries)
     job = batchmodels.JobAddParameter(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
         uses_task_dependencies=True,
+        on_all_tasks_complete=on_all_tasks_complete,
         on_task_failure=OnTaskFailure.perform_exit_options_job_action,
-        constraints=job_constraints,
+        constraints=job_constraints
     )
     logger.debug("Attempting to add job.")
     try:
@@ -893,8 +891,8 @@ def add_task_to_job(
     else:
         full_cmd = d_cmd_str
 
+    tasks = []
     if input_files:
-        tasks = []
         for i, input_file in enumerate(input_files):
             config_stem = "_".join(input_file.split(".")[:-1]).split("/")[-1]
             id = task_id_base + "-" + config_stem
@@ -915,7 +913,6 @@ def add_task_to_job(
             )
             batch_client.task.add(job_id=job_id, task=task)
             print(f"Task '{id}' added to job '{job_id}'.")
-        return tasks
     else:
         command_line = full_cmd
         logger.debug(f"Adding task {task_id}")
@@ -933,9 +930,8 @@ def add_task_to_job(
         )
         batch_client.task.add(job_id=job_id, task=task)
         logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
-        t = []
-        t.append(task_id)
-        return t
+        tasks.append(task_id)
+    return tasks
 
 
 def monitor_tasks(

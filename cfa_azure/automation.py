@@ -136,7 +136,7 @@ def run_tasks(task_config: str, auth_config: str):
         print("could not create AzureClient object.")
         return None
 
-    #check pool included in exp_toml and exists in azure
+    #check pool included in task_toml and exists in azure
     if 'pool_name' in task_toml['setup'].keys():
         if not helpers.check_pool_exists(resource_group_name= client.resource_group_name,
             account_name=client.account_name,
@@ -167,7 +167,7 @@ def run_tasks(task_config: str, auth_config: str):
                                 container_name=container_name)
 
     #create the job
-    job_id = exp_toml['job']['name']
+    job_id = task_toml['job']['name']
     if 'save_logs_to_blob' in task_toml['job'].keys():
         save_logs_to_blob = task_toml['job']['save_logs_to_blob']
     else:
@@ -223,7 +223,7 @@ def run_tasks(task_config: str, auth_config: str):
         df.loc[i, 'task_id'] = tid
 
 
-    if 'monitor_job' in exp_toml['job'].keys():
+    if 'monitor_job' in task_toml['job'].keys():
         if task_toml['job']['monitor_job'] is True:
             client.monitor_job(job_id)
     return None

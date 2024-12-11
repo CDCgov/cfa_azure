@@ -165,7 +165,6 @@ def run_tasks(task_config: str, auth_config: str):
             client.upload_files(files=task_toml['upload']['files'],
                                 location_in_blob=location_in_blob,
                                 container_name=container_name)
-    return None
 
     #create the job
     job_id = exp_toml['job']['name']
@@ -212,13 +211,13 @@ def run_tasks(task_config: str, auth_config: str):
         if 'run_dependent_tasks_on_fail' in item.keys():
             run_dependent_tasks_on_fail = item['run_dependent_tasks_on_fail']
         else:
-            run_dependent_task_on_fail = False
+            run_dependent_tasks_on_fail = False
         #submit the task
         tid = client.add_task(
             job_id = job_id,
             docker_cmd = item['cmd'],
             depends_on = d_list,
-            run_dependent_tasks_on_fail = run_dependent_task_on_fail,
+            run_dependent_tasks_on_fail = run_dependent_tasks_on_fail,
             container = container
         )
         df.loc[i, 'task_id'] = tid

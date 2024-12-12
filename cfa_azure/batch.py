@@ -4,7 +4,8 @@ import subprocess as sp
 import toml
 
 from cfa_azure import helpers
-from azure.identity import DefaultAzureCredential
+from azure.identity import ManagedIdentityCredential
+
 
 def create_pool(
     pool_id: str,
@@ -35,7 +36,7 @@ def create_pool(
 
     # Get credentials
     print("Retrieving service principal credentials...")
-    sp_credential=DefaultAzureCredential()
+    sp_credential=ManagedIdentityCredential()
     sp_secret = helpers.get_sp_secret(config=config, credential=sp_credential)
 
     # Create blob service account
@@ -157,7 +158,7 @@ def run_job(
     config = toml.load(config_path)
 
     # Get credentials
-    sp_credential = DefaultAzureCredential()
+    sp_credential = ManagedIdentityCredential()
     sp_secret = helpers.get_sp_secret(config=config, credential=sp_credential)
 
     # Check input_files

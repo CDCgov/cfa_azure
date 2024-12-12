@@ -8,7 +8,6 @@ from azure.common.credentials import ServicePrincipalCredentials
 from azure.core.exceptions import HttpResponseError
 from azure.identity import (
     ClientSecretCredential,
-    DefaultAzureCredential,
     EnvironmentCredential,
     ManagedIdentityCredential,
 )
@@ -167,7 +166,7 @@ class AzureClient:
         elif "sp" in self.credential_method.lower():
             if "sp_secrets" not in self.config["Authentication"].keys():
                 sp_secret = helpers.get_sp_secret(
-                    self.config, DefaultAzureCredential()
+                    self.config, ManagedIdentityCredential()
                 )
             self.cred = ClientSecretCredential(
                 tenant_id=self.config["Authentication"]["tenant_id"],
@@ -600,6 +599,7 @@ class AzureClient:
             container_registry_server=self.container_registry_server,
             config=self.config,
             mount_config=mount_config,
+            credential=self.secret_cred
         )
         self.create_pool(pool_name)
         return pool_name
@@ -712,7 +712,7 @@ class AzureClient:
             container_registry_server=self.container_registry_server,
             config=self.config,
             mount_config=mount_config,
-            credential=self.cred,
+            credential=self.secret_cred
         )
         self.create_pool(pool_name)
         return pool_name

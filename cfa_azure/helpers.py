@@ -25,7 +25,7 @@ from azure.batch.models import (
     JobAction,
     JobConstraints,
     OnAllTasksComplete,
-    OnTaskFailure,
+    OnTaskFailure
 )
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError

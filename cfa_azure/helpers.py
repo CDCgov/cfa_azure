@@ -25,7 +25,7 @@ from azure.batch.models import (
     JobAction,
     JobConstraints,
     OnAllTasksComplete,
-    OnTaskFailure,
+    OnTaskFailure
 )
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -937,7 +937,6 @@ def add_task_to_job(
         tasks.append(task_id)
     return tasks
 
-
 def monitor_tasks(
     job_id: str,
     timeout: int,
@@ -1743,7 +1742,6 @@ def upload_docker_image(
     Returns:
         str: full container name
     """
-
     full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
 
     # check if docker is running

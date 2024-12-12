@@ -24,12 +24,11 @@ from azure.batch.models import (
     ExitOptions,
     JobAction,
     JobConstraints,
-    OnTaskFailure
+    OnTaskFailure,
+    OnAllTasksComplete
 )
-from azure.common.credentials import ServicePrincipalCredentials
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
-from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
 from azure.storage.blob import BlobServiceClient, ContainerClient
@@ -732,6 +731,7 @@ def add_job(
     end_job_on_task_failure: bool,
     batch_client: object,
     task_retries: int = 0,
+    mark_complete: bool = False
 ):
     """takes in a job ID and config to create a job in the pool
 
@@ -741,15 +741,19 @@ def add_job(
         end_job_on_task_failure (bool): whether to end a running job if a task fails
         batch_client (object): batch client object
         task_retries (int): number of times to retry the task if it fails. Default 3.
+        mark_complete (bool): whether to mark the job complete after tasks finish running. Default False.
     """
     logger.debug(f"Attempting to create job '{job_id}'...")
     logger.debug("Adding job parameters to job.")
+    on_all_tasks_complete = OnAllTasksComplete.terminate_job if mark_complete else OnAllTasksComplete.no_action
+    job_constraints = JobConstraints(max_task_retry_count=task_retries)
     job = batchmodels.JobAddParameter(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
         uses_task_dependencies=True,
+        on_all_tasks_complete=on_all_tasks_complete,
         on_task_failure=OnTaskFailure.perform_exit_options_job_action,
-        constraints=JobConstraints(max_task_retry_count=task_retries),
+        constraints=job_constraints
     )
     logger.debug("Attempting to add job.")
     try:
@@ -887,8 +891,8 @@ def add_task_to_job(
     else:
         full_cmd = d_cmd_str
 
+    tasks = []
     if input_files:
-        tasks = []
         for i, input_file in enumerate(input_files):
             config_stem = "_".join(input_file.split(".")[:-1]).split("/")[-1]
             id = task_id_base + "-" + config_stem
@@ -909,7 +913,6 @@ def add_task_to_job(
             )
             batch_client.task.add(job_id=job_id, task=task)
             print(f"Task '{id}' added to job '{job_id}'.")
-        return tasks
     else:
         command_line = full_cmd
         logger.debug(f"Adding task {task_id}")
@@ -927,9 +930,8 @@ def add_task_to_job(
         )
         batch_client.task.add(job_id=job_id, task=task)
         logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
-        t = []
-        t.append(task_id)
-        return t
+        tasks.append(task_id)
+    return tasks
 
 
 def monitor_tasks(
@@ -1563,7 +1565,7 @@ def download_directory(
         src_path += "/"
     for blob in c_client.list_blobs(name_starts_with=src_path):
         b = blob.name
-        if b.split(src_path)[0] == "":
+        if b.split(src_path)[0] == "" and "." in b:
             blob_list.append(b)
 
     flist = []
@@ -1759,7 +1761,9 @@ def upload_docker_image(
     except docker.errors.ImageNotFound:
         # Log available images to guide the user
         available_images = [img.tags for img in docker_env.images.list()]
-        logger.error(f"Image {image_name} does not exist. Available images are: {available_images}")
+        logger.error(
+            f"Image {image_name} does not exist. Available images are: {available_images}"
+        )
         raise
 
     # Log in to ACR and upload container to registry
@@ -1773,7 +1777,7 @@ def upload_docker_image(
     sp.run(f"az acr login --name {registry_name}", shell=True)
     logger.debug("Pushing Docker container to ACR.")
     sp.run(f"docker push {full_container_name}", shell=True)
-    
+
     return full_container_name
 
 
@@ -1940,7 +1944,7 @@ def check_config_req(config: str):
     else:
         logger.warning(
             "%s missing from the config file and will be required by client.",
-            str(list(req - loaded))
+            str(list(req - loaded)),
         )
         return False
 
@@ -1948,9 +1952,7 @@ def check_config_req(config: str):
 def get_container_registry_client(
     endpoint: str, credential: object, audience: str
 ):
-    return ContainerRegistryClient(
-        endpoint, credential, audience=audience
-    )
+    return ContainerRegistryClient(endpoint, credential, audience=audience)
 
 
 def check_azure_container_exists(
@@ -2148,25 +2150,6 @@ def format_extensions(extension):
         else:
             ext.append("." + _ext)
     return ext
-
-
-def mark_job_completed_after_tasks_run(
-    job_id: str,
-    pool_id: str,
-    batch_client: object,
-    mark_complete: bool = True,
-):
-    if mark_complete:
-        logger.debug("setting terminateJob when all tasks complete for job.")
-        job_term = batchmodels.JobUpdateParameter(
-            id=job_id,
-            pool_info=batchmodels.PoolInformation(pool_id=pool_id),
-            on_all_tasks_complete="terminateJob",
-        )
-        batch_client.job.update(job_id=job_id, job_update_parameter=job_term)
-        print(
-            "Job will be marked complete when all tasks finish, even if task(s) fails."
-        )
 
 
 def check_autoscale_parameters(

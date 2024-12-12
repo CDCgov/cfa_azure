@@ -19,7 +19,12 @@ logger = logging.getLogger(__name__)
 
 
 class AzureClient:
-    def __init__(self, config_path: str, credential_method: str = "identity", use_env_vars: bool = False):
+    def __init__(
+        self,
+        config_path: str,
+        credential_method: str = "identity",
+        use_env_vars: bool = False,
+    ):
         """Azure Client for interacting with Azure Batch, Container Registries and Blob Storage
 
         Args:
@@ -204,7 +209,7 @@ class AzureClient:
         )
 
         logger.debug(f"generated credentials from {credential_method}.")
-        
+
         # create blob service account
 
         self.blob_service_client = helpers.get_blob_service_client(
@@ -258,7 +263,7 @@ class AzureClient:
         task_slots_per_node: int = 1,
         availability_zones: bool = False,
         use_hpc_image: bool = False,
-        ) -> None:
+    ) -> None:
         """Sets the scaling mode of the client, either "fixed" or "autoscale".
         If "fixed" is selected, debug must be turned off.
         If "autoscale" is selected, an autoscale formula path must be provided.
@@ -547,9 +552,11 @@ class AzureClient:
                 sleep(5.0)
 
         else:
-            logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
-            container_image_name=self.container_image_name
-            
+            logger.info(
+                f"Pool {pool_name} does not exist. New pool will be created."
+            )
+            container_image_name = self.container_image_name
+
         if "pool_id" not in self.config["Batch"]:
             self.config["Batch"]["pool_id"] = pool_name
 
@@ -664,8 +671,10 @@ class AzureClient:
                 sleep(5.0)
 
         else:
-            logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
-            container_image_name=self.container_image_name
+            logger.info(
+                f"Pool {pool_name} does not exist. New pool will be created."
+            )
+            container_image_name = self.container_image_name
 
         if "pool_id" not in self.config["Batch"]:
             self.config["Batch"]["pool_id"] = pool_name
@@ -939,6 +948,7 @@ class AzureClient:
         logs_folder: str | None = None,
         end_job_on_task_failure: bool = False,
         task_retries: int = 0,
+        mark_complete_after_tasks_run: bool = False
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
@@ -949,6 +959,7 @@ class AzureClient:
             logs_folder (str): the folder structure to use when saving logs to blob. Default None will save to /stdout_stderr/ folder in specified blob container.
             end_job_on_task_failure (bool): whether to end the job if a task fails. Default False.
             task_retries (int): number of times to retry a task that fails. Default 0.
+            mark_complete_after_tasks_run (bool): whether to mark the job as completed when all tasks finish running. Default False.
         """
         # make sure the job_id does not have spaces
         job_id_r = job_id.replace(" ", "")
@@ -979,9 +990,10 @@ class AzureClient:
         helpers.add_job(
             job_id=job_id_r,
             pool_id=p_name,
-            end_job_on_task_failure = end_job_on_task_failure,
+            end_job_on_task_failure=end_job_on_task_failure,
             batch_client=self.batch_client,
             task_retries=task_retries,
+            mark_complete = mark_complete_after_tasks_run
         )
         self.jobs.add(job_id_r)
 
@@ -1437,15 +1449,3 @@ class AzureClient:
             folder_path, container_name, self.blob_service_client
         )
         logger.debug(f"Deleted folder {folder_path}.")
-
-    def mark_job_completed_after_tasks_run(
-        self,
-        job_id: str,
-        mark_complete: bool = True,
-    ):
-        helpers.mark_job_completed_after_tasks_run(
-            job_id=job_id,
-            pool_id=self.pool_name,
-            batch_client=self.batch_client,
-            mark_complete=mark_complete,
-        )

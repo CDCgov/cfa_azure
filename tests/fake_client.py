@@ -105,6 +105,7 @@ FAKE_POOL_INFO = {
     "mount_configuration": {},
 }
 
+
 class FakeClient:
     class FakeBatchJob:
         def delete(self, *args):
@@ -193,7 +194,7 @@ class FakeClient:
                 @property
                 def auto_scale(self):
                     return "fixed"
-                
+
                 def as_dict(self):
                     return FAKE_POOL_INFO
 
@@ -204,15 +205,15 @@ class FakeClient:
                             @property
                             def registry_server(self):
                                 return "registry_server"
-                            
+
                             @property
                             def user_name(self):
                                 return "user_name"
-                            
+
                         @property
                         def container_image_names(self):
                             return [FAKE_CONTAINER_IMAGE]
-                        
+
                         @property
                         def container_registries(self):
                             return [self.FakeContainerRegistry()]

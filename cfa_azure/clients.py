@@ -664,7 +664,7 @@ class AzureClient:
             container_registry_server=self.container_registry_server,
             config=self.config,
             mount_config=mount_config,
-            credential=self.secret_cred
+            credential=self.secret_cred,
         )
         self.create_pool(pool_name)
         return pool_name
@@ -777,7 +777,7 @@ class AzureClient:
             container_registry_server=self.container_registry_server,
             config=self.config,
             mount_config=mount_config,
-            credential=self.secret_cred
+            credential=self.secret_cred,
         )
         self.create_pool(pool_name)
         return pool_name

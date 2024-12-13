@@ -633,7 +633,7 @@ class TestHelpers(unittest.TestCase):
                 registry_name=FAKE_CONTAINER_REGISTRY,
                 repo_name="Fake Repo",
                 tag_name="latest",
-                credential=FAKE_CREDENTIAL
+                credential=FAKE_CREDENTIAL,
             )
             self.assertTrue(response)
 
@@ -649,7 +649,7 @@ class TestHelpers(unittest.TestCase):
                 registry_name=FAKE_CONTAINER_REGISTRY,
                 repo_name="Fake Repo",
                 tag_name="bad_tag_1",
-                credential=FAKE_CREDENTIAL
+                credential=FAKE_CREDENTIAL,
             )
             self.assertIsNone(response)
 
@@ -724,7 +724,10 @@ class TestHelpers(unittest.TestCase):
         batch_client = FakeClient()
         job_id = "my_job_id"
         cfa_azure.helpers.add_job(
-            job_id, FAKE_BATCH_POOL, batch_client=batch_client, end_job_on_task_failure=False
+            job_id,
+            FAKE_BATCH_POOL,
+            batch_client=batch_client,
+            end_job_on_task_failure=False,
         )
         mock_logger.info.assert_called_with(
             f"Job '{job_id}' created successfully."
@@ -735,7 +738,10 @@ class TestHelpers(unittest.TestCase):
         batch_client = FakeClient()
         job_id = "my_job_id"
         cfa_azure.helpers.add_job(
-            job_id, FAKE_BATCH_POOL, batch_client=batch_client, end_job_on_task_failure=False
+            job_id,
+            FAKE_BATCH_POOL,
+            batch_client=batch_client,
+            end_job_on_task_failure=False,
         )
         mock_logger.debug.assert_called_with("Attempting to add job.")
 
@@ -776,7 +782,9 @@ class TestHelpers(unittest.TestCase):
     )
     def test_get_sp_secret(self, mock_secret):
         mock_secret.return_value = FakeClient.FakeSecretClient.FakeSecret()
-        secret = cfa_azure.helpers.get_sp_secret(config=FAKE_CONFIG, credential=FAKE_CREDENTIAL)
+        secret = cfa_azure.helpers.get_sp_secret(
+            config=FAKE_CONFIG, credential=FAKE_CREDENTIAL
+        )
         self.assertEqual(secret, FAKE_SECRET)
 
     @patch(
@@ -785,7 +793,9 @@ class TestHelpers(unittest.TestCase):
     )
     def test_get_sp_secret_bad_key(self):
         with self.assertRaises(Exception):
-            cfa_azure.helpers.get_sp_secret(config=FAKE_CONFIG, credential=FAKE_CREDENTIAL)
+            cfa_azure.helpers.get_sp_secret(
+                config=FAKE_CONFIG, credential=FAKE_CREDENTIAL
+            )
 
     def test_get_blob_config(self):
         blob_config = cfa_azure.helpers.get_blob_config(
@@ -843,11 +853,11 @@ class TestHelpers(unittest.TestCase):
     @patch("subprocess.run", MagicMock(return_value=True))
     def test_upload_docker_image(self):
         full_container_name = cfa_azure.helpers.upload_docker_image(
-            image_name=FAKE_CONTAINER_IMAGE, 
+            image_name=FAKE_CONTAINER_IMAGE,
             registry_name=FAKE_CONTAINER_REGISTRY,
             repo_name="Fake Repo",
-            tag="latest", 
-            use_device_code=False
+            tag="latest",
+            use_device_code=False,
         )
         self.assertIsNotNone(full_container_name)
 
@@ -857,11 +867,11 @@ class TestHelpers(unittest.TestCase):
     def test_upload_docker_image_exception(self):
         with self.assertRaises(DockerException) as docexc:
             cfa_azure.helpers.upload_docker_image(
-                image_name=FAKE_CONTAINER_IMAGE, 
+                image_name=FAKE_CONTAINER_IMAGE,
                 registry_name=FAKE_CONTAINER_REGISTRY,
                 repo_name="Fake Repo",
-                tag="latest", 
-                use_device_code=False
+                tag="latest",
+                use_device_code=False,
             )
             self.assertEqual(
                 "Make sure Docker is running.",
@@ -873,9 +883,9 @@ class TestHelpers(unittest.TestCase):
     @patch("subprocess.run", MagicMock(return_value=True))
     def test_upload_docker_image_notag(self):
         full_container_name = cfa_azure.helpers.upload_docker_image(
-            image_name=FAKE_CONTAINER_IMAGE, 
+            image_name=FAKE_CONTAINER_IMAGE,
             registry_name=FAKE_CONTAINER_REGISTRY,
             repo_name="Fake Repo",
-            use_device_code=False
+            use_device_code=False,
         )
         self.assertIsNotNone(full_container_name)

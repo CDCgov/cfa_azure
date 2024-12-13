@@ -24,8 +24,8 @@ from azure.batch.models import (
     ExitOptions,
     JobAction,
     JobConstraints,
+    OnAllTasksComplete,
     OnTaskFailure,
-    OnAllTasksComplete
 )
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -731,7 +731,7 @@ def add_job(
     end_job_on_task_failure: bool,
     batch_client: object,
     task_retries: int = 0,
-    mark_complete: bool = False
+    mark_complete: bool = False,
 ):
     """takes in a job ID and config to create a job in the pool
 
@@ -745,7 +745,11 @@ def add_job(
     """
     logger.debug(f"Attempting to create job '{job_id}'...")
     logger.debug("Adding job parameters to job.")
-    on_all_tasks_complete = OnAllTasksComplete.terminate_job if mark_complete else OnAllTasksComplete.no_action
+    on_all_tasks_complete = (
+        OnAllTasksComplete.terminate_job
+        if mark_complete
+        else OnAllTasksComplete.no_action
+    )
     job_constraints = JobConstraints(max_task_retry_count=task_retries)
     job = batchmodels.JobAddParameter(
         id=job_id,
@@ -753,7 +757,7 @@ def add_job(
         uses_task_dependencies=True,
         on_all_tasks_complete=on_all_tasks_complete,
         on_task_failure=OnTaskFailure.perform_exit_options_job_action,
-        constraints=job_constraints
+        constraints=job_constraints,
     )
     logger.debug("Attempting to add job.")
     try:
@@ -1738,7 +1742,7 @@ def upload_docker_image(
 
     Returns:
         str: full container name
-    """    
+    """
     full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
 
     # check if docker is running

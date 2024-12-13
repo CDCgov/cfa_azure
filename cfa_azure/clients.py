@@ -599,7 +599,7 @@ class AzureClient:
             container_registry_server=self.container_registry_server,
             config=self.config,
             mount_config=mount_config,
-            credential=self.secret_cred
+            credential=self.secret_cred,
         )
         self.create_pool(pool_name)
         return pool_name
@@ -712,7 +712,7 @@ class AzureClient:
             container_registry_server=self.container_registry_server,
             config=self.config,
             mount_config=mount_config,
-            credential=self.secret_cred
+            credential=self.secret_cred,
         )
         self.create_pool(pool_name)
         return pool_name
@@ -947,7 +947,7 @@ class AzureClient:
         logs_folder: str | None = None,
         end_job_on_task_failure: bool = False,
         task_retries: int = 0,
-        mark_complete_after_tasks_run: bool = False
+        mark_complete_after_tasks_run: bool = False,
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
@@ -992,7 +992,7 @@ class AzureClient:
             end_job_on_task_failure=end_job_on_task_failure,
             batch_client=self.batch_client,
             task_retries=task_retries,
-            mark_complete = mark_complete_after_tasks_run
+            mark_complete=mark_complete_after_tasks_run,
         )
         self.jobs.add(job_id_r)
 

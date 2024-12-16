@@ -1,11 +1,7 @@
 # Automation Module
 
 ## Overview
-<<<<<<< HEAD
 The `automation` module as part of `cfa_azure` is designed to perform certain actions in Azure based on a configuration file. This allows users to interact with Azure via this `cfa_azure` package even with little python experience. It also allows users to take their config file and make minor tweaks in order to upload new files, run different tasks, etc. It provides a more flexible framework than changing user-provided parameters spread throughout different functions in a python script.
-=======
-The `automation` module as part of `cfa_azure.automation` is designed to perform certain actions in Azure based on a configuration file. This allows users to interact with Azure via this cfa_azure package even with little python experience. It also allows users to take their config file and make minor tweaks as new files need to be uploaded, slightly different tasks are needed to be run, etc. It provides a more flexible framework than changing user-provided parameters spread throughout different functions in a python script.
->>>>>>> 3a7ad48 (new automation functions and documentation)
 
 Currently, the `automation` module is comprised of two functions to automate certain tasks:
 1. `run_experiment`: useful when needing to create tasks based on a base command and a permutation of variables
@@ -33,26 +29,16 @@ There are two slightly different configuration files depending on which function
 The experiment config will have the following additional section and keys:
 - [experiment]
     - base_cmd: the full docker command for executing the tasks, including some indication of how the variables should be included. This usually entails a flag or argument. See the example for more details.
-<<<<<<< HEAD
     - the variable names along with their list of possible values. See the example for more details. Note that the order matters. For example, if you have variables `input` and `num` listed in that order in the config file, the values for `input` will be put into the {0} spot in the base_cmd and the values for `num` will be put into the {1} spot. Each variable should be on its own line in the form `var_name=[val1, val2, ...]`.
-=======
-    - the variable names along with their list of possible values. See the example for more details. Note that the order matters. For example, if you have variables `input` and `num` listed in that order in the config file, the values for `input` will be put into the {0} spot in the base_cmd and the values for `num` will be put into the {1} spot.
->>>>>>> 3a7ad48 (new automation functions and documentation)
 
 The task config will have the following additional section(s) and keys:
 - [[task]]
     - cmd: the full docker command to use for the task
     - name: the name for the task. Required if using dependent tasks.
     - depends_on: a list of task names the task depends on to run. Optional.
-<<<<<<< HEAD
     - run_dependent_tasks_on_fail: true or false, whether you want dependent tasks to run even if the parent task(s) fails. Optional.
 
 Notice above that [[task]] is in double brackets. This is necessary because there can be repeated sections starting with [[task]] as the header, followed by the task-specific information; one [[task]] section for each task to be submitted. See the task_config.toml example for more information.
-=======
-    - run_dependent_tasks_on_fail: true or false, wether you want dependent tasks to run even if the parents task(s) fails. Optional.  
-
-Notice above that [[task]] is in double brackets. This is necessary because there can be repeated sections starting with [[task]] as the header, followed by the task-specific information. See the task_config.toml example for more information.
->>>>>>> 3a7ad48 (new automation functions and documentation)
 
 See the example [experiment config](examples/automation/exp_config.toml) and [task config](examples/automation/task_config.toml) for more help.
 
@@ -79,33 +65,21 @@ python3 /input/data/vars.py --var1 2 --var2 11 --var3 '99'
 ...
 ```
 
-<<<<<<< HEAD
 You can use the `run_experiment` function in two lines of code, as shown below.
 ```
 from cfa_azure.automation import run_experiment
 run_experiment(exp_config = "path/to/exp_config.toml",
     auth_config = "path/to/auth_config.toml")
-=======
-You can use the `run_experiment` function in two lines of code, as shown below. 
-```
-from cfa_azure.automation import run_experiment
-run_experiment(exp_config = "path/to/exp_config.toml", auth_config = "path/to/auth_config.toml")
->>>>>>> 3a7ad48 (new automation functions and documentation)
 ```
 
 
 ## run_tasks()
-<<<<<<< HEAD
 The `run_tasks()` function is designed to take an arbitrary number of tasks from a configuration file to submit them as part of a job. Any folders or files included in the [upload] section of the config will be uploaded before kicking off the tasks.
-=======
-The `run_tasks()` function is designed to take an arbitrary number of tasks from a configuration file to submit them as part of a job. Any folders or files included in the [upload] section of the config will be uploaded before kicking off the tasks. 
->>>>>>> 3a7ad48 (new automation functions and documentation)
 
 Suppose we want to kick off two tasks we'll call "do_first" and "second_depends_on_first", where the R script is stored in Blob storage at the relative mount path "input/scripts/execute.R", the script can take different flags as input,  the second task depends on the first, and we will run the second task even if the first fails. We would setup the task_config.toml to have the following info in the [[task]] sections:
 ```
 [[task]]
 cmd = 'Rscript /input/scripts/execute.R --data /example/data.csv"
-<<<<<<< HEAD
 name = "do_first"
 
 [[task]]
@@ -113,25 +87,11 @@ cmd = 'Rscript /input/scripts/execute.R --model /example/model.pkl'
 name = "second_depends_on_first"
 depends_on = ["do_first"]
 run_dependent_tasks_on_fail = true
-=======
-name="do_first"
-
-[[task]]
-cmd = 'Rscript /input/scripts/execute.R --model /example/model.pkl'
-name="second_depends_on_first"
-depends_on= ["do_first"]
-run_dependent_tasks_on_fail=true
->>>>>>> 3a7ad48 (new automation functions and documentation)
 ```
 
 You can then run the tasks in two lines of code, as shown below.
 ```
 from cfa_azure.automation import run_tasks
-<<<<<<< HEAD
 run_experiment(task_config = "path/to/task_config.toml",
     auth_config = "path/to/auth_config.toml")
 ```
-=======
-run_experiment(task_config = "path/to/task_config.toml", auth_config = "path/to/auth_config.toml")
-```
->>>>>>> 3a7ad48 (new automation functions and documentation)

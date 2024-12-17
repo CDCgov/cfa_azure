@@ -14,7 +14,7 @@ name='test_auto'
 save_logs_to_blob="input-test" #optional
 logs_folder='logs-folder' #optional
 task_retries=1 #optional
-monitor_job=true #optional 
+monitor_job=true #optional
 #container=<optional ACR container name>
 
 [[task]]

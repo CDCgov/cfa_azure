@@ -36,7 +36,7 @@ The task config will have the following additional section(s) and keys:
     - cmd: the full docker command to use for the task
     - name: the name for the task. Required if using dependent tasks.
     - depends_on: a list of task names the task depends on to run. Optional.
-    - run_dependent_tasks_on_fail: true or false, whether you want dependent tasks to run even if the parent task(s) fails. Optional.  
+    - run_dependent_tasks_on_fail: true or false, whether you want dependent tasks to run even if the parent task(s) fails. Optional.
 
 Notice above that [[task]] is in double brackets. This is necessary because there can be repeated sections starting with [[task]] as the header, followed by the task-specific information; one [[task]] section for each task to be submitted. See the task_config.toml example for more information.
 
@@ -65,16 +65,16 @@ python3 /input/data/vars.py --var1 2 --var2 11 --var3 '99'
 ...
 ```
 
-You can use the `run_experiment` function in two lines of code, as shown below. 
+You can use the `run_experiment` function in two lines of code, as shown below.
 ```
 from cfa_azure.automation import run_experiment
-run_experiment(exp_config = "path/to/exp_config.toml", 
+run_experiment(exp_config = "path/to/exp_config.toml",
     auth_config = "path/to/auth_config.toml")
 ```
 
 
 ## run_tasks()
-The `run_tasks()` function is designed to take an arbitrary number of tasks from a configuration file to submit them as part of a job. Any folders or files included in the [upload] section of the config will be uploaded before kicking off the tasks. 
+The `run_tasks()` function is designed to take an arbitrary number of tasks from a configuration file to submit them as part of a job. Any folders or files included in the [upload] section of the config will be uploaded before kicking off the tasks.
 
 Suppose we want to kick off two tasks we'll call "do_first" and "second_depends_on_first", where the R script is stored in Blob storage at the relative mount path "input/scripts/execute.R", the script can take different flags as input,  the second task depends on the first, and we will run the second task even if the first fails. We would setup the task_config.toml to have the following info in the [[task]] sections:
 ```
@@ -92,6 +92,6 @@ run_dependent_tasks_on_fail = true
 You can then run the tasks in two lines of code, as shown below.
 ```
 from cfa_azure.automation import run_tasks
-run_experiment(task_config = "path/to/task_config.toml", 
+run_experiment(task_config = "path/to/task_config.toml",
     auth_config = "path/to/auth_config.toml")
 ```

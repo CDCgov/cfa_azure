@@ -934,8 +934,7 @@ def add_task_to_job(
         )
         batch_client.task.add(job_id=job_id, task=task)
         logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
-        tasks.append(task_id)
-    return tasks
+        return task_id
 
 
 def monitor_tasks(
@@ -1743,6 +1742,10 @@ def upload_docker_image(
     Returns:
         str: full container name
     """
+    # Generate a unique tag if none provided
+    if tag is None:
+        tag = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
     full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
 
     # check if docker is running

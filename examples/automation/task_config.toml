@@ -1,0 +1,34 @@
+[setup]
+credential_method='sp' #optional
+use_env_vars=false #optional
+pool_name='a_fixed_pool_test'
+
+[upload]
+container_name='input-test'
+location_in_blob='data' #optional
+folders=['data', 'input'] #optional
+files=['input/vars.py'] #optional
+
+[job]
+name='test_auto'
+save_logs_to_blob="input-test" #optional
+logs_folder='logs-folder' #optional
+task_retries=1 #optional
+monitor_job=true #optional
+#container=<optional ACR container name>
+
+[[task]]
+cmd = 'python3 /input/data/task.py'
+name="first"
+
+[[task]]
+cmd = 'python3 /input/data/task.py'
+name="second"
+depends_on= ["first"]
+#run_dependent_tasks_on_fail
+
+[[task]]
+cmd = 'python3 /input/data/task.py'
+name="another_one"
+depends_on=["first", "second"]
+run_dependent_tasks_on_fail=true

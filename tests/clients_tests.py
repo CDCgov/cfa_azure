@@ -11,14 +11,6 @@ from tests.fake_client import *
 class TestClients(unittest.TestCase):
     @patch("cfa_azure.clients.logger")
     @patch(
-        "azure.identity.ClientSecretCredential.__init__",
-        MagicMock(return_value=None),
-    )
-    @patch(
-        "azure.common.credentials.ServicePrincipalCredentials.__init__",
-        MagicMock(return_value=None),
-    )
-    @patch(
         "cfa_azure.helpers.read_config",
         MagicMock(return_value=FAKE_CONFIG_MINIMAL),
     )

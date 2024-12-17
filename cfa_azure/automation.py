@@ -38,7 +38,34 @@ def run_experiment(exp_config: str, auth_config: str | None = None):
         print("could not create AzureClient object.")
         return None
 
+    # Get cotntainer details from exp_toml
+    if "registry_name" in exp_toml["setup"].keys():
+        registry_name = exp_toml["setup"]["registry_name"]
+    else:
+        print(
+            f"registry_name must be provided in setup"
+        )
+        return None
+
+    if "repository_name" in exp_toml["setup"].keys():
+        repository_name = exp_toml["setup"]["repository_name"]
+    else:
+        print(
+            f"repository_name must be provided in setup"
+        )
+        return None
+
+    if "tag_name" in exp_toml["setup"].keys():
+        tag_name = exp_toml["setup"]["tag_name"]
+    else:
+        tag_name = "latest"
+
+    client.set_azure_container(
+        registry_name=registry_name, repo_name=repository_name, tag_name=tag_name
+    )
+
     # check pool included in exp_toml and exists in azure
+    pool_name = None
     if "pool_name" in exp_toml["setup"].keys():
         if not helpers.check_pool_exists(
             resource_group_name=client.resource_group_name,
@@ -46,11 +73,33 @@ def run_experiment(exp_config: str, auth_config: str | None = None):
             pool_name=exp_toml["setup"]["pool_name"],
             batch_mgmt_client=client.batch_mgmt_client,
         ):
+            pool_name = exp_toml["setup"]["pool_name"]
             print(
-                f"pool name {exp_toml['setup']['pool_name']} does not exist in the Azure environment."
+                f"pool name {pool_name} does not exist in the Azure environment."
             )
-            return None
-        pool_name = exp_toml["setup"]["pool_name"]
+            if "scaling_mode" in exp_toml["setup"].keys():
+                scaling_mode = exp_toml["setup"]["scaling_mode"]
+            else:
+                scaling_mode = "fixed"
+            if scaling_mode == "autoscale":
+                if "autoscale_formula_path" in exp_toml["setup"].keys():
+                    autoscale_formula_path = exp_toml["setup"]["autoscale_formula_path"]
+                    print("Creating pool with autoscaling mode")
+                    client.set_pool_info(mode=scaling_mode, autoscale_formula_path=autoscale_formula_path)
+                else:
+                    print(
+                        f"Autoscaling formula path must be provided if scaling_mode is set to autoscaling."
+                    )
+                    return None
+            else:
+                client.set_pool_info(mode=scaling_mode)
+            client.create_pool(pool_name)
+            print(
+                f"pool name {pool_name} has been created."
+            )
+        else:
+            pool_name=exp_toml["setup"]["pool_name"]
+        client.pool_name = pool_name
     else:
         print("could not find 'pool_name' key in 'setup' section of exp toml.")
         print("please specify a pool name to use.")

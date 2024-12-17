@@ -16,7 +16,6 @@ class TestClients(unittest.TestCase):
     )
     @patch("cfa_azure.helpers.check_config_req", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.get_sp_secret", MagicMock(return_value=True))
-    @patch("cfa_azure.helpers.get_sp_credential", MagicMock(return_value=True))
     @patch(
         "cfa_azure.helpers.get_blob_service_client",
         MagicMock(return_value=True),

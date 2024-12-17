@@ -8,7 +8,6 @@ from azure.common.credentials import ServicePrincipalCredentials
 from azure.core.exceptions import HttpResponseError
 from azure.identity import (
     ClientSecretCredential,
-    DefaultAzureCredential,
     EnvironmentCredential,
     ManagedIdentityCredential,
 )
@@ -167,7 +166,7 @@ class AzureClient:
         elif "sp" in self.credential_method.lower():
             if "sp_secrets" not in self.config["Authentication"].keys():
                 sp_secret = helpers.get_sp_secret(
-                    self.config, DefaultAzureCredential()
+                    self.config, ManagedIdentityCredential()
                 )
             self.cred = ClientSecretCredential(
                 tenant_id=self.config["Authentication"]["tenant_id"],
@@ -600,6 +599,7 @@ class AzureClient:
             container_registry_server=self.container_registry_server,
             config=self.config,
             mount_config=mount_config,
+            credential=self.secret_cred,
         )
         self.create_pool(pool_name)
         return pool_name
@@ -712,7 +712,7 @@ class AzureClient:
             container_registry_server=self.container_registry_server,
             config=self.config,
             mount_config=mount_config,
-            credential=self.cred,
+            credential=self.secret_cred,
         )
         self.create_pool(pool_name)
         return pool_name
@@ -947,6 +947,7 @@ class AzureClient:
         logs_folder: str | None = None,
         end_job_on_task_failure: bool = False,
         task_retries: int = 0,
+        mark_complete_after_tasks_run: bool = False,
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
@@ -957,6 +958,7 @@ class AzureClient:
             logs_folder (str): the folder structure to use when saving logs to blob. Default None will save to /stdout_stderr/ folder in specified blob container.
             end_job_on_task_failure (bool): whether to end the job if a task fails. Default False.
             task_retries (int): number of times to retry a task that fails. Default 0.
+            mark_complete_after_tasks_run (bool): whether to mark the job as completed when all tasks finish running. Default False.
         """
         # make sure the job_id does not have spaces
         job_id_r = job_id.replace(" ", "")
@@ -990,6 +992,7 @@ class AzureClient:
             end_job_on_task_failure=end_job_on_task_failure,
             batch_client=self.batch_client,
             task_retries=task_retries,
+            mark_complete=mark_complete_after_tasks_run,
         )
         self.jobs.add(job_id_r)
 
@@ -1445,15 +1448,3 @@ class AzureClient:
             folder_path, container_name, self.blob_service_client
         )
         logger.debug(f"Deleted folder {folder_path}.")
-
-    def mark_job_completed_after_tasks_run(
-        self,
-        job_id: str,
-        mark_complete: bool = True,
-    ):
-        helpers.mark_job_completed_after_tasks_run(
-            job_id=job_id,
-            pool_id=self.pool_name,
-            batch_client=self.batch_client,
-            mark_complete=mark_complete,
-        )

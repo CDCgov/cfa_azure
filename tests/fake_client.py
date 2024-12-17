@@ -12,6 +12,7 @@ FAKE_BLOBS = ["some_path/fake_blob_1.txt", "some_path/fake_blob_2.csv"]
 FAKE_BLOB_CONTENT = "Test Blob Content"
 FAKE_CONTAINER_IMAGE = "Test Container Image"
 FAKE_CONTAINER_REGISTRY = "Test Container Registry"
+FAKE_CREDENTIAL = "Test Credential"
 FAKE_FOLDER = "/test_folder"
 FAKE_FOLDER_CONTENTS = [
     f"{FAKE_FOLDER}/test_file.csv",
@@ -116,6 +117,9 @@ class FakeClient:
     class FakeTag:
         def __init__(self, tag):
             self.name = tag
+
+        def tag(self, tag_name):
+            return tag_name
 
     class FakeBlob:
         def __init__(self, name):
@@ -246,6 +250,22 @@ class FakeClient:
             def vm_size(self):
                 return FAKE_POOL_SIZE
 
+            @property
+            def scale_settings(self):
+                return dict2obj(
+                    {
+                        "fixed_scale": {
+                            "targetDedicatedNodes": 10,
+                            "targetLowPriorityNodes": 5,
+                            "resizeTimeout": 10,
+                        },
+                        "auto_scale": {
+                            "evaluationInterval": 10,
+                            "formula": FAKE_AUTOSCALE_FORMULA,
+                        },
+                    }
+                )
+
             def get(self):
                 return True
 
@@ -272,6 +292,10 @@ class FakeClient:
     @property
     def compute_node(self) -> FakeComputeNodeList:
         return self.FakeComputeNodeList()
+
+    @property
+    def images(self):
+        return {FAKE_CONTAINER_IMAGE: FakeClient.FakeTag("fake_tag_1")}
 
     def get_container_client(self, container):
         return self.FakeContainerClient()

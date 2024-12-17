@@ -7,11 +7,11 @@ from cfa_azure import helpers
 from cfa_azure.clients import AzureClient
 
 
-def run_experiment(exp_config: str, auth_config: str):
+def run_experiment(exp_config: str, auth_config: str | None = None):
     """Run jobs and tasks automatically based on the provided experiment config.
 
     exp_config (str): path to experiment config file (toml)
-    auth_config (str): path to authorization config file (toml)
+    auth_config (str): path to authorization config file (toml). Optional. Required when not using environment variables.
     """
 
     # read files
@@ -24,6 +24,11 @@ def run_experiment(exp_config: str, auth_config: str):
         use_env_vars = exp_toml["setup"]["use_env_vars"]
     else:
         use_env_vars = False
+    if auth_config is None and use_env_vars is False:
+        print(
+            "No auth config provided and use_env_vars set to false. Please try again."
+        )
+        return None
 
     try:
         client = AzureClient(
@@ -124,11 +129,11 @@ def run_experiment(exp_config: str, auth_config: str):
             client.monitor_job(job_id)
 
 
-def run_tasks(task_config: str, auth_config: str):
+def run_tasks(task_config: str, auth_config: str | None = None):
     """Run jobs and tasks automatically based on the provided task config.
 
     task_config (str): path to task config file (toml)
-    auth_config (str): path to authorization config file (toml)
+    auth_config (str): path to authorization config file (toml). Optional. Required if not using environment variables to authenticate.
     """
 
     # read files
@@ -141,6 +146,11 @@ def run_tasks(task_config: str, auth_config: str):
         use_env_vars = task_toml["setup"]["use_env_vars"]
     else:
         use_env_vars = False
+    if auth_config is None and use_env_vars is False:
+        print(
+            "No auth config provided and use_env_vars set to false. Please try again."
+        )
+        return None
 
     try:
         client = AzureClient(

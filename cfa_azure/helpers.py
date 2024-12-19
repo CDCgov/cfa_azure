@@ -24,10 +24,7 @@ from azure.batch.models import (
     ExitOptions,
     JobAction,
     JobConstraints,
-<<<<<<< HEAD
     OnAllTasksComplete,
-=======
->>>>>>> 2137c2a (fix add_task return as string not list)
     OnTaskFailure,
 )
 from azure.containerregistry import ContainerRegistryClient
@@ -937,20 +934,8 @@ def add_task_to_job(
         )
         batch_client.task.add(job_id=job_id, task=task)
         logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
-<<<<<<< HEAD
-<<<<<<< HEAD
-        return task_id
-=======
         tasks.append(task_id)
     return tasks
->>>>>>> 5e7d09c (Auto complex the job if marked complete and all tasks are done)
-=======
-        tasks.append(task_id)
-    return tasks
-=======
-        return task_id
->>>>>>> 2137c2a (fix add_task return as string not list)
->>>>>>> 65e1ad4 (fix add_task return as string not list)
 
 
 def monitor_tasks(
@@ -1757,31 +1742,7 @@ def upload_docker_image(
 
     Returns:
         str: full container name
-<<<<<<< HEAD
-<<<<<<< HEAD
     """
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-=======
->>>>>>> 65e1ad4 (fix add_task return as string not list)
-    # Generate a unique tag if none provided
-    if tag is None:
-        tag = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-    """    
->>>>>>> 0afcba7 (Updated unit tests for added coverage)
-=======
->>>>>>> 3786cc8 (fix download_directory function (#180))
-=======
-    """
->>>>>>> 1d87429 (Revert "Remove pre commit" (#187))
-=======
->>>>>>> 2137c2a (fix add_task return as string not list)
->>>>>>> 65e1ad4 (fix add_task return as string not list)
     full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
 
     # check if docker is running

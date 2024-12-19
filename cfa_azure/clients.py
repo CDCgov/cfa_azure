@@ -235,6 +235,7 @@ class AzureClient:
         self.container_registry_server = None
         self.container_image_name = None
         self.full_container_name = None
+        registry_name = None
         if "registry_name" in self.config["Container"].keys():
             registry_name = self.config["Container"]["registry_name"]
             self.container_registry_server = f"{registry_name}.azurecr.io"

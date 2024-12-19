@@ -40,23 +40,14 @@ class AzureClient:
             AzureClient object
         """
         self.config_path = config_path
-        self.credential_method = credential_method
         self.debug = None
-        self.scaling = None
-        self.input_container_name = None
-        self.output_container_name = None
         self.files = []
         self.task_id_max = 0
         self.jobs = set()
-        self.container_registry_server = None
-        self.registry_url = None
-        self.container_image_name = None
-        self.full_container_name = None
         self.input_mount_dir = None
         self.output_mount_dir = None
         self.mounts = []
         self.mount_container_clients = []
-        self.pool_parameters = None
         self.timeout = None
         self.save_logs_to_blob = None
         self.logs_folder = "stdout_stderr"
@@ -161,6 +152,39 @@ class AzureClient:
             logger.warning("Could not find resource group name in config.")
 
         # get credentials
+        self._initialize_authentication(credential_method)
+        logger.debug(f"generated credentials from {credential_method}.")
+        # initialize registry 
+        self._initialize_registry()
+        # create blob service account
+        self.blob_service_client = helpers.get_blob_service_client(
+            self.config, self.cred
+        )
+        logger.debug("generated Blob Service Client.")
+        # create batch mgmt client
+        self.batch_mgmt_client = helpers.get_batch_mgmt_client(
+            self.config, self.secret_cred
+        )
+        logger.debug("generated Batch Management Client.")
+        # create batch service client
+        self.batch_client = helpers.get_batch_service_client(
+            self.config, self.batch_cred
+        )
+        # Create pool
+        self._initialize_pool()
+        # Set up containers
+        self._initialize_containers()
+        logger.info("Client initialized! Happy coding!")
+
+    def _initialize_authentication(self, credential_method):
+        """Called by init method to set up authentication
+        Args:
+            config (str): config dict
+        """
+        if "credential_method" in self.config["Authentication"].keys():
+            self.credential_method = credential_method = self.config["Authentication"]["credential_method"]
+        else:
+            self.credential_method = credential_method
         if "identity" in self.credential_method.lower():
             self.cred = ManagedIdentityCredential()
         elif "sp" in self.credential_method.lower():
@@ -192,7 +216,6 @@ class AzureClient:
             raise Exception(
                 "please choose a credential_method from 'identity', 'sp', 'ext_user', 'env' and try again."
             )
-
         if "sp_secrets" not in self.config["Authentication"].keys():
             sp_secret = helpers.get_sp_secret(self.config, self.cred)
         self.secret_cred = ClientSecretCredential(
@@ -207,26 +230,68 @@ class AzureClient:
             resource="https://batch.core.windows.net/",
         )
 
-        logger.debug(f"generated credentials from {credential_method}.")
+    def _initialize_registry(self):
+        """Called by init to initialize the registry URL and details"""
+        self.container_registry_server = None
+        self.container_image_name = None
+        self.full_container_name = None
+        if "registry_name" in self.config["Container"].keys():
+            registry_name = self.config["Container"]["registry_name"]
+            self.container_registry_server = f"{registry_name}.azurecr.io"
+            self.registry_url = f"https://{self.container_registry_server}"
+        else:            
+            self.registry_url = None
 
-        # create blob service account
+        if "repository_name" in self.config["Container"].keys():
+            repository_name = self.config["Container"]["repository_name"]
+        
+        if "tag_name" in self.config["Container"].keys():
+            tag_name = self.config["Container"]["tag_name"]
+        else:
+            tag_name = "latest"
 
-        self.blob_service_client = helpers.get_blob_service_client(
-            self.config, self.cred
-        )
-        logger.debug("generated Blob Service Client.")
+        if registry_name and repository_name:
+            self.set_azure_container(
+                registry_name=registry_name, repo_name=repository_name, tag_name=tag_name
+            )
 
-        # create batch mgmt client
-        self.batch_mgmt_client = helpers.get_batch_mgmt_client(
-            self.config, self.secret_cred
-        )
-        logger.debug("generated Batch Management Client.")
+    def _initialize_pool(self):
+        """Called by init to initialize the pool"""
+        self.pool_parameters = None
+        self.pool_name = self.config["Batch"]["pool_name"] if "pool_name" in self.config["Batch"].keys() else None
+        self.scaling = self.config["Batch"]["scaling_mode"] if "scaling_mode" in self.config["Batch"].keys() else None 
+        if self.pool_name:
+            if self.scaling == "autoscale" and "autoscale_formula_path" in self.config["Batch"].keys():
+                autoscale_formula_path = self.config["Batch"]["autoscale_formula_path"]
+                print("Creating pool with autoscaling mode")
+                self.set_pool_info(mode=self.scaling, autoscale_formula_path=autoscale_formula_path)
+            elif self.scaling == "fixed":
+                dedicated_nodes = self.config["Batch"]["dedicated_nodes"] if "dedicated_nodes" in self.config["Batch"].keys() else 0
+                low_priority_nodes = self.config["Batch"]["low_priority_nodes"] if "low_priority_nodes" in self.config["Batch"].keys() else 1
+                node_deallocation_option = self.config["Batch"]["node_deallocation_option"] if "node_deallocation_option" in self.config["Batch"].keys() else None
+                self.set_pool_info(
+                    mode=self.scaling, 
+                    dedicated_nodes=dedicated_nodes, 
+                    low_priority_nodes=low_priority_nodes,
+                    node_deallocation_option=node_deallocation_option
+                )
+            else:
+                pass
+            self.create_pool(self.pool_name)
+        else:
+            pass
 
-        # create batch service client
-        self.batch_client = helpers.get_batch_service_client(
-            self.config, self.batch_cred
-        )
-        logger.info("Client initialized! Happy coding!")
+    def _initialize_containers(self):
+        """Called by init to initialize input and output containers"""
+        self.input_container_name = self.config["Container"]["input_container_name"] if "input_container_name" in self.config["Container"].keys() else None 
+        self.output_container_name = self.config["Container"]["output_container_name"] if "output_container_name" in self.config["Container"].keys() else None 
+        if self.input_container_name and self.output_container_name:
+            self.update_containers(
+                pool_name=self.pool_name,
+                input_container_name=self.input_container_name,
+                output_container_name=self.output_container_name,
+                force_update=False
+            )
 
     def set_debugging(self, debug: bool) -> None:
         """required method that determines whether debugging is on or off. Debug = True for 'on', debug = False for 'off'.

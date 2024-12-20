@@ -18,3 +18,6 @@ req*
 yaml*
 .coverage
 run_client.py
+*config.toml
+!*exp_config.toml
+!*task_config.toml

@@ -1,0 +1,24 @@
+[setup]
+credential_method='sp' #optional
+use_env_vars=false #optional
+pool_name='a_fixed_pool_test'
+
+[upload]
+container_name='input-test'
+location_in_blob='data' #optional
+folders=['data', 'input'] #optional
+files=['input/vars.py'] #optional
+
+[job]
+name='test_auto'
+save_logs_to_blob="input-test" #optional
+logs_folder='logs-folder' #optional
+task_retries=1 #optional
+monitor_job=true #optional
+#container=<optional ACR container name>
+
+[experiment]
+base_cmd = "python3 /input/data/vars.py --var1 {0} --var2 {1} --var3 {2}"
+var1 = [1, 2, 4]
+var2 = [10,11,12]
+var3 = ['90', '99', '98']

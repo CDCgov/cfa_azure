@@ -25,7 +25,7 @@ from azure.batch.models import (
     JobAction,
     JobConstraints,
     OnAllTasksComplete,
-    OnTaskFailure
+    OnTaskFailure,
 )
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -936,6 +936,7 @@ def add_task_to_job(
         batch_client.task.add(job_id=job_id, task=task)
         logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
         return task_id
+
 
 def monitor_tasks(
     job_id: str,

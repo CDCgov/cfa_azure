@@ -1,6 +1,8 @@
 import itertools
+
 import pandas as pd
 import toml
+
 from cfa_azure import helpers
 from cfa_azure.clients import AzureClient
 

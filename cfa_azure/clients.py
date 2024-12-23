@@ -154,7 +154,6 @@ class AzureClient:
         # get credentials
         self._initialize_authentication(credential_method)
         logger.debug(f"generated credentials from {credential_method}.")
-        # initialize registry 
         self._initialize_registry()
         # create blob service account
         self.blob_service_client = helpers.get_blob_service_client(
@@ -182,7 +181,9 @@ class AzureClient:
             config (str): config dict
         """
         if "credential_method" in self.config["Authentication"].keys():
-            self.credential_method = credential_method = self.config["Authentication"]["credential_method"]
+            self.credential_method = credential_method = self.config[
+                "Authentication"
+            ]["credential_method"]
         else:
             self.credential_method = credential_method
         if "identity" in self.credential_method.lower():
@@ -240,12 +241,12 @@ class AzureClient:
             registry_name = self.config["Container"]["registry_name"]
             self.container_registry_server = f"{registry_name}.azurecr.io"
             self.registry_url = f"https://{self.container_registry_server}"
-        else:            
+        else:
             self.registry_url = None
 
         if "repository_name" in self.config["Container"].keys():
             repository_name = self.config["Container"]["repository_name"]
-        
+
         if "tag_name" in self.config["Container"].keys():
             tag_name = self.config["Container"]["tag_name"]
         else:
@@ -253,28 +254,59 @@ class AzureClient:
 
         if registry_name and repository_name:
             self.set_azure_container(
-                registry_name=registry_name, repo_name=repository_name, tag_name=tag_name
+                registry_name=registry_name,
+                repo_name=repository_name,
+                tag_name=tag_name,
             )
 
     def _initialize_pool(self):
         """Called by init to initialize the pool"""
         self.pool_parameters = None
-        self.pool_name = self.config["Batch"]["pool_name"] if "pool_name" in self.config["Batch"].keys() else None
-        self.scaling = self.config["Batch"]["scaling_mode"] if "scaling_mode" in self.config["Batch"].keys() else None 
+        self.pool_name = (
+            self.config["Batch"]["pool_name"]
+            if "pool_name" in self.config["Batch"].keys()
+            else None
+        )
+        self.scaling = (
+            self.config["Batch"]["scaling_mode"]
+            if "scaling_mode" in self.config["Batch"].keys()
+            else None
+        )
         if self.pool_name:
-            if self.scaling == "autoscale" and "autoscale_formula_path" in self.config["Batch"].keys():
-                autoscale_formula_path = self.config["Batch"]["autoscale_formula_path"]
+            if (
+                self.scaling == "autoscale"
+                and "autoscale_formula_path" in self.config["Batch"].keys()
+            ):
+                autoscale_formula_path = self.config["Batch"][
+                    "autoscale_formula_path"
+                ]
                 print("Creating pool with autoscaling mode")
-                self.set_pool_info(mode=self.scaling, autoscale_formula_path=autoscale_formula_path)
-            elif self.scaling == "fixed":
-                dedicated_nodes = self.config["Batch"]["dedicated_nodes"] if "dedicated_nodes" in self.config["Batch"].keys() else 0
-                low_priority_nodes = self.config["Batch"]["low_priority_nodes"] if "low_priority_nodes" in self.config["Batch"].keys() else 1
-                node_deallocation_option = self.config["Batch"]["node_deallocation_option"] if "node_deallocation_option" in self.config["Batch"].keys() else None
                 self.set_pool_info(
-                    mode=self.scaling, 
-                    dedicated_nodes=dedicated_nodes, 
+                    mode=self.scaling,
+                    autoscale_formula_path=autoscale_formula_path,
+                )
+            elif self.scaling == "fixed":
+                dedicated_nodes = (
+                    self.config["Batch"]["dedicated_nodes"]
+                    if "dedicated_nodes" in self.config["Batch"].keys()
+                    else 0
+                )
+                low_priority_nodes = (
+                    self.config["Batch"]["low_priority_nodes"]
+                    if "low_priority_nodes" in self.config["Batch"].keys()
+                    else 1
+                )
+                node_deallocation_option = (
+                    self.config["Batch"]["node_deallocation_option"]
+                    if "node_deallocation_option"
+                    in self.config["Batch"].keys()
+                    else None
+                )
+                self.set_pool_info(
+                    mode=self.scaling,
+                    dedicated_nodes=dedicated_nodes,
                     low_priority_nodes=low_priority_nodes,
-                    node_deallocation_option=node_deallocation_option
+                    node_deallocation_option=node_deallocation_option,
                 )
             else:
                 pass
@@ -284,14 +316,22 @@ class AzureClient:
 
     def _initialize_containers(self):
         """Called by init to initialize input and output containers"""
-        self.input_container_name = self.config["Container"]["input_container_name"] if "input_container_name" in self.config["Container"].keys() else None 
-        self.output_container_name = self.config["Container"]["output_container_name"] if "output_container_name" in self.config["Container"].keys() else None 
+        self.input_container_name = (
+            self.config["Container"]["input_container_name"]
+            if "input_container_name" in self.config["Container"].keys()
+            else None
+        )
+        self.output_container_name = (
+            self.config["Container"]["output_container_name"]
+            if "output_container_name" in self.config["Container"].keys()
+            else None
+        )
         if self.input_container_name and self.output_container_name:
             self.update_containers(
                 pool_name=self.pool_name,
                 input_container_name=self.input_container_name,
                 output_container_name=self.output_container_name,
-                force_update=False
+                force_update=False,
             )
 
     def set_debugging(self, debug: bool) -> None:

@@ -300,7 +300,8 @@ upload_files_in_folder("/path/to/folder", "container-name", blob_service_client)
 ```
 batch_client = get_batch_service_client(config, DefaultAzureCredential())
 ```
-- `add_job`: creates a new job to the specified Azure Batch pool
+- `add_job`: creates a new job to the specified Azure Batch pool. By default, a job remains active after completion of enclosed tasks. You can optionally specify the *mark_complete_after_tasks_run* argument to *True* if you want job to auto-complete after completion of enclosed tasks.
+
 ```
 add_job("job-id", "pool-id", True, batch_client)
 ```
@@ -371,10 +372,6 @@ delete_blob_folder("folder_path", "container_name", blob_service_client)
 - `format_extensions`: formats file extensions into a standard format for use
 ```
 format_extensions([".txt", "jpg"])
-```
-- `mark_job_completed_after_tasks_run`: sets a job to be marked as complete once all tasks are finished
-```
-mark_job_completed_after_tasks_run("job_id", "pool_id", batch_client)
 ```
 - `check_autoscale_parameters`: checks which arguments are incompatible with the provided scaling mode
 ```

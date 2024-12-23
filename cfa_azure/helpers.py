@@ -895,8 +895,8 @@ def add_task_to_job(
     else:
         full_cmd = d_cmd_str
 
-    tasks = []
     if input_files:
+        tasks = []
         for i, input_file in enumerate(input_files):
             config_stem = "_".join(input_file.split(".")[:-1]).split("/")[-1]
             id = task_id_base + "-" + config_stem
@@ -917,6 +917,7 @@ def add_task_to_job(
             )
             batch_client.task.add(job_id=job_id, task=task)
             print(f"Task '{id}' added to job '{job_id}'.")
+        return tasks
     else:
         command_line = full_cmd
         logger.debug(f"Adding task {task_id}")
@@ -934,8 +935,7 @@ def add_task_to_job(
         )
         batch_client.task.add(job_id=job_id, task=task)
         logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
-        tasks.append(task_id)
-    return tasks
+        return task_id
 
 def monitor_tasks(
     job_id: str,

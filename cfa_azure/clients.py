@@ -301,7 +301,7 @@ class AzureClient:
                 self.set_pool_info(
                     mode=self.scaling,
                     dedicated_nodes=dedicated_nodes,
-                    low_priority_nodes=low_priority_nodes
+                    low_priority_nodes=low_priority_nodes,
                 )
             else:
                 pass

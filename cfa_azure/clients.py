@@ -173,6 +173,8 @@ class AzureClient:
         self._initialize_pool()
         # Set up containers
         self._initialize_containers()
+        if self.pool_name and self.pool_parameters:
+            self.create_pool(self.pool_name)
         logger.info("Client initialized! Happy coding!")
 
     def _initialize_authentication(self, credential_method):
@@ -296,21 +298,13 @@ class AzureClient:
                     if "low_priority_nodes" in self.config["Batch"].keys()
                     else 1
                 )
-                node_deallocation_option = (
-                    self.config["Batch"]["node_deallocation_option"]
-                    if "node_deallocation_option"
-                    in self.config["Batch"].keys()
-                    else None
-                )
                 self.set_pool_info(
                     mode=self.scaling,
                     dedicated_nodes=dedicated_nodes,
-                    low_priority_nodes=low_priority_nodes,
-                    node_deallocation_option=node_deallocation_option,
+                    low_priority_nodes=low_priority_nodes
                 )
             else:
                 pass
-            self.create_pool(self.pool_name)
         else:
             pass
 

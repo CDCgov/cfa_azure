@@ -895,8 +895,8 @@ def add_task_to_job(
     else:
         full_cmd = d_cmd_str
 
-    tasks = []
     if input_files:
+        tasks = []
         for i, input_file in enumerate(input_files):
             config_stem = "_".join(input_file.split(".")[:-1]).split("/")[-1]
             id = task_id_base + "-" + config_stem
@@ -917,6 +917,7 @@ def add_task_to_job(
             )
             batch_client.task.add(job_id=job_id, task=task)
             print(f"Task '{id}' added to job '{job_id}'.")
+        return tasks
     else:
         command_line = full_cmd
         logger.debug(f"Adding task {task_id}")
@@ -1742,10 +1743,6 @@ def upload_docker_image(
     Returns:
         str: full container name
     """
-    # Generate a unique tag if none provided
-    if tag is None:
-        tag = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-
     full_container_name = f"{registry_name}.azurecr.io/{repo_name}:{tag}"
 
     # check if docker is running

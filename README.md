@@ -143,7 +143,7 @@ After creating the configuration file (e.g. client_configuration.toml), then use
 ```
   client = AzureClient("./client_configuration.toml")
 ```
- 
+
 ### Functions
 - `create_pool`: creates a new Azure batch pool using default autoscale mode
   **Example:**

@@ -100,6 +100,50 @@ client.set_pool_info("autoscale",
     )
 ```
 
+**Configuration**
+An AzureClient object can be instantiated and initialized with pool, mounted containers and container registries using a configuration file. This is especially useful if the same pool will be used for running multiple batch jobs and experiments. Use the following example to create a configuration file:
+
+```
+[Authentication]
+subscription_id="REPLACE_WITH_AZURE_SUBSCRIPTION_ID"
+resource_group="EXT-EDAV-CFA-PRD"
+user_assigned_identity="REPLACE_WITH_USER_ASSIGNED_ID"
+tenant_id="REPLACE_WITH_TENANT_ID"
+batch_application_id="REPLACE_WITH_BATCH_APP_ID"
+batch_object_id="REPLACE_WITH_BATCH_OBJECT_ID"
+sp_application_id="REPLACE_WITH_SERVICE_PRINCIPAL_APP_ID"
+vault_url="https://cfa-common-adf-prd.vault.azure.net/"
+vault_sp_secret_id="REPLACE_WITH_SECRET_ID"
+subnet_id="REPLACE_WITH_AZURE_SUBNET_ID"
+
+[Batch]
+batch_account_name="cfaprdba"
+batch_service_url="https://cfaprdba.eastus.batch.azure.com"
+pool_vm_size="STANDARD_A2_V2"
+pool_name="my_test_pool"
+scaling_mode="fixed"
+
+[Storage]
+storage_account_name="cfaazurebatchprd"
+storage_account_url="https://cfaazurebatchprd.blob.core.windows.net"
+
+[Container]
+container_registry_username="cfaprdbatchcr"
+container_registry_url="https:/cfaprdbatchcr.azurecr.io/"
+container_registry_password="REPLACE_WITH_CONTAINER_REGISTRY_PASSWORD"
+container_image_name="simple_test_app:latest"
+input_container_name="cfazureinput2"
+output_container_name="cfazureoutput2"
+registry_name="cfaprdbatchcr"
+repository_name="simple_test_app"
+tag_name="latest"
+```
+
+After creating the configuration file (e.g. client_configuration.toml), then use the following snippet to initialize the AzureClient object:
+```
+  client = AzureClient("./client_configuration.toml")
+```
+ 
 ### Functions
 - `create_pool`: creates a new Azure batch pool using default autoscale mode
   **Example:**

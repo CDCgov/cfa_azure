@@ -130,7 +130,7 @@ storage_account_url="https://cfaazurebatchprd.blob.core.windows.net"
 [Container]
 container_registry_username="cfaprdbatchcr"
 container_registry_url="https:/cfaprdbatchcr.azurecr.io/"
-container_registry_password="REPLACE_WITH_CONTAINER_REGISTRY_PASSWORD"
+container_registry_password="****"
 container_image_name="simple_test_app:latest"
 input_container_name="cfazureinput2"
 output_container_name="cfazureoutput2"

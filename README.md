@@ -1,6 +1,3 @@
-# cfa_azure module
-## created by Ryan Raasch (Peraton)
-
 ![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)
 ![pre-commit](https://github.com/CDCgov/cfa_azure/workflows/pre-commit/badge.svg)
 ![CI](https://github.com/CDCgov/cfa_azure/workflows/Python%20Unit%20Tests%20with%20Coverage/badge.svg)
@@ -8,6 +5,8 @@
 ![Python](https://img.shields.io/badge/python-3670A0?logo=python&logoColor=ffdd54)
 ![Azure](https://img.shields.io/badge/AZURE-%230072C6.svg?logo=microsoftazure&logoColor=white)
 
+# cfa_azure module
+## created by Ryan Raasch (Peraton)
 
 ## ***Version 1.x.x WARNING***
 The expected configuration.toml has changed several keys to make it easier on users to find the right information in the Azure Management Console. The following keys have changed:

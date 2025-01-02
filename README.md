@@ -1,6 +1,11 @@
 # cfa_azure module
 ## created by Ryan Raasch (Peraton)
 
+![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)
+![License](https://img.shields.io/badge/License-Apache--2.0-blue)
+![Python](https://img.shields.io/badge/python-3670A0?logo=python&logoColor=ffdd54)
+![Azure](https://img.shields.io/badge/azure-%230072C6.svg?logo=microsoftazure&logoColor=white)
+
 ## ***Version 1.x.x WARNING***
 The expected configuration.toml has changed several keys to make it easier on users to find the right information in the Azure Management Console. The following keys have changed:
 - `client_id` is now `batch_application_id`

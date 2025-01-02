@@ -54,4 +54,4 @@ client.add_task(job_id="example_job", docker_cmd="python3 main.py")
 The diagram below illustrates the flow of using the `AzureClient` depending on use case.
 
 
-![AzureClient Workflow](./cfa_azure%20workflow.png)
+![AzureClient Workflow](/docs/cfa_azure_workflow.png)

@@ -13,7 +13,7 @@ Refer to the example_config.toml in the examples folder, found [here](examples/e
 The `cfa_azure` python module is intended to ease the challenge of working with Azure via multiple Azure python modules which require the correct steps and many lines of code to execute. `cfa_azure` simplifies many repeated workflows when interacting with Azure, Blob Storage, Batch, and more. For example, creating a pool in Azure may take different credentials and several clients to complete, but with `cfa_azure`, creating a pool is reduced to a single function with only a few parameters.
 
 # Components
-The `cfa_azure` module is composed of three submodules: `clients`, `automation` and `helpers`. The module `clients` contains what we call the AzureClient, which combines the multiple Azure Clients needed to interact with Azure and consolidates to a single client. The module `helpers` contains more fine-grained functions which are used within the `clients` module or independently for more control when working with Azure. The `automation` module introduces a simplified way to upload files and submit jobs/tasks to Batch via another configuration toml file. For help getting started with the `automation` module, please see [this overview](automation_README.md).
+The `cfa_azure` module is composed of three submodules: `clients`, `automation` and `helpers`. The module `clients` contains what we call the AzureClient, which combines the multiple Azure Clients needed to interact with Azure and consolidates to a single client. The module `helpers` contains more fine-grained functions which are used within the `clients` module or independently for more control when working with Azure. The `automation` module introduces a simplified way to upload files and submit jobs/tasks to Batch via another configuration toml file. For help getting started with the `automation` module, please see [this overview](docs/automation_README.md).
 
 
 ### clients
@@ -242,7 +242,7 @@ client.upload_files_to_container(
   ```
 
 ### automation
-Please view [this documentation](automation_README.md) on getting started with the `automation` module.
+Please view [this documentation](docs/automation_README.md) on getting started with the `automation` module.
 
 ### helpers
 The `helpers` module provides a collection of functions that helps manage Azure resources and perform key tasks, such as interacting with Blob storage, Azure Batch, configuration management, and data transformations. Below is an expanded overview of each function.

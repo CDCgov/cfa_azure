@@ -9,6 +9,28 @@ The expected configuration.toml has changed several keys to make it easier on us
 
 Refer to the example_config.toml in the examples folder, found [here](examples/example_config.toml) to view the required keys/values needed in the configuration file.
 
+# Outline
+- [Description](#description)  
+- [Components](#components)  
+  - [clients](#clients)
+    - [Logging](#logging)
+    - [Using Various Credential Methods](#using-various-credential-methods)
+    - [Persisting stdout and stderr to Blob Storage](#persisting-stdout-and-stderr-to-blob-storage)
+    - [Availability Zones](#availability-zones)
+    - [Updated High Performance Compute Image](#updated-high-performance-compute-image)
+    - [AzureClient Methods](#azureclient-methods)
+    - [Running Jobs and Tasks](#running-jobs-and-tasks)
+  - [automation](#automation)
+  - [helpers](#helpers)
+    - [Helpers Functions](#helpers-functions)
+  - [Common Use Case Scenarios](#common-use-case-scenarios)
+- [Public Domain Standard Notice](#public-domain-standard-notice)
+- [License Standard Notice](#license-standard-notice)
+- [Privacy Standard Notice](#privacy-standard-notice)
+- [Contributing Standard Notice](#contributing-standard-notice)
+- [Records Management Standard Notice](#records-management-standard-notice)
+- [Additional Standard Notices](#additional-standard-notices)
+
 # Description
 The `cfa_azure` python module is intended to ease the challenge of working with Azure via multiple Azure python modules which require the correct steps and many lines of code to execute. `cfa_azure` simplifies many repeated workflows when interacting with Azure, Blob Storage, Batch, and more. For example, creating a pool in Azure may take different credentials and several clients to complete, but with `cfa_azure`, creating a pool is reduced to a single function with only a few parameters.
 
@@ -16,10 +38,11 @@ The `cfa_azure` python module is intended to ease the challenge of working with 
 The `cfa_azure` module is composed of three submodules: `clients`, `automation` and `helpers`. The module `clients` contains what we call the AzureClient, which combines the multiple Azure Clients needed to interact with Azure and consolidates to a single client. The module `helpers` contains more fine-grained functions which are used within the `clients` module or independently for more control when working with Azure. The `automation` module introduces a simplified way to upload files and submit jobs/tasks to Batch via another configuration toml file. For help getting started with the `automation` module, please see [this overview](docs/automation_README.md).
 
 
-### clients
+## clients
 Classes:
 - AzureClient: a client object used for interacting with Azure. It initializes based on a supplied configuration file and creates various Azure clients under the hood. It can be used to upload containers, upload files, run jobs, and more.
 
+### Logging
 To customize the logging capabilities of cfa_azure, two environment variables can be set. These are LOG_LEVEL and LOG_OUTPUT.
 
 LOG_LEVEL: sets the logging level. Choices are:
@@ -41,7 +64,7 @@ export LOG_OUTPUT="stdout"
 ```
 
 
-**Using Various Credential Methods**
+### Using Various Credential Methods
 
 When instantiating a AzureClient object, there is an option to set which `credential_method` to use. Previously, only a service principal could be used. Now, there are three an options to choose `identity`, `sp`, or `env`.
 - `identity`: Uses the managed identity associated with the VM where the code is running.
@@ -70,7 +93,7 @@ os.environ["AZURE_CLIENT_SECRET"] = "your-client-secret" #pragma: allowlist secr
 client = AzureClient(credential_method="env", use_env_vars=True)
 ```
 
-**Persisting stdout and stderr to Blob Storage**
+### Persisting stdout and stderr to Blob Storage
 
 In certain situations, it is beneficial to save the stdout and stderr from each task to Blob Storage (like when using autoscale pools). It is possible to persist these to Blob Storage by specifying the blob container name in the `save_logs_to_blob` parameter when using `client.add_job()`. *Note that the blob container specified must be mounted to the pool being used for the job.
 
@@ -79,7 +102,7 @@ For example, if we would like to persist stdout and stderr to the blob container
 client.add_job("persisting_test", save_logs_to_blob = "input-test")
 ```
 
-**Availability Zones**
+### Availability Zones
 
 To make use of Azure's availability zone functionality there is a parameter available in the `set_pool_info()` method called `availability_zones`. To use availability zones when building a pool, set this parameter to True. If you want to stick with the default Regional configuration, this parameter can be left out or set to False. Turn availability zone on like the following:
 ```
@@ -90,7 +113,8 @@ client.set_pool_info(
 )
 ```
 
-**Updated High Performance Compute Image**
+### Updated High Performance Compute Image
+
 The default base Ubuntu image used for Azure Batch nodes is Ubuntu 20.04, which is nearing end of life on 4/22/2025. There is an option to use a high performance compute image using Ubuntu 22.04 as the base OS. It's important to use a compatible VM size with these HPC images. To implement a HPC image for Azure pools, set the parameter `use_hpc_image` to `True` in the `AzureClient` method `set_pool_info()`, like the following:
 ```
 client.set_pool_info("autoscale",
@@ -100,7 +124,7 @@ client.set_pool_info("autoscale",
     )
 ```
 
-### Functions
+### AzureClient Methods
 - `create_pool`: creates a new Azure batch pool using default autoscale mode
   **Example:**
   ```
@@ -108,7 +132,7 @@ client.set_pool_info("autoscale",
   client.create_pool("my-test-pool")
   ```
 - `update_containers`: modifies the containers mounted on an existing Azure batch pool. It essentially recreates the pool with new mounts. Use force_update=True to recreate the pool without waiting for running tasks to complete.
-- `upload_files_to_container`: uploads files from a specified folder to an Azure Blob container. It also includes options like `force_upload` to allow or deny large file uploads without confirmation.
+- `upload_files_to_container`: uploads files from a specified folder to an Azure Blob container. It also includes options like `force_upload` to allow or deny large file uploads without confirmation.  
   **Example:**
 ```
 client.upload_files_to_container(
@@ -118,8 +142,8 @@ client.upload_files_to_container(
     force_upload=True
 )
 ```
-- `update_scale_settings`: modifies the scaling mode (fixed or autoscale) for an existing pool
- **Example:**
+- `update_scale_settings`: modifies the scaling mode (fixed or autoscale) for an existing pool  
+ **Example:**  
   ```
   # Specify new autoscale formula that will be evaluated every 30 minutes
   client.scaling = "autoscale"
@@ -241,13 +265,13 @@ client.upload_files_to_container(
   )
   ```
 
-### automation
+## automation
 Please view [this documentation](docs/automation_README.md) on getting started with the `automation` module.
 
-### helpers
+## helpers
 The `helpers` module provides a collection of functions that helps manage Azure resources and perform key tasks, such as interacting with Blob storage, Azure Batch, configuration management, and data transformations. Below is an expanded overview of each function.
 
-**Functions:**
+### Helpers Functions
 - `read_config`: reads in a configuration toml file and returns it as a Python dictionary
 ```
 read_config("/path/to/config.toml")
@@ -461,7 +485,7 @@ upload_blob_file("file_path", location="folder/subfolder", container_client=cont
 download_directory("container_name", "src_path", "dest_path", blob_service_client, include_extensions=".txt", verbose=True)
 ```
 
-### Common Use Case Scenarios
+## Common Use Case Scenarios
 
 **Example Workflow**: Uploading files to Blob Storage, creating an Azure Batch Pool, adding jobs, and monitoring tasks.
 

@@ -26,6 +26,7 @@ from azure.batch.models import (
     JobConstraints,
     OnAllTasksComplete,
     OnTaskFailure,
+    MetadataItem
 )
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -728,7 +729,6 @@ def list_nodes_by_pool(pool_name: str, config: dict, node_state: str = None):
 def add_job(
     job_id: str,
     pool_id: str,
-    end_job_on_task_failure: bool,
     batch_client: object,
     task_retries: int = 0,
     mark_complete: bool = False,
@@ -738,7 +738,6 @@ def add_job(
     Args:
         job_id (str): name of the job to run
         pool_id (str): name of pool
-        end_job_on_task_failure (bool): whether to end a running job if a task fails
         batch_client (object): batch client object
         task_retries (int): number of times to retry the task if it fails. Default 3.
         mark_complete (bool): whether to mark the job complete after tasks finish running. Default False.
@@ -758,6 +757,7 @@ def add_job(
         on_all_tasks_complete=on_all_tasks_complete,
         on_task_failure=OnTaskFailure.perform_exit_options_job_action,
         constraints=job_constraints,
+        metadata=[MetadataItem(name="mark_complete", value=mark_complete)]
     )
     logger.debug("Attempting to add job.")
     try:
@@ -833,8 +833,17 @@ def add_task_to_job(
             logger.debug("Adding task dependency.")
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
 
+    job_action = JobAction.none
+    if check_job_exists(job_id, batch_client):
+        job_details = batch_client.job.get(job_id)
+        if job_details and job_details.metadata:
+            for metadata in job_details.metadata:
+                if metadata.name == "mark_complete" and metadata.value == True:
+                    job_action = JobAction.terminate
+                    break
+
     no_exit_options = ExitOptions(
-        dependency_action=DependencyAction.satisfy, job_action=JobAction.none
+        dependency_action=DependencyAction.satisfy, job_action=job_action
     )
     if run_dependent_tasks_on_fail:
         exit_conditions = ExitConditions(
@@ -849,7 +858,7 @@ def add_task_to_job(
     else:
         terminate_exit_options = ExitOptions(
             dependency_action=DependencyAction.block,
-            job_action=JobAction.terminate,
+            job_action=job_action,
         )
         exit_conditions = ExitConditions(
             exit_codes=[

@@ -24,9 +24,9 @@ from azure.batch.models import (
     ExitOptions,
     JobAction,
     JobConstraints,
+    MetadataItem,
     OnAllTasksComplete,
     OnTaskFailure,
-    MetadataItem
 )
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
@@ -757,7 +757,7 @@ def add_job(
         on_all_tasks_complete=on_all_tasks_complete,
         on_task_failure=OnTaskFailure.perform_exit_options_job_action,
         constraints=job_constraints,
-        metadata=[MetadataItem(name="mark_complete", value=mark_complete)]
+        metadata=[MetadataItem(name="mark_complete", value=mark_complete)],
     )
     logger.debug("Attempting to add job.")
     try:
@@ -838,7 +838,10 @@ def add_task_to_job(
         job_details = batch_client.job.get(job_id)
         if job_details and job_details.metadata:
             for metadata in job_details.metadata:
-                if metadata.name == "mark_complete" and metadata.value == True:
+                if (
+                    metadata.name == "mark_complete"
+                    and bool(metadata.value) is True
+                ):
                     job_action = JobAction.terminate
                     break
 

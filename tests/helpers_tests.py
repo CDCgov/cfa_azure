@@ -724,9 +724,7 @@ class TestHelpers(unittest.TestCase):
         batch_client = FakeClient()
         job_id = "my_job_id"
         cfa_azure.helpers.add_job(
-            job_id,
-            FAKE_BATCH_POOL,
-            batch_client=batch_client
+            job_id, FAKE_BATCH_POOL, batch_client=batch_client
         )
         mock_logger.info.assert_called_with(
             f"Job '{job_id}' created successfully."
@@ -737,9 +735,7 @@ class TestHelpers(unittest.TestCase):
         batch_client = FakeClient()
         job_id = "my_job_id"
         cfa_azure.helpers.add_job(
-            job_id,
-            FAKE_BATCH_POOL,
-            batch_client=batch_client
+            job_id, FAKE_BATCH_POOL, batch_client=batch_client
         )
         mock_logger.debug.assert_called_with("Attempting to add job.")
 

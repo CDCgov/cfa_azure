@@ -113,10 +113,10 @@ class FakeClient:
 
         def add(self, job):
             return True
-        
+
         def get(self, job):
             return True
- 
+
         def list(self):
             return []
 

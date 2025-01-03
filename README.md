@@ -4,7 +4,9 @@
 ![CI](https://github.com/CDCgov/cfa_azure/workflows/Python%20Unit%20Tests%20with%20Coverage/badge.svg?style=plastic)
 ![GitHub License](https://img.shields.io/github/license/cdcgov/cfa_azure)
 ![Python](https://img.shields.io/badge/python-3670A0?logo=python&logoColor=ffdd54&style=plastic)
-![Azure](https://img.shields.io/badge/AZURE-%230072C6.svg?logo=microsoftazure&logoColor=white&style=plastic)
+![Azure](https://img.shields.io/badge/Microsoft-Azure-blue?logo=microsoftazure&logoColor=white&style=plastic)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/cdcgov/cfa_azure?style=plastic)
+
 
 
 # cfa_azure Python Package

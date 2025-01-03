@@ -7,7 +7,6 @@
 ![Azure](https://img.shields.io/badge/AZURE-%230072C6.svg?logo=microsoftazure&logoColor=white)
 
 
-
 # cfa_azure module
 ## created by Ryan Raasch (Peraton)
 
@@ -21,8 +20,8 @@ Refer to the example_config.toml in the examples folder, found [here](examples/e
 
 # Outline
 - [Description](#description)
-- [Getting Started](#getting-started)  
-- [Components](#components)  
+- [Getting Started](#getting-started)
+- [Components](#components)
   - [clients](#clients)
     - [Logging](#logging)
     - [Using Various Credential Methods](#using-various-credential-methods)
@@ -45,7 +44,7 @@ Refer to the example_config.toml in the examples folder, found [here](examples/e
 # Description
 The `cfa_azure` python module is intended to ease the challenge of working with Azure via multiple Azure python modules which require the correct steps and many lines of code to execute. `cfa_azure` simplifies many repeated workflows when interacting with Azure, Blob Storage, Batch, and more. For example, creating a pool in Azure may take different credentials and several clients to complete, but with `cfa_azure`, creating a pool is reduced to a single function with only a few parameters.
 
-# Getting Started 
+# Getting Started
 In order to use the `cfa_azure` library, you need [Python 3.8 or higher](https://www.python.org/downloads/), [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/), and any python package manager.
 
 To install using pip:
@@ -151,7 +150,7 @@ client.set_pool_info("autoscale",
   client.create_pool("my-test-pool")
   ```
 - `update_containers`: modifies the containers mounted on an existing Azure batch pool. It essentially recreates the pool with new mounts. Use force_update=True to recreate the pool without waiting for running tasks to complete.
-- `upload_files_to_container`: uploads files from a specified folder to an Azure Blob container. It also includes options like `force_upload` to allow or deny large file uploads without confirmation.  
+- `upload_files_to_container`: uploads files from a specified folder to an Azure Blob container. It also includes options like `force_upload` to allow or deny large file uploads without confirmation.
   **Example:**
 ```
 client.upload_files_to_container(
@@ -161,8 +160,8 @@ client.upload_files_to_container(
     force_upload=True
 )
 ```
-- `update_scale_settings`: modifies the scaling mode (fixed or autoscale) for an existing pool  
- **Example:**  
+- `update_scale_settings`: modifies the scaling mode (fixed or autoscale) for an existing pool
+ **Example:**
   ```
   # Specify new autoscale formula that will be evaluated every 30 minutes
   client.scaling = "autoscale"

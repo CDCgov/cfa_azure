@@ -2,7 +2,7 @@
 ![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&style=plastic)
 ![pre-commit](https://github.com/CDCgov/cfa_azure/workflows/pre-commit/badge.svg?style=plastic)
 ![CI](https://github.com/CDCgov/cfa_azure/workflows/Python%20Unit%20Tests%20with%20Coverage/badge.svg?style=plastic)
-![GitHub License](https://img.shields.io/github/license/cdcgov/cfa_azure)
+![GitHub License](https://img.shields.io/github/license/cdcgov/cfa_azure?style=plastic)
 ![Python](https://img.shields.io/badge/python-3670A0?logo=python&logoColor=ffdd54&style=plastic)
 ![Azure](https://img.shields.io/badge/Microsoft-Azure-blue?logo=microsoftazure&logoColor=white&style=plastic)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/cdcgov/cfa_azure?style=plastic)

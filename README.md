@@ -7,8 +7,8 @@
 ![Azure](https://img.shields.io/badge/AZURE-%230072C6.svg?logo=microsoftazure&logoColor=white&style=plastic)
 
 
-# cfa_azure module
-## created by Ryan Raasch (Peraton)
+# cfa_azure Python Package
+## Created by Ryan Raasch (Peraton) for CFA
 
 ## ***Version 1.x.x WARNING***
 The expected configuration.toml has changed several keys to make it easier on users to find the right information in the Azure Management Console. The following keys have changed:

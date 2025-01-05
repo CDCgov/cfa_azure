@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from azure.core.exceptions import HttpResponseError
+
 import cfa_azure.clients
 import cfa_azure.helpers
 from tests.fake_client import *
@@ -189,14 +190,24 @@ class TestClients(unittest.TestCase):
         self.assertEqual(error_msg, str(exc.exception))
 
     @patch("cfa_azure.clients.logger")
-    @patch("tests.fake_client.FakeClient.FakePool.create", MagicMock(side_effect=HttpResponseError(message="PropertyCannotBeUpdated")))
+    @patch(
+        "tests.fake_client.FakeClient.FakePool.create",
+        MagicMock(
+            side_effect=HttpResponseError(message="PropertyCannotBeUpdated")
+        ),
+    )
     def test_create_pool_response_exists(self, mock_logger):
         self.azure_client.create_pool(FAKE_BATCH_POOL)
-        mock_logger.warning.assert_called_with(f"Pool {FAKE_BATCH_POOL!r} already exists")
+        mock_logger.warning.assert_called_with(
+            f"Pool {FAKE_BATCH_POOL!r} already exists"
+        )
 
-    @patch("tests.fake_client.FakeClient.FakePool.create", MagicMock(side_effect=HttpResponseError))
+    @patch(
+        "tests.fake_client.FakeClient.FakePool.create",
+        MagicMock(side_effect=HttpResponseError),
+    )
     def test_create_pool_response_error(self):
-        with self.assertRaises(HttpResponseError) as exc:
+        with self.assertRaises(HttpResponseError):
             self.azure_client.create_pool(FAKE_BATCH_POOL)
 
     @patch(
@@ -529,14 +540,15 @@ class TestClients(unittest.TestCase):
         "cfa_azure.helpers.format_rel_path",
         MagicMock(return_value="/some_path"),
     )
-    @patch(
-        "cfa_azure.helpers.create_container",
-        MagicMock(return_value=True)
-    )
+    @patch("cfa_azure.helpers.create_container", MagicMock(return_value=True))
     def test_create_input_container(self, mock_logger):
         self.azure_client.create_input_container(name=FAKE_INPUT_CONTAINER)
-        self.assertEqual(FAKE_INPUT_CONTAINER, self.azure_client.input_container_name)
-        mock_logger.debug.assert_called_with(f"Created container client for input container." ) 
+        self.assertEqual(
+            FAKE_INPUT_CONTAINER, self.azure_client.input_container_name
+        )
+        mock_logger.debug.assert_called_with(
+            "Created container client for input container."
+        )
 
     @patch(
         "cfa_azure.helpers.check_pool_exists", MagicMock(return_value=False)
@@ -649,7 +661,7 @@ class TestClients(unittest.TestCase):
     @patch("cfa_azure.clients.logger")
     @patch(
         "cfa_azure.helpers.check_azure_container_exists",
-        MagicMock(return_value=None)
+        MagicMock(return_value=None),
     )
     def test_set_azure_container_no_name(self, mock_logger):
         container_name = self.azure_client.set_azure_container(
@@ -657,40 +669,46 @@ class TestClients(unittest.TestCase):
             repo_name=FAKE_REPO_NAME,
             tag_name="latest",
         )
-        mock_logger.warning.assert_called_with("ACR container does not exist.") 
+        mock_logger.warning.assert_called_with("ACR container does not exist.")
         self.assertIsNone(container_name)
-
 
     @patch(
         "cfa_azure.helpers.get_deployment_config",
         MagicMock(return_value={"virtualMachineConfiguration": {}}),
     )
-    @patch("cfa_azure.helpers.package_and_upload_dockerfile", MagicMock(return_value=FAKE_INPUT_CONTAINER))
+    @patch(
+        "cfa_azure.helpers.package_and_upload_dockerfile",
+        MagicMock(return_value=FAKE_INPUT_CONTAINER),
+    )
     def test_package_and_upload_dockerfile(self):
         self.azure_client.set_pool_info(mode="autoscale")
         container_name = self.azure_client.package_and_upload_dockerfile(
             registry_name=FAKE_CONTAINER_REGISTRY,
             repo_name=FAKE_REPO_NAME,
-            tag="latest"
+            tag="latest",
         )
         self.assertEqual(FAKE_INPUT_CONTAINER, container_name)
-
 
     @patch("cfa_azure.clients.logger")
     @patch(
         "cfa_azure.helpers.get_deployment_config",
         MagicMock(return_value={"virtualMachineConfiguration": {}}),
     )
-    @patch("cfa_azure.helpers.upload_docker_image", MagicMock(return_value=FAKE_INPUT_CONTAINER))
+    @patch(
+        "cfa_azure.helpers.upload_docker_image",
+        MagicMock(return_value=FAKE_INPUT_CONTAINER),
+    )
     def test_upload_docker_image(self, mock_logger):
         self.azure_client.set_pool_info(mode="autoscale")
         container_name = self.azure_client.upload_docker_image(
             image_name=FAKE_CONTAINER_IMAGE,
             registry_name=FAKE_CONTAINER_REGISTRY,
             repo_name=FAKE_REPO_NAME,
-            tag="latest"
+            tag="latest",
         )
-        mock_logger.debug.assert_called_with("Completed package_and_upload_docker_image() function.")
+        mock_logger.debug.assert_called_with(
+            "Completed package_and_upload_docker_image() function."
+        )
         self.assertEqual(FAKE_INPUT_CONTAINER, container_name)
 
     @patch("cfa_azure.clients.logger")
@@ -702,7 +720,9 @@ class TestClients(unittest.TestCase):
         self.azure_client.blob_service_client = FakeClient()
         error_message = f"Blob container {FAKE_INPUT_CONTAINER} does not exist. Please try again with an existing Blob container."
         with self.assertRaises(Exception) as exc:
-            self.azure_client.upload_files(files=FAKE_FOLDER_CONTENTS, container_name=FAKE_INPUT_CONTAINER)
+            self.azure_client.upload_files(
+                files=FAKE_FOLDER_CONTENTS, container_name=FAKE_INPUT_CONTAINER
+            )
         self.assertEqual(error_message, str(exc.exception))
         mock_logger.error.assert_called_with(error_message)
 
@@ -711,11 +731,12 @@ class TestClients(unittest.TestCase):
         "tests.fake_client.FakeClient.FakeContainerClient.exists",
         MagicMock(return_value=True),
     )
-    @patch(
-        "cfa_azure.helpers.upload_blob_file",
-        MagicMock(return_value=True)
-    )
+    @patch("cfa_azure.helpers.upload_blob_file", MagicMock(return_value=True))
     def test_upload_files(self, mock_logger):
         self.azure_client.blob_service_client = FakeClient()
-        self.azure_client.upload_files(files=FAKE_FOLDER_CONTENTS, container_name=FAKE_INPUT_CONTAINER)
-        mock_logger.debug.assert_called_with("Uploaded all files in files list.")
+        self.azure_client.upload_files(
+            files=FAKE_FOLDER_CONTENTS, container_name=FAKE_INPUT_CONTAINER
+        )
+        mock_logger.debug.assert_called_with(
+            "Uploaded all files in files list."
+        )

@@ -1045,7 +1045,6 @@ class AzureClient:
         pool_name: str | None = None,
         save_logs_to_blob: str | None = None,
         logs_folder: str | None = None,
-        end_job_on_task_failure: bool = False,
         task_retries: int = 0,
         mark_complete_after_tasks_run: bool = False,
     ) -> None:
@@ -1056,7 +1055,6 @@ class AzureClient:
             pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
             save_logs_to_blob (str): the name of the blob container. Must be mounted to the pool. Default None for no saving.
             logs_folder (str): the folder structure to use when saving logs to blob. Default None will save to /stdout_stderr/ folder in specified blob container.
-            end_job_on_task_failure (bool): whether to end the job if a task fails. Default False.
             task_retries (int): number of times to retry a task that fails. Default 0.
             mark_complete_after_tasks_run (bool): whether to mark the job as completed when all tasks finish running. Default False.
         """
@@ -1089,7 +1087,6 @@ class AzureClient:
         helpers.add_job(
             job_id=job_id_r,
             pool_id=p_name,
-            end_job_on_task_failure=end_job_on_task_failure,
             batch_client=self.batch_client,
             task_retries=task_retries,
             mark_complete=mark_complete_after_tasks_run,

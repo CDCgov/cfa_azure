@@ -32,9 +32,9 @@ class AzureClient:
             use_env_vars (bool): set to True to load configuration from environment variables
 
             credential_method details:
-                        - 'identity' uses managed identity linked to VM
-                        - 'sp' uses service principal from config/env
-                        - 'env' uses environment credential based on env variables
+                - 'identity' uses managed identity linked to VM
+                - 'sp' uses service principal from config/env
+                - 'env' uses environment credential based on env variables
 
         Returns:
             AzureClient object
@@ -55,6 +55,7 @@ class AzureClient:
         logger.debug("Attributes initialized in client.")
 
         if not config_path and not use_env_vars:
+            logger.error("No configureation method specified in initialization.")
             raise Exception(
                 "No configuration method specified. Please provide a config path or set `use_env_vars=True` to load settings from environment variables."
             )
@@ -64,6 +65,7 @@ class AzureClient:
             try:
                 missing_vars = helpers.check_env_req()
                 if missing_vars:
+                    logger.error(f"Missing the following variables: {missing_vars}.")
                     raise ValueError(
                         f"Missing required environment variables: {', '.join(missing_vars)}"
                     )
@@ -190,6 +192,7 @@ class AzureClient:
             self.credential_method = credential_method
         if "identity" in self.credential_method.lower():
             self.cred = ManagedIdentityCredential()
+            logger.debug('ManagedIdentityCredential set.')
         elif "sp" in self.credential_method.lower():
             if "sp_secrets" not in self.config["Authentication"].keys():
                 sp_secret = helpers.get_sp_secret(
@@ -200,6 +203,7 @@ class AzureClient:
                 client_id=self.config["Authentication"]["sp_application_id"],
                 client_secret=sp_secret,
             )
+            logger.debug("ClientSecretCredential set.")
         elif "env" in self.credential_method.lower():
             keys = os.environ.keys()
             if (
@@ -215,9 +219,11 @@ class AzureClient:
                 )
             else:
                 self.cred = EnvironmentCredential()
+                logger.debug("EnvironmentCredential set.")
         else:
+            logger.error("No correct credential method provided.")
             raise Exception(
-                "please choose a credential_method from 'identity', 'sp', 'ext_user', 'env' and try again."
+                "Please choose a credential_method from 'identity', 'sp', 'ext_user', 'env' and try again."
             )
         if "sp_secrets" not in self.config["Authentication"].keys():
             sp_secret = helpers.get_sp_secret(self.config, self.cred)
@@ -226,12 +232,14 @@ class AzureClient:
             client_id=self.config["Authentication"]["sp_application_id"],
             client_secret=sp_secret,
         )
+        logger.debug("SecretCredential established.")
         self.batch_cred = ServicePrincipalCredentials(
             client_id=self.config["Authentication"]["sp_application_id"],
             tenant=self.config["Authentication"]["tenant_id"],
             secret=sp_secret,
             resource="https://batch.core.windows.net/",
         )
+        logger.debug("ServicePrincipalCredentials established.")
 
     def _initialize_registry(self):
         """Called by init to initialize the registry URL and details"""
@@ -260,6 +268,7 @@ class AzureClient:
                 repo_name=repository_name,
                 tag_name=tag_name,
             )
+        logger.debug("Registry initialized.")
 
     def _initialize_pool(self):
         """Called by init to initialize the pool"""
@@ -307,6 +316,7 @@ class AzureClient:
                 pass
         else:
             pass
+        logger.debug("Pool info initialized.")
 
     def _initialize_containers(self):
         """Called by init to initialize input and output containers"""
@@ -327,6 +337,7 @@ class AzureClient:
                 output_container_name=self.output_container_name,
                 force_update=False,
             )
+        logger.debug("Container info initialized.")
 
     def set_debugging(self, debug: bool) -> None:
         """required method that determines whether debugging is on or off. Debug = True for 'on', debug = False for 'off'.

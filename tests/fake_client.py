@@ -12,6 +12,7 @@ FAKE_BLOBS = ["some_path/fake_blob_1.txt", "some_path/fake_blob_2.csv"]
 FAKE_BLOB_CONTENT = "Test Blob Content"
 FAKE_CONTAINER_IMAGE = "Test Container Image"
 FAKE_CONTAINER_REGISTRY = "Test Container Registry"
+FAKE_REPO_NAME = "fake repo"
 FAKE_CREDENTIAL = "Test Credential"
 FAKE_FOLDER = "/test_folder"
 FAKE_FOLDER_CONTENTS = [
@@ -113,6 +114,12 @@ class FakeClient:
 
         def add(self, job):
             return True
+
+        def get(self, job):
+            return True
+
+        def list(self):
+            return []
 
     class FakeTag:
         def __init__(self, tag):

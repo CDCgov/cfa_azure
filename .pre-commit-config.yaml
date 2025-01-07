@@ -28,27 +28,12 @@ repos:
   hooks:
     - id: ruff
 #####
-# R
-#-   repo: https://github.com/lorenzwalthert/precommit
-#    rev: v0.3.2.9023
-#    hooks:
-#    -   id: style-files
-#    -   id: lintr
-#####
 # Java
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
   rev: v2.11.0
   hooks:
   - id: pretty-format-java
     args: [--aosp,--autofix]
-#####
-# Julia
-# Due to lack of first-class Julia support, this needs Julia local install
-#   and JuliaFormatter.jl installed in the library
-# - repo: https://github.com/domluna/JuliaFormatter.jl
-#   rev: v1.0.39
-#   hooks:
-#   - id: julia-formatter
 #####
 # Secrets
 -   repo: https://github.com/Yelp/detect-secrets

@@ -1,0 +1,20 @@
+Metadata-Version: 2.1
+Name: cfa_azure
+Version: 1.1.2
+Summary: module for use with Azure and Azure Batch
+Author: Ryan Raasch
+Author-email: xng3@cdc.gov
+License-File: LICENSE
+Requires-Dist: azure-identity>=1.16.1
+Requires-Dist: azure-keyvault>=4.2.0
+Requires-Dist: azure-batch>=14.0.0
+Requires-Dist: azure-mgmt-batch>=17.1.0
+Requires-Dist: azure-mgmt-resource>=21.2.1
+Requires-Dist: azure-storage-blob>=12.17.0
+Requires-Dist: azure-containerregistry>=1.2.0
+Requires-Dist: cryptography>=43.0.1
+Requires-Dist: toml>=0.10.2
+Requires-Dist: pandas
+Requires-Dist: pathlib
+Requires-Dist: docker
+Requires-Dist: pyyaml

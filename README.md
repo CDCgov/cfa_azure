@@ -1,5 +1,16 @@
-# cfa_azure module
-## created by Ryan Raasch (Peraton)
+![Version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FCDCgov%2Fcfa_azure%2Frefs%2Fheads%2Fmaster%2Fpyproject.toml&query=%24.tool.poetry.version&style=plastic&label=version&color=lightgray)
+![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&style=plastic&link=https://raw.githubusercontent.com/CDCgov/cfa_azure/refs/heads/master/.pre-commit-config.yaml)
+![pre-commit](https://github.com/CDCgov/cfa_azure/workflows/pre-commit/badge.svg?style=plastic&link=https://github.com/CDCgov/cfa_azure/actions/workflows/pre-commit.yaml)
+![CI](https://github.com/CDCgov/cfa_azure/workflows/Python%20Unit%20Tests%20with%20Coverage/badge.svg?style=plastic&link=https://github.com/CDCgov/cfa_azure/actions/workflows/pre-commit.yaml&link=https://github.com/CDCgov/cfa_azure/actions/workflows/ci.yaml)
+![GitHub License](https://img.shields.io/github/license/cdcgov/cfa_azure?style=plastic&link=https://github.com/CDCgov/cfa_azure/blob/master/LICENSE)
+![Python](https://img.shields.io/badge/python-3670A0?logo=python&logoColor=ffdd54&style=plastic)
+![Azure](https://img.shields.io/badge/Microsoft-Azure-blue?logo=microsoftazure&logoColor=white&style=plastic)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/cdcgov/cfa_azure?style=plastic)
+
+
+
+# cfa_azure Python Package
+## Created by Ryan Raasch (Peraton) for CFA
 
 ## ***Version 1.x.x WARNING***
 The expected configuration.toml has changed several keys to make it easier on users to find the right information in the Azure Management Console. The following keys have changed:
@@ -9,17 +20,49 @@ The expected configuration.toml has changed several keys to make it easier on us
 
 Refer to the example_config.toml in the examples folder, found [here](examples/example_config.toml) to view the required keys/values needed in the configuration file.
 
+# Outline
+- [Description](#description)
+- [Getting Started](#getting-started)
+- [Components](#components)
+  - [clients](#clients)
+    - [Logging](#logging)
+    - [Using Various Credential Methods](#using-various-credential-methods)
+    - [Persisting stdout and stderr to Blob Storage](#persisting-stdout-and-stderr-to-blob-storage)
+    - [Availability Zones](#availability-zones)
+    - [Updated High Performance Compute Image](#updated-high-performance-compute-image)
+    - [AzureClient Methods](#azureclient-methods)
+    - [Running Jobs and Tasks](#running-jobs-and-tasks)
+  - [automation](#automation)
+  - [helpers](#helpers)
+    - [Helpers Functions](#helpers-functions)
+  - [Common Use Case Scenarios](#common-use-case-scenarios)
+- [Public Domain Standard Notice](#public-domain-standard-notice)
+- [License Standard Notice](#license-standard-notice)
+- [Privacy Standard Notice](#privacy-standard-notice)
+- [Contributing Standard Notice](#contributing-standard-notice)
+- [Records Management Standard Notice](#records-management-standard-notice)
+- [Additional Standard Notices](#additional-standard-notices)
+
 # Description
 The `cfa_azure` python module is intended to ease the challenge of working with Azure via multiple Azure python modules which require the correct steps and many lines of code to execute. `cfa_azure` simplifies many repeated workflows when interacting with Azure, Blob Storage, Batch, and more. For example, creating a pool in Azure may take different credentials and several clients to complete, but with `cfa_azure`, creating a pool is reduced to a single function with only a few parameters.
 
+# Getting Started
+In order to use the `cfa_azure` library, you need [Python 3.8 or higher](https://www.python.org/downloads/), [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/), and any python package manager.
+
+To install using pip:
+```
+pip install git+https://github.com/CDCgov/cfa_azure.git
+```
+
 # Components
-The `cfa_azure` module is composed of three submodules: `clients`, `automation` and `helpers`. The module `clients` contains what we call the AzureClient, which combines the multiple Azure Clients needed to interact with Azure and consolidates to a single client. The module `helpers` contains more fine-grained functions which are used within the `clients` module or independently for more control when working with Azure. The `automation` module introduces a simplified way to upload files and submit jobs/tasks to Batch via another configuration toml file. For help getting started with the `automation` module, please see [this overview](automation_README.md).
+The `cfa_azure` module is composed of three submodules: `clients`, `automation` and `helpers`. The module `clients` contains what we call the AzureClient, which combines the multiple Azure Clients needed to interact with Azure and consolidates to a single client. The module `helpers` contains more fine-grained functions which are used within the `clients` module or independently for more control when working with Azure. The `automation` module introduces a simplified way to upload files and submit jobs/tasks to Batch via another configuration toml file. For help getting started with the `automation` module, please see [this overview](docs/automation_README.md).
 
 
-### clients
+## clients
 Classes:
 - AzureClient: a client object used for interacting with Azure. It initializes based on a supplied configuration file and creates various Azure clients under the hood. It can be used to upload containers, upload files, run jobs, and more.
 
+### Logging
 To customize the logging capabilities of cfa_azure, two environment variables can be set. These are LOG_LEVEL and LOG_OUTPUT.
 
 LOG_LEVEL: sets the logging level. Choices are:
@@ -41,7 +84,7 @@ export LOG_OUTPUT="stdout"
 ```
 
 
-**Using Various Credential Methods**
+### Using Various Credential Methods
 
 When instantiating a AzureClient object, there is an option to set which `credential_method` to use. Previously, only a service principal could be used. Now, there are three an options to choose `identity`, `sp`, or `env`.
 - `identity`: Uses the managed identity associated with the VM where the code is running.
@@ -70,7 +113,7 @@ os.environ["AZURE_CLIENT_SECRET"] = "your-client-secret" #pragma: allowlist secr
 client = AzureClient(credential_method="env", use_env_vars=True)
 ```
 
-**Persisting stdout and stderr to Blob Storage**
+### Persisting stdout and stderr to Blob Storage
 
 In certain situations, it is beneficial to save the stdout and stderr from each task to Blob Storage (like when using autoscale pools). It is possible to persist these to Blob Storage by specifying the blob container name in the `save_logs_to_blob` parameter when using `client.add_job()`. *Note that the blob container specified must be mounted to the pool being used for the job.
 
@@ -79,7 +122,7 @@ For example, if we would like to persist stdout and stderr to the blob container
 client.add_job("persisting_test", save_logs_to_blob = "input-test")
 ```
 
-**Availability Zones**
+### Availability Zones
 
 To make use of Azure's availability zone functionality there is a parameter available in the `set_pool_info()` method called `availability_zones`. To use availability zones when building a pool, set this parameter to True. If you want to stick with the default Regional configuration, this parameter can be left out or set to False. Turn availability zone on like the following:
 ```
@@ -90,7 +133,8 @@ client.set_pool_info(
 )
 ```
 
-**Updated High Performance Compute Image**
+### Updated High Performance Compute Image
+
 The default base Ubuntu image used for Azure Batch nodes is Ubuntu 20.04, which is nearing end of life on 4/22/2025. There is an option to use a high performance compute image using Ubuntu 22.04 as the base OS. It's important to use a compatible VM size with these HPC images. To implement a HPC image for Azure pools, set the parameter `use_hpc_image` to `True` in the `AzureClient` method `set_pool_info()`, like the following:
 ```
 client.set_pool_info("autoscale",
@@ -111,7 +155,7 @@ After creating the configuration file (e.g. client_configuration.toml), then use
   client = AzureClient("./client_configuration.toml")
 ```
 
-### Functions
+### AzureClient Methods
 - `create_pool`: creates a new Azure batch pool using default autoscale mode
   **Example:**
   ```
@@ -252,13 +296,13 @@ client.upload_files_to_container(
   )
   ```
 
-### automation
-Please view [this documentation](automation_README.md) on getting started with the `automation` module.
+## automation
+Please view [this documentation](docs/automation_README.md) on getting started with the `automation` module.
 
-### helpers
+## helpers
 The `helpers` module provides a collection of functions that helps manage Azure resources and perform key tasks, such as interacting with Blob storage, Azure Batch, configuration management, and data transformations. Below is an expanded overview of each function.
 
-**Functions:**
+### Helpers Functions
 - `read_config`: reads in a configuration toml file and returns it as a Python dictionary
 ```
 read_config("/path/to/config.toml")
@@ -472,7 +516,7 @@ upload_blob_file("file_path", location="folder/subfolder", container_client=cont
 download_directory("container_name", "src_path", "dest_path", blob_service_client, include_extensions=".txt", verbose=True)
 ```
 
-### Common Use Case Scenarios
+## Common Use Case Scenarios
 
 **Example Workflow**: Uploading files to Blob Storage, creating an Azure Batch Pool, adding jobs, and monitoring tasks.
 

@@ -55,7 +55,9 @@ class AzureClient:
         logger.debug("Attributes initialized in client.")
 
         if not config_path and not use_env_vars:
-            logger.error("No configureation method specified in initialization.")
+            logger.error(
+                "No configureation method specified in initialization."
+            )
             raise Exception(
                 "No configuration method specified. Please provide a config path or set `use_env_vars=True` to load settings from environment variables."
             )
@@ -65,7 +67,9 @@ class AzureClient:
             try:
                 missing_vars = helpers.check_env_req()
                 if missing_vars:
-                    logger.error(f"Missing the following variables: {missing_vars}.")
+                    logger.error(
+                        f"Missing the following variables: {missing_vars}."
+                    )
                     raise ValueError(
                         f"Missing required environment variables: {', '.join(missing_vars)}"
                     )
@@ -192,7 +196,7 @@ class AzureClient:
             self.credential_method = credential_method
         if "identity" in self.credential_method.lower():
             self.cred = ManagedIdentityCredential()
-            logger.debug('ManagedIdentityCredential set.')
+            logger.debug("ManagedIdentityCredential set.")
         elif "sp" in self.credential_method.lower():
             if "sp_secrets" not in self.config["Authentication"].keys():
                 sp_secret = helpers.get_sp_secret(
@@ -1334,7 +1338,7 @@ class AzureClient:
             repo_name (str): the name of the repo
             tag_name (str): the tag name
             use_device_code (bool): whether to use device code for authentication to ACR. Default False.
-            
+
         Returns:
             str: full container name
         """
@@ -1499,7 +1503,7 @@ class AzureClient:
         return pool_info
 
     def get_virtual_machine_configuration(self, pool_name: str) -> dict:
-        """ 
+        """
         Args:
             pool_name (str): name of pool from which to retrieve VM configuration
 
@@ -1540,7 +1544,7 @@ class AzureClient:
         )
 
     def list_blob_files(self, blob_container: str = None):
-        """ 
+        """
         Args:
             blob_container (str|None): name of Blob Container to list files from
         """
@@ -1569,7 +1573,7 @@ class AzureClient:
         return filenames
 
     def delete_blob_file(self, blob_name: str, container_name: str):
-        """ 
+        """
         Args:
             blob_name (str): name of blob file
             container_name (str): name of blob container
@@ -1581,7 +1585,7 @@ class AzureClient:
         logger.debug(f"Deleted {blob_name}.")
 
     def delete_blob_folder(self, folder_path: str, container_name: str):
-        """ 
+        """
         Args:
             folder_path (str): path to folder to delete
             container_name (str): name of Blob container

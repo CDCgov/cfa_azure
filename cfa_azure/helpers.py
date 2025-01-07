@@ -430,7 +430,7 @@ def update_pool(
     account_name: str,
     resource_group_name: str,
 ) -> dict:
-    """ 
+    """
     Args:
         pool_name (str): name of pool to update
         pool_parameters (dict): pool parameters dictionary
@@ -585,7 +585,7 @@ def upload_blob_file(
 
 
 def walk_folder(folder: str) -> list | None:
-    """ 
+    """
     Args:
         folder (str): folder path
 
@@ -970,11 +970,7 @@ def add_task_to_job(
         return task_id
 
 
-def monitor_tasks(
-    job_id: str,
-    timeout: int,
-    batch_client: object
-):
+def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     """monitors tasks running in the job based on job ID
 
     Args:
@@ -1986,7 +1982,7 @@ def get_container_registry_client(
     endpoint: str, credential: object, audience: str
 ):
     """
-    Args: 
+    Args:
         endpoint (str): the endpoint to the container registry
         credential (object): a credential object
         audience (str): audience for container registry client
@@ -2074,9 +2070,9 @@ def generate_autoscale_formula(max_nodes: int = 8) -> str:
 
 
 def format_rel_path(rel_path: str) -> str:
-    """ 
+    """
     Formats a relative path into the right format for Azure services
-    
+
     Args:
         rel_path (str): relative mount path
 
@@ -2090,7 +2086,7 @@ def format_rel_path(rel_path: str) -> str:
 
 
 def get_timeout(_time: str) -> int:
-    """ 
+    """
     Args:
         _time (str): formatted timeout string
 
@@ -2114,7 +2110,7 @@ def get_timeout(_time: str) -> int:
 def list_blobs_flat(
     container_name: str, blob_service_client: BlobServiceClient, verbose=True
 ):
-    """ 
+    """
     Args:
         container_name (str): name of Blob container
         blob_service_client (object): instance of BlobServiceClient
@@ -2178,7 +2174,7 @@ def get_log_level() -> int:
 def delete_blob_snapshots(
     blob_name: str, container_name: str, blob_service_client: object
 ):
-    """ 
+    """
     Args:
         blob_name (str): name of blob
         container_name (str): name of container
@@ -2194,7 +2190,7 @@ def delete_blob_snapshots(
 def delete_blob_folder(
     folder_path: str, container_name: str, blob_service_client: object
 ):
-    """ 
+    """
     Args:
         folder_path (str): path to blob folder
         container_name (str): name of Blob container
@@ -2217,7 +2213,7 @@ def delete_blob_folder(
 
 
 def format_extensions(extension):
-    """ 
+    """
     Formats extensions to include periods.
     Args:
         extension (str | list): string or list of strings of extensions. Can include a leading period but does not need to.
@@ -2287,7 +2283,7 @@ def get_rel_mnt_path(
     account_name: str,
     batch_mgmt_client: object,
 ):
-    """ 
+    """
     Args:
         blob_name (str): name of blob container
         pool_name (str): name of pool
@@ -2329,7 +2325,7 @@ def get_pool_mounts(
     account_name: str,
     batch_mgmt_client: object,
 ):
-    """ 
+    """
     Args:
         pool_name (str): name of pool
         resource_group_name (str): name of resource group in Azure

@@ -9,7 +9,7 @@ from cfa_azure.clients import AzureClient
 
 def run_experiment(exp_config: str, auth_config: str | None = None):
     """Run jobs and tasks automatically based on the provided experiment config.
-    
+
     Args:
         exp_config (str): path to experiment config file (toml)
         auth_config (str): path to authorization config file (toml). Optional. Required when not using environment variables.

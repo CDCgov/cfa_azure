@@ -144,6 +144,17 @@ client.set_pool_info("autoscale",
     )
 ```
 
+**Configuration**
+An AzureClient object can be instantiated and initialized with pool, mounted containers and container registries using a configuration file. This is especially useful if the same pool will be used for running multiple batch jobs and experiments. Use the following example to create a configuration file:
+
+[Configuration File](examples/client_configuration.toml)
+
+
+After creating the configuration file (e.g. client_configuration.toml), then use the following snippet to initialize the AzureClient object:
+```
+  client = AzureClient("./client_configuration.toml")
+```
+
 ### AzureClient Methods
 - `create_pool`: creates a new Azure batch pool using default autoscale mode
   **Example:**

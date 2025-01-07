@@ -9,9 +9,10 @@ from cfa_azure.clients import AzureClient
 
 def run_experiment(exp_config: str, auth_config: str | None = None):
     """Run jobs and tasks automatically based on the provided experiment config.
-
-    exp_config (str): path to experiment config file (toml)
-    auth_config (str): path to authorization config file (toml). Optional. Required when not using environment variables.
+    
+    Args:
+        exp_config (str): path to experiment config file (toml)
+        auth_config (str): path to authorization config file (toml). Optional. Required when not using environment variables.
     """
 
     # read files
@@ -131,9 +132,9 @@ def run_experiment(exp_config: str, auth_config: str | None = None):
 
 def run_tasks(task_config: str, auth_config: str | None = None):
     """Run jobs and tasks automatically based on the provided task config.
-
-    task_config (str): path to task config file (toml)
-    auth_config (str): path to authorization config file (toml). Optional. Required if not using environment variables to authenticate.
+    Args:
+        task_config (str): path to task config file (toml)
+        auth_config (str): path to authorization config file (toml). Optional. Required if not using environment variables to authenticate.
     """
 
     # read files

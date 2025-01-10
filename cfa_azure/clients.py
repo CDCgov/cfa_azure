@@ -56,7 +56,7 @@ class AzureClient:
 
         if not config_path and not use_env_vars:
             logger.error(
-                "No configureation method specified in initialization."
+                "No configuration method specified in initialization."
             )
             raise Exception(
                 "No configuration method specified. Please provide a config path or set `use_env_vars=True` to load settings from environment variables."

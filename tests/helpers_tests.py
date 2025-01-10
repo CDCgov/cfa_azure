@@ -457,15 +457,10 @@ class TestHelpers(unittest.TestCase):
     @patch("cfa_azure.helpers.get_timeout", MagicMock(return_value=10))
     def test_monitor_tasks(self):
         batch_client = FakeClient()
-        batch_mgmt_client = FakeClient()
         status = cfa_azure.helpers.monitor_tasks(
             "test_job_id",
             10,
             batch_client,
-            FAKE_RESOURCE_GROUP,
-            FAKE_ACCOUNT,
-            FAKE_BATCH_POOL,
-            batch_mgmt_client,
         )
         self.assertTrue(status["completed"])
         self.assertIsNotNone(status["elapsed time"])

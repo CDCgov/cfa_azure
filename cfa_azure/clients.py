@@ -32,9 +32,9 @@ class AzureClient:
             use_env_vars (bool): set to True to load configuration from environment variables
 
             credential_method details:
-                        - 'identity' uses managed identity linked to VM
-                        - 'sp' uses service principal from config/env
-                        - 'env' uses environment credential based on env variables
+                - 'identity' uses managed identity linked to VM
+                - 'sp' uses service principal from config/env
+                - 'env' uses environment credential based on env variables
 
         Returns:
             AzureClient object
@@ -55,6 +55,9 @@ class AzureClient:
         logger.debug("Attributes initialized in client.")
 
         if not config_path and not use_env_vars:
+            logger.error(
+                "No configuration method specified in initialization."
+            )
             raise Exception(
                 "No configuration method specified. Please provide a config path or set `use_env_vars=True` to load settings from environment variables."
             )
@@ -64,6 +67,9 @@ class AzureClient:
             try:
                 missing_vars = helpers.check_env_req()
                 if missing_vars:
+                    logger.error(
+                        f"Missing the following variables: {missing_vars}."
+                    )
                     raise ValueError(
                         f"Missing required environment variables: {', '.join(missing_vars)}"
                     )
@@ -190,6 +196,7 @@ class AzureClient:
             self.credential_method = credential_method
         if "identity" in self.credential_method.lower():
             self.cred = ManagedIdentityCredential()
+            logger.debug("ManagedIdentityCredential set.")
         elif "sp" in self.credential_method.lower():
             if "sp_secrets" not in self.config["Authentication"].keys():
                 sp_secret = helpers.get_sp_secret(
@@ -200,6 +207,7 @@ class AzureClient:
                 client_id=self.config["Authentication"]["sp_application_id"],
                 client_secret=sp_secret,
             )
+            logger.debug("ClientSecretCredential set.")
         elif "env" in self.credential_method.lower():
             keys = os.environ.keys()
             if (
@@ -215,9 +223,11 @@ class AzureClient:
                 )
             else:
                 self.cred = EnvironmentCredential()
+                logger.debug("EnvironmentCredential set.")
         else:
+            logger.error("No correct credential method provided.")
             raise Exception(
-                "please choose a credential_method from 'identity', 'sp', 'ext_user', 'env' and try again."
+                "Please choose a credential_method from 'identity', 'sp', 'ext_user', 'env' and try again."
             )
         if "sp_secrets" not in self.config["Authentication"].keys():
             sp_secret = helpers.get_sp_secret(self.config, self.cred)
@@ -226,12 +236,14 @@ class AzureClient:
             client_id=self.config["Authentication"]["sp_application_id"],
             client_secret=sp_secret,
         )
+        logger.debug("SecretCredential established.")
         self.batch_cred = ServicePrincipalCredentials(
             client_id=self.config["Authentication"]["sp_application_id"],
             tenant=self.config["Authentication"]["tenant_id"],
             secret=sp_secret,
             resource="https://batch.core.windows.net/",
         )
+        logger.debug("ServicePrincipalCredentials established.")
 
     def _initialize_registry(self):
         """Called by init to initialize the registry URL and details"""
@@ -260,6 +272,7 @@ class AzureClient:
                 repo_name=repository_name,
                 tag_name=tag_name,
             )
+        logger.debug("Registry initialized.")
 
     def _initialize_pool(self):
         """Called by init to initialize the pool"""
@@ -307,6 +320,7 @@ class AzureClient:
                 pass
         else:
             pass
+        logger.debug("Pool info initialized.")
 
     def _initialize_containers(self):
         """Called by init to initialize input and output containers"""
@@ -327,6 +341,7 @@ class AzureClient:
                 output_container_name=self.output_container_name,
                 force_update=False,
             )
+        logger.debug("Container info initialized.")
 
     def set_debugging(self, debug: bool) -> None:
         """required method that determines whether debugging is on or off. Debug = True for 'on', debug = False for 'off'.
@@ -490,7 +505,7 @@ class AzureClient:
 
         Args:
             name (str): desired name of output container.
-            output_mount_dir (str, optional): the path of the output mount directory. Defaults to "output".
+            rel_mount_dir (str, optional): the path of the relative mount directory to use.
         """
         rel_mount_dir = helpers.format_rel_path(rel_mount_dir)
         # add to self.mounts
@@ -594,9 +609,9 @@ class AzureClient:
         """Changes the input and/or output containers mounted in an existing Azure batch pool
 
         Args:
-            pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
             input_container_name (str): unique identifier for the Blob storage container that will be mapped to /input path
             output_container_name (str): unique identifier for the Blob storage container that will be mapped to /output path
+            pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
             force_update (bool): optional, deletes the existing pool without checking if it is already running any tasks
         """
         # Check if pool already exists
@@ -713,9 +728,9 @@ class AzureClient:
         """Changes the input and/or output containers mounted in an existing Azure batch pool
 
         Args:
+            containers (list[dict]): a list of dictionaries containing the name and relative_mount_dir keys.
+                Example: [{'name': 'input-container', 'relative_mount_dir': 'input'}]
             pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
-            input_container_name (str): unique identifier for the Blob storage container that will be mapped to /input path
-            output_container_name (str): unique identifier for the Blob storage container that will be mapped to /output path
             force_update (bool): optional, deletes the existing pool without checking if it is already running any tasks
         """
         # Check if pool already exists
@@ -830,6 +845,7 @@ class AzureClient:
         """Updates scale mode (fixed or autoscale) and related settings for an existing Azure batch pool
 
         Args:
+            scaling (str): scaling mode for pool. Choices are 'fixed' and 'autoscale'.
             pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
             dedicated_nodes (int): optional, the target number of dedicated compute nodes for the pool in fixed scaling mode. Defaults to None.
             low_priority_nodes (int): optional, the target number of spot compute nodes for the pool in fixed scaling mode. Defaults to None.
@@ -972,7 +988,7 @@ class AzureClient:
         Args:
             files (list): list of paths to files to upload
             container_name (str): name of Blob Storage Container to upload file to
-            location (str): the location (folder) inside the Blob container. Uploaded to root if "". Default is "".
+            location_in_blob (str): the location (folder) inside the Blob container. Uploaded to root if "". Default is "".
             verbose (bool): whether to be verbose in uploaded files. Defaults to False
         """
         container_client = self.blob_service_client.get_container_client(
@@ -1054,7 +1070,7 @@ class AzureClient:
             job_id (str): name of job
             pool_name (str|None): pool to use for job. If None, will used self.pool_name from client. Default None.
             save_logs_to_blob (str): the name of the blob container. Must be mounted to the pool. Default None for no saving.
-            logs_folder (str): the folder structure to use when saving logs to blob. Default None will save to /stdout_stderr/ folder in specified blob container.
+            logs_folder (str|None): the folder structure to use when saving logs to blob. Default None will save to /stdout_stderr/ folder in specified blob container.
             task_retries (int): number of times to retry a task that fails. Default 0.
             mark_complete_after_tasks_run (bool): whether to mark the job as completed when all tasks finish running. Default False.
         """
@@ -1219,6 +1235,7 @@ class AzureClient:
 
         Args:
             job_id (str): job id
+            timeout (str): timeout for monitoring job. If omitted, will use None.
         """
         # monitor the tasks
         logger.debug(f"starting to monitor job {job_id}.")
@@ -1313,6 +1330,18 @@ class AzureClient:
         tag: str,
         use_device_code: bool = False,
     ) -> str:
+        """Upload local docker image to Azure Container Registry.
+
+        Args:
+            image_name (str): local Docker image name
+            registry_name (str): the name of the registry in Azure Container Registry
+            repo_name (str): the name of the repo
+            tag_name (str): the tag name
+            use_device_code (bool): whether to use device code for authentication to ACR. Default False.
+
+        Returns:
+            str: full container name
+        """
         self.full_container_name = helpers.upload_docker_image(
             image_name, registry_name, repo_name, tag, use_device_code
         )
@@ -1474,6 +1503,13 @@ class AzureClient:
         return pool_info
 
     def get_virtual_machine_configuration(self, pool_name: str) -> dict:
+        """
+        Args:
+            pool_name (str): name of pool from which to retrieve VM configuration
+
+        Returns:
+            dict: VM configuration dictionary
+        """
         pool_info = self.get_pool_full_info(pool_name)
         scale_settings = pool_info.scale_settings
         scaling = "autoscale" if scale_settings.auto_scale else "fixed"
@@ -1508,6 +1544,10 @@ class AzureClient:
         )
 
     def list_blob_files(self, blob_container: str = None):
+        """
+        Args:
+            blob_container (str|None): name of Blob Container to list files from
+        """
         if not self.mounts and blob_container is None:
             logger.warning(
                 "Please specify a blob container or have mounts associated with the client."
@@ -1532,14 +1572,24 @@ class AzureClient:
                 filenames += _files
         return filenames
 
-    def delete_blob_file(self, blob_name, container_name):
+    def delete_blob_file(self, blob_name: str, container_name: str):
+        """
+        Args:
+            blob_name (str): name of blob file
+            container_name (str): name of blob container
+        """
         logger.debug(f"Deleting blob {blob_name} from {container_name}.")
         helpers.delete_blob_snapshots(
             blob_name, container_name, self.blob_service_client
         )
         logger.debug(f"Deleted {blob_name}.")
 
-    def delete_blob_folder(self, folder_path, container_name):
+    def delete_blob_folder(self, folder_path: str, container_name: str):
+        """
+        Args:
+            folder_path (str): path to folder to delete
+            container_name (str): name of Blob container
+        """
         logger.debug(f"Deleting files in {folder_path} folder.")
         helpers.delete_blob_folder(
             folder_path, container_name, self.blob_service_client

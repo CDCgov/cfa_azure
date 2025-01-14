@@ -1378,6 +1378,7 @@ def get_pool_parameters(
         use_default_autoscale_formula (bool, optional)
         max_autoscale_nodes (int): maximum number of nodes to use with autoscaling. Default 3.
         task_slots_per_node (int): number of task slots per node. Default is 1.
+        availability_zones (bool): whether to use availability zones. Default False.
         use_hpc_image (bool): whether to use a high performance compute image for each node. Default False.
 
     Returns:
@@ -1429,12 +1430,13 @@ def get_pool_parameters(
             "taskSlotsPerNode": task_slots_per_node,
             "taskSchedulingPolicy": {"nodeFillType": "Spread"},
             "deploymentConfiguration": get_deployment_config(
-                container_image_name,
-                container_registry_url,
-                container_registry_server,
-                config,
-                credential,
-                use_hpc_image,
+                container_image_name=container_image_name,
+                container_registry_url=container_registry_url,
+                container_registry_server=container_registry_server,
+                config=config,
+                credential=credential,
+                availability_zones=availability_zones,
+                use_hpc_image=use_hpc_image,
             ),
             "networkConfiguration": get_network_config(config),
             "scaleSettings": scale_settings,

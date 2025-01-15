@@ -168,7 +168,7 @@ class AzureClient:
         logger.debug("generated Blob Service Client.")
         # create batch mgmt client
         self.batch_mgmt_client = helpers.get_batch_mgmt_client(
-            self.config, self.secret_cred
+            config=self.config, credential=self.secret_cred
         )
         logger.debug("generated Batch Management Client.")
         # create batch service client

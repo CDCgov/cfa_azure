@@ -1242,11 +1242,7 @@ class AzureClient:
         monitor = helpers.monitor_tasks(
             job_id,
             timeout,
-            self.batch_client,
-            self.resource_group_name,
-            self.account_name,
-            self.pool_name,
-            self.batch_mgmt_client,
+            self.batch_client
         )
         print(monitor)
 

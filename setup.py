@@ -21,5 +21,6 @@ setup(
         "pathlib",
         "docker",
         "pyyaml",
+        "re"
     ],
 )

@@ -3,12 +3,12 @@ import datetime
 import json
 import logging
 import os
+import re
 import subprocess as sp
 import time
 from datetime import datetime as dt
 from os import path, walk
 from pathlib import Path
-import re
 from zoneinfo import ZoneInfo as zi
 
 import azure.batch.models as batchmodels
@@ -1423,9 +1423,11 @@ def get_pool_parameters(
         logger.debug("Returning empty pool parameters.")
         return {}
 
-    #check task_slots_per_node
+    # check task_slots_per_node
     vm_size = config["Batch"]["pool_vm_size"]
-    task_slots = check_tasks_v_cores(task_slots=task_slots_per_node, vm_size=vm_size)
+    task_slots = check_tasks_v_cores(
+        task_slots=task_slots_per_node, vm_size=vm_size
+    )
     pool_parameters = {
         "identity": get_user_identity(config),
         "properties": {
@@ -2364,6 +2366,7 @@ def get_pool_mounts(
             )
         )
     return mounts
+
 
 def check_tasks_v_cores(task_slots: int, vm_size: int) -> int:
     """

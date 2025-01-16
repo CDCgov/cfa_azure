@@ -39,7 +39,7 @@ from yaml import SafeLoader, dump, load
 logger = logging.getLogger(__name__)
 
 
-def read_config(config_path: str = "./configuration.toml"):
+def read_config(config_path: str = "./configuration.toml") -> dict:
     """takes in a path to a configuration toml file and returns it as a json object
 
     Args:
@@ -235,7 +235,7 @@ def create_blob_containers(
     """creates the input and output Blob containers based on given names
 
     Args:
-        blob_service_client (object): an instance of the Batch Management Client
+        blob_service_client (object): an instance of the Blob Service Client
         input_container_name (str): user specified name for input container. Default is None.
         output_container_name (str): user specified name for output container. Default is None.
     """
@@ -277,9 +277,11 @@ def get_batch_pool_json(
         output_container_name (str): user specified name for input container
         config (dict): config dictionary
         autoscale_formula_path (str): path to the autoscale formula
+        autoscale_evaluation_interval (str): time period for autoscale evaluation. Default is 15 minutes.
+        fixedscale_resize_timeout (str): timeout for resizing fixed scale pools. Default is 15 minutes.
 
     Returns:
-        json: relevant information for Batch pool creation
+        dict: relevant information for Batch pool creation
     """
     logger.debug("Preparing batch pool configuration...")
     # User-assigned identity for the pool
@@ -428,6 +430,17 @@ def update_pool(
     account_name: str,
     resource_group_name: str,
 ) -> dict:
+    """
+    Args:
+        pool_name (str): name of pool to update
+        pool_parameters (dict): pool parameters dictionary
+        batch_mgmt_client (object): instance of BatchManagementClient object
+        account_name (str): name of Azure Account
+        resource_group_name (str): name of Resource Group in Azure
+
+    Returns:
+        dict: json of pool_id and updation_time
+    """
     print("Updating the pool...")
 
     start_time = datetime.datetime.now()
@@ -572,6 +585,13 @@ def upload_blob_file(
 
 
 def walk_folder(folder: str) -> list | None:
+    """
+    Args:
+        folder (str): folder path
+
+    Returns:
+        list: list of file names contained in folder
+    """
     file_list = []
     for dirname, _, fname in walk(folder):
         for f in fname:
@@ -738,7 +758,7 @@ def add_job(
     Args:
         job_id (str): name of the job to run
         pool_id (str): name of pool
-        batch_client (object): batch client object
+        batch_client (object): BatchClient object
         task_retries (int): number of times to retry the task if it fails. Default 3.
         mark_complete (bool): whether to mark the job complete after tasks finish running. Default False.
     """
@@ -950,11 +970,7 @@ def add_task_to_job(
         return task_id
 
 
-def monitor_tasks(
-    job_id: str,
-    timeout: int,
-    batch_client: object
-):
+def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     """monitors tasks running in the job based on job ID
 
     Args:
@@ -1314,7 +1330,7 @@ def get_mount_config(blob_config: list[str]):
     """takes blob configurations as input and combines them to create a mount configuration.
 
     Args:
-        Blob configurations, usually from get_blob_config(). Usually one for input blob and one for output blob.
+        blob_config (list): usually from get_blob_config(). Usually one for input blob and one for output blob.
 
     Returns:
         list: mount configuration to used with get_pool_parameters.
@@ -1362,6 +1378,7 @@ def get_pool_parameters(
         use_default_autoscale_formula (bool, optional)
         max_autoscale_nodes (int): maximum number of nodes to use with autoscaling. Default 3.
         task_slots_per_node (int): number of task slots per node. Default is 1.
+        availability_zones (bool): whether to use availability zones. Default False.
         use_hpc_image (bool): whether to use a high performance compute image for each node. Default False.
 
     Returns:
@@ -1413,12 +1430,13 @@ def get_pool_parameters(
             "taskSlotsPerNode": task_slots_per_node,
             "taskSchedulingPolicy": {"nodeFillType": "Spread"},
             "deploymentConfiguration": get_deployment_config(
-                container_image_name,
-                container_registry_url,
-                container_registry_server,
-                config,
-                credential,
-                use_hpc_image,
+                container_image_name=container_image_name,
+                container_registry_url=container_registry_url,
+                container_registry_server=container_registry_server,
+                config=config,
+                credential=credential,
+                availability_zones=availability_zones,
+                use_hpc_image=use_hpc_image,
             ),
             "networkConfiguration": get_network_config(config),
             "scaleSettings": scale_settings,
@@ -1483,13 +1501,13 @@ def download_file(
     src_path: str,
     dest_path: str,
     do_check: bool = True,
-    verbose=False,
+    verbose: bool = False,
 ) -> None:
     """
     Download a file from Azure Blob storage
 
     Args:
-        client (ContainerClient):
+        c_client (ContainerClient):
             Instance of ContainerClient provided with the storage account
         src_path (str):
             Path within the container to the desired file (including filename)
@@ -1499,6 +1517,8 @@ def download_file(
             Name of the storage container containing the file to be downloaded
         do_check (bool):
             Whether or not to do an existence check
+        verbose (bool):
+            Whether to be verbose in printing information
 
     Raises:
         ValueError:
@@ -1745,7 +1765,6 @@ def upload_docker_image(
         registry_name (str): name of Azure Container Registry
         repo_name (str): name of repo
         tag (str): tag for the Docker container. Default is "latest". If None, a timestamp tag will be generated.
-        path_to_dockerfile (str): path to Dockerfile. Default is ./Dockerfile.
         use_device_code (bool): whether to use the device code when authenticating. Default False.
 
     Returns:
@@ -1802,10 +1821,10 @@ def check_pool_exists(
     """Check if a pool exists in Azure Batch
 
     Args:
-        resource_group_name (str):
-        account_name (str):
-        pool_name (str):
-        batch_mgmt_client (object):
+        resource_group_name (str): Azure resource group name
+        account_name (str): Azure account name
+        pool_name (str): name of pool
+        batch_mgmt_client (object): instance of BatchManagementClient
 
     Returns:
         bool: whether the pool exists
@@ -1834,7 +1853,7 @@ def get_pool_info(
         resource_group_name (str): name of resource group
         account_name (str): name of account
         pool_name (str): name of pool
-        batch_mgmt_client (object): instance of Batch Management Client
+        batch_mgmt_client (object): instance of BatchManagementClient
 
     Returns:
         dict: json with name, last_modified, creation_time, vm_size, and task_slots_per_node info
@@ -1866,7 +1885,7 @@ def get_pool_full_info(
         resource_group_name (str): name of resource group
         account_name (str): name of account
         pool_name (str): name of pool
-        batch_mgmt_client (object): instance of Batch Management Client
+        batch_mgmt_client (object): instance of BatchManagementClient
 
     Returns:
         dict: dictionary with full pool information
@@ -1964,6 +1983,12 @@ def check_config_req(config: str):
 def get_container_registry_client(
     endpoint: str, credential: object, audience: str
 ):
+    """
+    Args:
+        endpoint (str): the endpoint to the container registry
+        credential (object): a credential object
+        audience (str): audience for container registry client
+    """
     return ContainerRegistryClient(endpoint, credential, audience=audience)
 
 
@@ -2047,6 +2072,15 @@ def generate_autoscale_formula(max_nodes: int = 8) -> str:
 
 
 def format_rel_path(rel_path: str) -> str:
+    """
+    Formats a relative path into the right format for Azure services
+
+    Args:
+        rel_path (str): relative mount path
+
+    Returns:
+        str: formatted relative path
+    """
     if rel_path.startswith("/"):
         rel_path = rel_path[1:]
         logger.debug(f"path formatted to {rel_path}")
@@ -2054,6 +2088,13 @@ def format_rel_path(rel_path: str) -> str:
 
 
 def get_timeout(_time: str) -> int:
+    """
+    Args:
+        _time (str): formatted timeout string
+
+    Returns:
+        int: integer of timeout in minutes
+    """
     t = _time.split("PT")[-1]
     if "H" in t:
         if "M" in t:
@@ -2071,6 +2112,15 @@ def get_timeout(_time: str) -> int:
 def list_blobs_flat(
     container_name: str, blob_service_client: BlobServiceClient, verbose=True
 ):
+    """
+    Args:
+        container_name (str): name of Blob container
+        blob_service_client (object): instance of BlobServiceClient
+        verbose (bool): whether to be verbose in printing files. Default True.
+
+    Returns:
+        list: list of blobs in Blob container
+    """
     logger.debug("Creating container client for getting Blob info.")
     container_client = blob_service_client.get_container_client(
         container=container_name
@@ -2126,6 +2176,12 @@ def get_log_level() -> int:
 def delete_blob_snapshots(
     blob_name: str, container_name: str, blob_service_client: object
 ):
+    """
+    Args:
+        blob_name (str): name of blob
+        container_name (str): name of container
+        blob_service_client (object): instance of BlobServiceClient
+    """
     blob_client = blob_service_client.get_blob_client(
         container=container_name, blob=blob_name
     )
@@ -2136,6 +2192,12 @@ def delete_blob_snapshots(
 def delete_blob_folder(
     folder_path: str, container_name: str, blob_service_client: object
 ):
+    """
+    Args:
+        folder_path (str): path to blob folder
+        container_name (str): name of Blob container
+        blob_service_client (object): instance of BlobServiceClient
+    """
     # create container client
     c_client = blob_service_client.get_container_client(
         container=container_name
@@ -2153,6 +2215,14 @@ def delete_blob_folder(
 
 
 def format_extensions(extension):
+    """
+    Formats extensions to include periods.
+    Args:
+        extension (str | list): string or list of strings of extensions. Can include a leading period but does not need to.
+
+    Returns:
+        list: list of formatted extensions
+    """
     if isinstance(extension, str):
         extension = [extension]
     ext = []
@@ -2175,6 +2245,7 @@ def check_autoscale_parameters(
     """Checks which arguments are incompatible with the provided scale mode
 
     Args:
+        mode (str): pool mode, chosen from 'fixed' or 'autoscale'
         dedicated_nodes (int): optional, the target number of dedicated compute nodes for the pool in fixed scaling mode. Defaults to None.
         low_priority_nodes (int): optional, the target number of spot compute nodes for the pool in fixed scaling mode. Defaults to None.
         node_deallocation_option (str): optional, determines what to do with a node and its running tasks after it has been selected for deallocation. Defaults to None.
@@ -2214,6 +2285,17 @@ def get_rel_mnt_path(
     account_name: str,
     batch_mgmt_client: object,
 ):
+    """
+    Args:
+        blob_name (str): name of blob container
+        pool_name (str): name of pool
+        resource_group_name (str): name of resource group in Azure
+        account_name (str): name of account in Azure
+        batch_mgmt_object (object): instance of BatchManagementClient
+
+    Returns:
+        str: relative mount path for the blob and pool specified
+    """
     try:
         pool_info = get_pool_full_info(
             resource_group_name=resource_group_name,
@@ -2245,6 +2327,16 @@ def get_pool_mounts(
     account_name: str,
     batch_mgmt_client: object,
 ):
+    """
+    Args:
+        pool_name (str): name of pool
+        resource_group_name (str): name of resource group in Azure
+        account_name (str): name of account in Azure
+        batch_mgmt_client (object): instance of BatchManagementClient
+
+    Returns:
+        list: list of mounts in specified pool
+    """
     try:
         pool_info = get_pool_full_info(
             resource_group_name=resource_group_name,

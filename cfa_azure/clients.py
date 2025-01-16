@@ -1239,11 +1239,7 @@ class AzureClient:
         """
         # monitor the tasks
         logger.debug(f"starting to monitor job {job_id}.")
-        monitor = helpers.monitor_tasks(
-            job_id,
-            timeout,
-            self.batch_client
-        )
+        monitor = helpers.monitor_tasks(job_id, timeout, self.batch_client)
         print(monitor)
 
         # delete job automatically if debug is false

@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 import os
+import re
 import subprocess as sp
 import time
 from datetime import datetime as dt
@@ -1422,12 +1423,17 @@ def get_pool_parameters(
         logger.debug("Returning empty pool parameters.")
         return {}
 
+    # check task_slots_per_node
+    vm_size = config["Batch"]["pool_vm_size"]
+    task_slots = check_tasks_v_cores(
+        task_slots=task_slots_per_node, vm_size=vm_size
+    )
     pool_parameters = {
         "identity": get_user_identity(config),
         "properties": {
             "vmSize": config["Batch"]["pool_vm_size"],
             "interNodeCommunication": "Disabled",
-            "taskSlotsPerNode": task_slots_per_node,
+            "taskSlotsPerNode": task_slots,
             "taskSchedulingPolicy": {"nodeFillType": "Spread"},
             "deploymentConfiguration": get_deployment_config(
                 container_image_name=container_image_name,
@@ -2360,3 +2366,44 @@ def get_pool_mounts(
             )
         )
     return mounts
+
+
+def check_tasks_v_cores(task_slots: int, vm_size: str) -> int:
+    """
+    Validates that task slots per node is valid based on VM size. Returns the correct task slots.
+
+    Args:
+        task_slots (int): number of task slots per node
+        vm_size (str): vm size for nodes. Usually in the form "standard_D4s_v3".
+
+    Returns:
+        int: the correct number of task slots per node based on restrictions of vm_size
+    """
+    cores = int(re.findall("\d+", vm_size.split("_")[1])[0])
+    if task_slots == 1:
+        return 1
+    elif task_slots < 1:
+        print(
+            "Task slots per node must be a positive number of at most 256. Setting value of 1."
+        )
+        return 1
+    elif task_slots > 256:
+        max_task_slots = min(4 * cores, 256)
+        print(
+            "Cannot have more than 256 tasks per node. Setting to",
+            max_task_slots,
+            ".",
+        )
+        return max_task_slots
+    else:
+        if task_slots > 4 * cores:
+            max_task_slots = 4 * cores
+            print(
+                task_slots,
+                "is over the maximum task slots allowed per node. Setting to",
+                max_task_slots,
+                ".",
+            )
+            return max_task_slots
+        else:
+            return task_slots

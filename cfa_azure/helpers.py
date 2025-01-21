@@ -2368,13 +2368,13 @@ def get_pool_mounts(
     return mounts
 
 
-def check_tasks_v_cores(task_slots: int, vm_size: int) -> int:
+def check_tasks_v_cores(task_slots: int, vm_size: str) -> int:
     """
     Validates that task slots per node is valid based on VM size. Returns the correct task slots.
 
     Args:
         task_slots (int): number of task slots per node
-        vm_size (int): vm size for nodes. Usually in the form "standard_D4s_v3".
+        vm_size (str): vm size for nodes. Usually in the form "standard_D4s_v3".
 
     Returns:
         int: the correct number of task slots per node based on restrictions of vm_size
@@ -2392,7 +2392,7 @@ def check_tasks_v_cores(task_slots: int, vm_size: int) -> int:
         print(
             "Cannot have more than 256 tasks per node. Setting to",
             max_task_slots,
-            "."
+            ".",
         )
         return max_task_slots
     else:
@@ -2402,7 +2402,7 @@ def check_tasks_v_cores(task_slots: int, vm_size: int) -> int:
                 task_slots,
                 "is over the maximum task slots allowed per node. Setting to",
                 max_task_slots,
-                "."
+                ".",
             )
             return max_task_slots
         else:

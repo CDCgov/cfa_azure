@@ -2392,6 +2392,7 @@ def check_tasks_v_cores(task_slots: int, vm_size: int) -> int:
         print(
             "Cannot have more than 256 tasks per node. Setting to",
             max_task_slots,
+            "."
         )
         return max_task_slots
     else:
@@ -2399,8 +2400,9 @@ def check_tasks_v_cores(task_slots: int, vm_size: int) -> int:
             max_task_slots = 4 * cores
             print(
                 task_slots,
-                "over the maximum task slots allowed per node. Setting to",
+                "is over the maximum task slots allowed per node. Setting to",
                 max_task_slots,
+                "."
             )
             return max_task_slots
         else:

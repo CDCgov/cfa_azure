@@ -46,7 +46,7 @@ FAKE_CONFIG_MINIMAL = {
     "Batch": {
         "batch_account_name": FAKE_ACCOUNT,
         "batch_service_url": "Test Batch Service URL",
-        "pool_vm_size": 10,
+        "pool_vm_size": "standard_d4s_v3",
     },
     "Container": {
         "container_registry_password": "Test ACR Password",  # pragma: allowlist secret

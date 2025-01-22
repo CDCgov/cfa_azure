@@ -1230,17 +1230,30 @@ class AzureClient:
         self.task_id_max += 1
         return task_ids
 
-    def monitor_job(self, job_id: str, timeout: str | None = None) -> None:
+    def monitor_job(
+        self,
+        job_id: str,
+        timeout: str | None = None,
+        download_job_stats: bool = False,
+    ) -> None:
         """monitor the tasks running in a job
 
         Args:
             job_id (str): job id
             timeout (str): timeout for monitoring job. If omitted, will use None.
+            download_job_stats (bool): whether to download job statistics when job completes. Default is False.
         """
         # monitor the tasks
         logger.debug(f"starting to monitor job {job_id}.")
         monitor = helpers.monitor_tasks(job_id, timeout, self.batch_client)
         print(monitor)
+
+        if download_job_stats:
+            helpers.download_job_stats(
+                job_id=job_id,
+                batch_service_client=self.batch_client,
+                file_name=None,
+            )
 
         # delete job automatically if debug is false
         if self.debug is False:
@@ -1599,5 +1612,5 @@ class AzureClient:
         helpers.download_job_stats(
             job_id=job_id,
             batch_service_client=self.batch_client,
-            file_name=file_name
+            file_name=file_name,
         )

@@ -2409,29 +2409,39 @@ def check_tasks_v_cores(task_slots: int, vm_size: str) -> int:
         else:
             return task_slots
 
-def download_job_stats(job_id: str, batch_service_client: object, file_name: str | None = None):
+
+def download_job_stats(
+    job_id: str, batch_service_client: object, file_name: str | None = None
+):
     if file_name is None:
         file_name = f"{job_id}-stats"
     r = batch_service_client.task.list(
-        job_id = job_id,
-        )
+        job_id=job_id,
+    )
 
-    fields = ["task_id", "creation", "start", "end", "runtime", "exit_code", "node_id"]
-    with open(rf'{file_name}.csv', 'w') as f:
+    fields = [
+        "task_id",
+        "creation",
+        "start",
+        "end",
+        "runtime",
+        "exit_code",
+        "node_id",
+    ]
+    with open(rf"{file_name}.csv", "w") as f:
         writer = csv.writer(f)
         writer.writerow(fields)
     for item in r:
-        st =item.execution_info.start_time
-        et =item.execution_info.end_time
-        rt = et-st
+        st = item.execution_info.start_time
+        et = item.execution_info.end_time
+        rt = et - st
         id = item.id
         creation = item.creation_time
         start = item.execution_info.start_time.strftime("%Y-%m-%d %H:%M:%S")
         end = item.execution_info.end_time.strftime("%Y-%m-%d %H:%M:%S")
-        exit_code =item.execution_info.exit_code
+        exit_code = item.execution_info.exit_code
         node_id = item.node_info.affinity_id
         fields = [id, creation, start, end, rt, exit_code, node_id]
-        with open(rf'{file_name}.csv', 'a') as f:
+        with open(rf"{file_name}.csv", "a") as f:
             writer = csv.writer(f)
             writer.writerow(fields)
-    

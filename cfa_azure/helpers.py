@@ -2409,14 +2409,14 @@ def check_tasks_v_cores(task_slots: int, vm_size: str) -> int:
         else:
             return task_slots
 
-def download_job_stats(job_id: str, batch_service_client: object, file_name: str = None):
+def download_job_stats(job_id: str, batch_service_client: object, file_name: str | None = None):
     if file_name is None:
         file_name = f"{job_id}-stats"
     r = batch_service_client.task.list(
         job_id = job_id,
         )
 
-    fields = ['task_id', "creation", "start", "end", "runtime", "exit_code", "node_id"]
+    fields = ["task_id", "creation", "start", "end", "runtime", "exit_code", "node_id"]
     with open(rf'{file_name}.csv', 'w') as f:
         writer = csv.writer(f)
         writer.writerow(fields)

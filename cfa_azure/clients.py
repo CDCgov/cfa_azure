@@ -1587,3 +1587,17 @@ class AzureClient:
             folder_path, container_name, self.blob_service_client
         )
         logger.debug(f"Deleted folder {folder_path}.")
+
+    def download_job_stats(self, job_id: str, file_name: str | None = None):
+        """
+        Download the job statistics to csv for a specified job in its current state.
+
+        Args:
+            job_id (str): name of Batch job
+            file_name (str | None, optional): file name for downloaded csv (excluding .csv extension). Defaults to None.
+        """
+        helpers.download_job_stats(
+            job_id=job_id,
+            batch_service_client=self.batch_client,
+            file_name=file_name
+        )

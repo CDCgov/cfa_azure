@@ -2442,7 +2442,7 @@ def download_job_stats(
         start = item.execution_info.start_time.strftime("%Y-%m-%d %H:%M:%S")
         end = item.execution_info.end_time.strftime("%Y-%m-%d %H:%M:%S")
         exit_code = item.execution_info.exit_code
-        node_id = item.node_info.affinity_id
+        node_id = item.node_info.node_id
         cli = item.command_line.split(" -")[0]
         pool = item.node_info.pool_id
         fields = [id, cli, creation, start, end, rt, exit_code, pool, node_id]

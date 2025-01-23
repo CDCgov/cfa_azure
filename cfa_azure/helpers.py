@@ -1220,7 +1220,7 @@ def get_deployment_config(
     config: str,
     credential: object,
     availability_zones: bool = False,
-    use_hpc_image: bool = False,
+    use_deprecated_image: bool = False,
 ):
     """gets the deployment config based on the config information
 
@@ -1231,7 +1231,7 @@ def get_deployment_config(
         config (str): config dict
         credential (object): credential object
         availability_zones (bool): whether to use availability zones. Default False.
-        use_hpc_image (bool): whether to use high performance compute images for each node. Default False.
+        use_deprecated_image (bool): whether to use the deprecated ubuntu 20.04 images for each node. Default False.
 
     Returns:
         dict: dictionary containing info for container deployment. Uses ubuntu server with info obtained from config file.
@@ -1242,7 +1242,7 @@ def get_deployment_config(
     else:
         policy = "Regional"
 
-    if use_hpc_image:
+    if not use_deprecated_image:
         image_ref = {
             "publisher": "microsoft-dsvm",
             "offer": "ubuntu-hpc",
@@ -1361,7 +1361,7 @@ def get_pool_parameters(
     max_autoscale_nodes: int = 3,
     task_slots_per_node: int = 1,
     availability_zones: bool = False,
-    use_hpc_image: bool = False,
+    use_deprecated_image: bool = False,
 ):
     """creates a pool parameter dictionary to be used with pool creation.
 
@@ -1381,7 +1381,7 @@ def get_pool_parameters(
         max_autoscale_nodes (int): maximum number of nodes to use with autoscaling. Default 3.
         task_slots_per_node (int): number of task slots per node. Default is 1.
         availability_zones (bool): whether to use availability zones. Default False.
-        use_hpc_image (bool): whether to use a high performance compute image for each node. Default False.
+        use_deprecated_image (bool): whether to use the deprecated Ubuntu 20.04 image for each node. Default False.
 
     Returns:
         dict: dict of pool parameters for pool creation
@@ -1443,7 +1443,7 @@ def get_pool_parameters(
                 config=config,
                 credential=credential,
                 availability_zones=availability_zones,
-                use_hpc_image=use_hpc_image,
+                use_deprecated_image=use_deprecated_image,
             ),
             "networkConfiguration": get_network_config(config),
             "scaleSettings": scale_settings,

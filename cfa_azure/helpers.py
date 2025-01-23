@@ -1,4 +1,5 @@
 # import modules for use
+import csv
 import datetime
 import json
 import logging
@@ -2407,3 +2408,47 @@ def check_tasks_v_cores(task_slots: int, vm_size: str) -> int:
             return max_task_slots
         else:
             return task_slots
+
+
+def download_job_stats(
+    job_id: str, batch_service_client: object, file_name: str | None = None
+):
+    if file_name is None:
+        file_name = f"{job_id}-stats"
+    r = batch_service_client.task.list(
+        job_id=job_id,
+    )
+
+    fields = [
+        "task_id",
+        "command",
+        "creation",
+        "start",
+        "end",
+        "runtime",
+        "exit_code",
+        "pool",
+        "node_id",
+    ]
+    with open(rf"{file_name}.csv", "w") as f:
+        logger.debug(f"initializing {file_name}.csv.")
+        writer = csv.writer(f, delimiter="|")
+        writer.writerow(fields)
+    for item in r:
+        st = item.execution_info.start_time
+        et = item.execution_info.end_time
+        rt = et - st
+        id = item.id
+        creation = item.creation_time
+        start = item.execution_info.start_time.strftime("%Y-%m-%d %H:%M:%S")
+        end = item.execution_info.end_time.strftime("%Y-%m-%d %H:%M:%S")
+        exit_code = item.execution_info.exit_code
+        node_id = item.node_info.node_id
+        cli = item.command_line.split(" -")[0]
+        pool = item.node_info.pool_id
+        fields = [id, cli, creation, start, end, rt, exit_code, pool, node_id]
+        with open(rf"{file_name}.csv", "a") as f:
+            writer = csv.writer(f, delimiter="|")
+            writer.writerow(fields)
+            logger.debug("wrote task to job statistic csv.")
+    print(f"Downloaded job statistics report to {file_name}.csv.")

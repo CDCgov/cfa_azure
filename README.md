@@ -162,6 +162,12 @@ After creating the configuration file (e.g. client_configuration.toml), then use
   client = AzureClient("./configuration.toml")
   client.create_pool("my-test-pool")
   ```
+- `download_job_stats`: downloads a csv of job statistics for the specified job in its current state, to the specified file_name if provided (without the .csv extension). If no file_name is provided, the csv is downloaded to {job_id}-stats.csv. There is also a parameter in the `monitor_job()` method with the same name that, when set to True, will save the job statistics when the job completes. Examples:
+```
+client.download_job_stats(job_id = "example-job-name", file_name = "test-job-stats")
+
+client.monitor_job(job_id = "example-job-name", download_job_stats = True)
+```
 - `update_containers`: modifies the containers mounted on an existing Azure batch pool. It essentially recreates the pool with new mounts. Use force_update=True to recreate the pool without waiting for running tasks to complete.
 - `upload_files_to_container`: uploads files from a specified folder to an Azure Blob container. It also includes options like `force_upload` to allow or deny large file uploads without confirmation.
   **Example:**
@@ -197,7 +203,7 @@ client.upload_files_to_container(
   # Switch to fixed scaling mode with 15 spot EC2 nodes and forced termination of current jobs
   client.update_scale_settings(low_priority_nodes=15, node_deallocation_option='Terminate')
   ```
-- update_containers: modifies the containers mounted on an existing Azure batch pool. It essentially recreates the pool with new mounts.
+- `update_containers`: modifies the containers mounted on an existing Azure batch pool. It essentially recreates the pool with new mounts.
  **Example:**
   ```
   # First create a pool

@@ -133,14 +133,16 @@ client.set_pool_info(
 )
 ```
 
-### Updated High Performance Compute Image
+### Updated Base Container Image
 
-The default base Ubuntu image used for Azure Batch nodes is Ubuntu 20.04, which is nearing end of life on 4/22/2025. There is an option to use a high performance compute image using Ubuntu 22.04 as the base OS. It's important to use a compatible VM size with these HPC images. To implement a HPC image for Azure pools, set the parameter `use_hpc_image` to `True` in the `AzureClient` method `set_pool_info()`, like the following:
+The original base Ubuntu image used for Azure Batch nodes was Ubuntu 20.04, which is deprecated effective April 2025. There is a new image provided by default from microsoft-dsvm, which runs Ubuntu 22.04 for container workloads. This new image supports high performance compute (HPC) VMs as well as a limited number of non-HPC VMs. 
+
+To continue using the old Ubuntu 20.04 image for Azure pools for now, set the parameter `use_deprecated_image` to `True` in the `AzureClient` method `set_pool_info()`, like the following:
 ```
 client.set_pool_info("autoscale",
     timeout=60,
     ...,
-    use_hpc_image = True
+    use_deprecated_image = True
     )
 ```
 

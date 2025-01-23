@@ -29,7 +29,7 @@ Refer to the example_config.toml in the examples folder, found [here](examples/e
     - [Using Various Credential Methods](#using-various-credential-methods)
     - [Persisting stdout and stderr to Blob Storage](#persisting-stdout-and-stderr-to-blob-storage)
     - [Availability Zones](#availability-zones)
-    - [Updated High Performance Compute Image](#updated-high-performance-compute-image)
+    - [Updated Base Container Image](#updated-base-container-image)
     - [AzureClient Methods](#azureclient-methods)
     - [Running Jobs and Tasks](#running-jobs-and-tasks)
   - [automation](#automation)
@@ -135,7 +135,7 @@ client.set_pool_info(
 
 ### Updated Base Container Image
 
-The original base Ubuntu image used for Azure Batch nodes was Ubuntu 20.04, which is deprecated effective April 2025. There is a new image provided by default from microsoft-dsvm, which runs Ubuntu 22.04 for container workloads. This new image supports high performance compute (HPC) VMs as well as a limited number of non-HPC VMs. 
+The original base Ubuntu image used for Azure Batch nodes was Ubuntu 20.04, which is deprecated effective April 2025. There is a new image provided by default from microsoft-dsvm, which runs Ubuntu 22.04 for container workloads. This new image supports high performance compute (HPC) VMs as well as a limited number of non-HPC VMs.
 The following non-HPC VMs can be used with the updated image:
 - d2s_v3
 - d4s_v3

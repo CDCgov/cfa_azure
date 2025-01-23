@@ -136,6 +136,20 @@ client.set_pool_info(
 ### Updated Base Container Image
 
 The original base Ubuntu image used for Azure Batch nodes was Ubuntu 20.04, which is deprecated effective April 2025. There is a new image provided by default from microsoft-dsvm, which runs Ubuntu 22.04 for container workloads. This new image supports high performance compute (HPC) VMs as well as a limited number of non-HPC VMs. 
+The following non-HPC VMs can be used with the updated image:
+- d2s_v3
+- d4s_v3
+- d4d_v5
+- d4ds_v5
+- d8s_v3
+- d16s_v3
+- d32s_v3
+- e8s_v3
+- e16s_v3
+
+There may be other compatible VMs as well, but note that the A-series VMs are no longer compatible.
+
+**Note:** all pools will need to be updated to the newer image by mid-April 2025.
 
 To continue using the old Ubuntu 20.04 image for Azure pools for now, set the parameter `use_deprecated_image` to `True` in the `AzureClient` method `set_pool_info()`, like the following:
 ```

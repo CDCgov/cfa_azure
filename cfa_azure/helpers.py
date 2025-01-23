@@ -2431,6 +2431,7 @@ def download_job_stats(
         "node_id",
     ]
     with open(rf"{file_name}.csv", "w") as f:
+        logger.debug(f"initializing {file_name}.csv.")
         writer = csv.writer(f, delimiter="|")
         writer.writerow(fields)
     for item in r:
@@ -2449,3 +2450,5 @@ def download_job_stats(
         with open(rf"{file_name}.csv", "a") as f:
             writer = csv.writer(f, delimiter="|")
             writer.writerow(fields)
+            logger.debug("wrote task to job statistic csv.")
+    print(f"Downloaded job statistics report to {file_name}.csv.")

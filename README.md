@@ -30,6 +30,7 @@ Refer to the example_config.toml in the examples folder, found [here](examples/e
     - [Persisting stdout and stderr to Blob Storage](#persisting-stdout-and-stderr-to-blob-storage)
     - [Availability Zones](#availability-zones)
     - [Updated Base Container Image](#updated-base-container-image)
+    - [Configuration](#configuration)
     - [AzureClient Methods](#azureclient-methods)
     - [Running Jobs and Tasks](#running-jobs-and-tasks)
   - [automation](#automation)
@@ -160,7 +161,7 @@ client.set_pool_info("autoscale",
     )
 ```
 
-**Configuration**
+### Configuration
 An AzureClient object can be instantiated and initialized with pool, mounted containers and container registries using a configuration file. This is especially useful if the same pool will be used for running multiple batch jobs and experiments. Use the following example to create a configuration file:
 
 [Configuration File](examples/client_configuration.toml)

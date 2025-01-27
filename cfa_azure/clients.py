@@ -183,13 +183,13 @@ class AzureClient:
             self.create_pool(self.pool_name)
         logger.info("Client initialized! Happy coding!")
 
-        print("-" * 40)
+        print("-" * 50)
         print("REMINDER")
         print("Pools using Ubuntu 20.04 image will be deprecated in April.")
         print(
             "Please recreate pools with the create_pool() method to use the new updated image."
         )
-        print("-" * 40)
+        print("-" * 50)
 
     def _initialize_authentication(self, credential_method):
         """Called by init method to set up authentication

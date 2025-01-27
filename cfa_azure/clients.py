@@ -187,7 +187,7 @@ class AzureClient:
         print("REMINDER")
         print("Pools using Ubuntu 20.04 image will be deprecated in April.")
         print(
-            "Please recreate pools with the create_pool() method to automatically use the new updated image."
+            "Please recreate pools with the create_pool() method to use the new updated image."
         )
         print("-" * 40)
 

@@ -1422,13 +1422,21 @@ def get_pool_parameters(
 
     # check task_slots_per_node
     vm_size = config["Batch"]["pool_vm_size"]
+    if vm_size.split("_")[1][0].upper() == "A":
+        print(
+            "Cannot use A-series VMs with new image. Setting standard_D4s_v3 as VM to use."
+        )
+        print(
+            "If another VM is desired, please change it in your config.toml."
+        )
+        vm_size = "standard_D4s_v3"
     task_slots = check_tasks_v_cores(
         task_slots=task_slots_per_node, vm_size=vm_size
     )
     pool_parameters = {
         "identity": get_user_identity(config),
         "properties": {
-            "vmSize": config["Batch"]["pool_vm_size"],
+            "vmSize": vm_size,
             "interNodeCommunication": "Disabled",
             "taskSlotsPerNode": task_slots,
             "taskSchedulingPolicy": {"nodeFillType": "Spread"},

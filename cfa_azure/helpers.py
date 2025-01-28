@@ -1424,10 +1424,10 @@ def get_pool_parameters(
     vm_size = config["Batch"]["pool_vm_size"]
     if vm_size.split("_")[1][0].upper() == "A":
         print(
-            "Cannot use A-series VMs with new image. Setting standard_D4s_v3 as VM to use."
+            "\nCannot use A-series VMs with new image. Setting standard_D4s_v3 as VM to use."
         )
         print(
-            "If another VM is desired, please change it in your config.toml."
+            "If another VM is desired, please change it in your config.toml.\n"
         )
         vm_size = "standard_D4s_v3"
     task_slots = check_tasks_v_cores(

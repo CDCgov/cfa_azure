@@ -136,7 +136,7 @@ client.set_pool_info(
 
 ### Updated Base Container Image
 
-The original base Ubuntu image used for Azure Batch nodes was Ubuntu 20.04, which is deprecated effective April 2025. There is a new image provided by default from microsoft-dsvm, which runs Ubuntu 22.04 for container workloads. This new image supports high performance compute (HPC) VMs as well as a limited number of non-HPC VMs.
+The original base Ubuntu image used for Azure Batch nodes was Ubuntu 20.04, which is deprecated effective April 2025. There is a new image provided by default from `microsoft-dsvm`, which runs Ubuntu 22.04 for container workloads. This new image supports high performance compute (HPC) VMs as well as a limited number of non-HPC VMs. Going forward, `cfa_azure` will only support the creation of pools with the new `microsoft-dsvm` image.
 The following non-HPC VMs can be used with the updated image:
 - d2s_v3
 - d4s_v3
@@ -152,14 +152,6 @@ There may be other compatible VMs as well, but note that the A-series VMs are no
 
 **Note:** all pools will need to be updated to the newer image by mid-April 2025.
 
-To continue using the old Ubuntu 20.04 image for Azure pools for now, set the parameter `use_deprecated_image` to `True` in the `AzureClient` method `set_pool_info()`, like the following:
-```
-client.set_pool_info("autoscale",
-    timeout=60,
-    ...,
-    use_deprecated_image = True
-    )
-```
 
 ### Configuration
 An AzureClient object can be instantiated and initialized with pool, mounted containers and container registries using a configuration file. This is especially useful if the same pool will be used for running multiple batch jobs and experiments. Use the following example to create a configuration file:

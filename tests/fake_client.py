@@ -102,7 +102,7 @@ FAKE_POOL_INFO = {
         }
     },
     "resize_operation_status": {"resize_timeout": 10},
-    "vm_size": 20,
+    "vm_size": "standard_D4s_v3",
     "mount_configuration": {},
 }
 

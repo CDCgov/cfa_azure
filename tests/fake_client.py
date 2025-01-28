@@ -77,7 +77,7 @@ FAKE_CONFIG = {
         "batch_account_name": FAKE_ACCOUNT,
         "batch_service_url": "Test Batch Service URL",
         "pool_id": FAKE_BATCH_POOL,
-        "pool_vm_size": 10,
+        "pool_vm_size": "standard_D4s_v3",
     },
     "Container": {
         "container_account_name": "Test Account",
@@ -102,7 +102,7 @@ FAKE_POOL_INFO = {
         }
     },
     "resize_operation_status": {"resize_timeout": 10},
-    "vm_size": 20,
+    "vm_size": "standard_D4s_v3",
     "mount_configuration": {},
 }
 

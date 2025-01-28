@@ -371,13 +371,22 @@ def get_batch_pool_json(
         },
     ]
     logger.debug("Mount configuration prepared.")
+    vm_size = config["Batch"]["pool_vm_size"]
+    if vm_size.split("_")[1][0].upper() == "A":
+        print(
+            "Cannot use A-series VMs with new image. Setting standard_D4s_v3 as VM to use."
+        )
+        print(
+            "If another VM is desired, please change it in your config.toml."
+        )
+        vm_size = "standard_D4s_v3"
 
     # Assemble the pool parameters JSON
     logger.debug("Generating autoscale formula...")
     pool_parameters = {
         "identity": user_identity,
         "properties": {
-            "vmSize": config["Batch"]["pool_vm_size"],
+            "vmSize": vm_size,
             "interNodeCommunication": "Disabled",
             "taskSlotsPerNode": 1,
             "taskSchedulingPolicy": {"nodeFillType": "Spread"},
@@ -1220,7 +1229,6 @@ def get_deployment_config(
     config: str,
     credential: object,
     availability_zones: bool = False,
-    use_hpc_image: bool = False,
 ):
     """gets the deployment config based on the config information
 
@@ -1231,7 +1239,6 @@ def get_deployment_config(
         config (str): config dict
         credential (object): credential object
         availability_zones (bool): whether to use availability zones. Default False.
-        use_hpc_image (bool): whether to use high performance compute images for each node. Default False.
 
     Returns:
         dict: dictionary containing info for container deployment. Uses ubuntu server with info obtained from config file.
@@ -1242,22 +1249,13 @@ def get_deployment_config(
     else:
         policy = "Regional"
 
-    if use_hpc_image:
-        image_ref = {
-            "publisher": "microsoft-dsvm",
-            "offer": "ubuntu-hpc",
-            "sku": "2204",
-            "version": "latest",
-        }
-        node_agent_sku = "batch.node.ubuntu 22.04"
-    else:
-        image_ref = {
-            "publisher": "microsoft-azure-batch",
-            "offer": "ubuntu-server-container",
-            "sku": "20-04-lts",
-            "version": "latest",
-        }
-        node_agent_sku = "batch.node.ubuntu 20.04"
+    image_ref = {
+        "publisher": "microsoft-dsvm",
+        "offer": "ubuntu-hpc",
+        "sku": "2204",
+        "version": "latest",
+    }
+    node_agent_sku = "batch.node.ubuntu 22.04"
 
     logger.debug("Getting deployment config.")
     deployment_config = {
@@ -1361,7 +1359,6 @@ def get_pool_parameters(
     max_autoscale_nodes: int = 3,
     task_slots_per_node: int = 1,
     availability_zones: bool = False,
-    use_hpc_image: bool = False,
 ):
     """creates a pool parameter dictionary to be used with pool creation.
 
@@ -1381,7 +1378,6 @@ def get_pool_parameters(
         max_autoscale_nodes (int): maximum number of nodes to use with autoscaling. Default 3.
         task_slots_per_node (int): number of task slots per node. Default is 1.
         availability_zones (bool): whether to use availability zones. Default False.
-        use_hpc_image (bool): whether to use a high performance compute image for each node. Default False.
 
     Returns:
         dict: dict of pool parameters for pool creation
@@ -1426,13 +1422,21 @@ def get_pool_parameters(
 
     # check task_slots_per_node
     vm_size = config["Batch"]["pool_vm_size"]
+    if vm_size.split("_")[1][0].upper() == "A":
+        print(
+            "\nCannot use A-series VMs with new image. Setting standard_D4s_v3 as VM to use."
+        )
+        print(
+            "If another VM is desired, please change it in your config.toml.\n"
+        )
+        vm_size = "standard_D4s_v3"
     task_slots = check_tasks_v_cores(
         task_slots=task_slots_per_node, vm_size=vm_size
     )
     pool_parameters = {
         "identity": get_user_identity(config),
         "properties": {
-            "vmSize": config["Batch"]["pool_vm_size"],
+            "vmSize": vm_size,
             "interNodeCommunication": "Disabled",
             "taskSlotsPerNode": task_slots,
             "taskSchedulingPolicy": {"nodeFillType": "Spread"},
@@ -1443,7 +1447,6 @@ def get_pool_parameters(
                 config=config,
                 credential=credential,
                 availability_zones=availability_zones,
-                use_hpc_image=use_hpc_image,
             ),
             "networkConfiguration": get_network_config(config),
             "scaleSettings": scale_settings,

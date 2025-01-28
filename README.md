@@ -29,7 +29,8 @@ Refer to the example_config.toml in the examples folder, found [here](examples/e
     - [Using Various Credential Methods](#using-various-credential-methods)
     - [Persisting stdout and stderr to Blob Storage](#persisting-stdout-and-stderr-to-blob-storage)
     - [Availability Zones](#availability-zones)
-    - [Updated High Performance Compute Image](#updated-high-performance-compute-image)
+    - [Updated Base Container Image](#updated-base-container-image)
+    - [Configuration](#configuration)
     - [AzureClient Methods](#azureclient-methods)
     - [Running Jobs and Tasks](#running-jobs-and-tasks)
   - [automation](#automation)
@@ -133,18 +134,26 @@ client.set_pool_info(
 )
 ```
 
-### Updated High Performance Compute Image
+### Updated Base Container Image
 
-The default base Ubuntu image used for Azure Batch nodes is Ubuntu 20.04, which is nearing end of life on 4/22/2025. There is an option to use a high performance compute image using Ubuntu 22.04 as the base OS. It's important to use a compatible VM size with these HPC images. To implement a HPC image for Azure pools, set the parameter `use_hpc_image` to `True` in the `AzureClient` method `set_pool_info()`, like the following:
-```
-client.set_pool_info("autoscale",
-    timeout=60,
-    ...,
-    use_hpc_image = True
-    )
-```
+The original base Ubuntu image used for Azure Batch nodes was Ubuntu 20.04, which is deprecated effective April 2025. There is a new image provided by default from `microsoft-dsvm`, which runs Ubuntu 22.04 for container workloads. This new image supports high performance compute (HPC) VMs as well as a limited number of non-HPC VMs. Going forward, `cfa_azure` will only support the creation of pools with the new `microsoft-dsvm` image.
+The following non-HPC VMs can be used with the updated image:
+- d2s_v3
+- d4s_v3
+- d4d_v5
+- d4ds_v5
+- d8s_v3
+- d16s_v3
+- d32s_v3
+- e8s_v3
+- e16s_v3
 
-**Configuration**
+There may be other compatible VMs as well, but note that the A-series VMs are no longer compatible.
+
+**Note:** all pools will need to be updated to the newer image by mid-April 2025.
+
+
+### Configuration
 An AzureClient object can be instantiated and initialized with pool, mounted containers and container registries using a configuration file. This is especially useful if the same pool will be used for running multiple batch jobs and experiments. Use the following example to create a configuration file:
 
 [Configuration File](examples/client_configuration.toml)

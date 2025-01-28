@@ -371,13 +371,22 @@ def get_batch_pool_json(
         },
     ]
     logger.debug("Mount configuration prepared.")
+    vm_size = config["Batch"]["pool_vm_size"]
+    if vm_size.split("_")[1][0].upper() == "A":
+        print(
+            "Cannot use A-series VMs with new image. Setting standard_D4s_v3 as VM to use."
+        )
+        print(
+            "If another VM is desired, please change it in your config.toml."
+        )
+        vm_size = "standard_D4s_v3"
 
     # Assemble the pool parameters JSON
     logger.debug("Generating autoscale formula...")
     pool_parameters = {
         "identity": user_identity,
         "properties": {
-            "vmSize": config["Batch"]["pool_vm_size"],
+            "vmSize": vm_size,
             "interNodeCommunication": "Disabled",
             "taskSlotsPerNode": 1,
             "taskSchedulingPolicy": {"nodeFillType": "Spread"},

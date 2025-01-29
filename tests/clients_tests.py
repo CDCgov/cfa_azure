@@ -38,6 +38,7 @@ class TestClients(unittest.TestCase):
         "cfa_azure.helpers.get_batch_service_client",
         MagicMock(return_value=FakeClient()),
     )
+
     def setUp(self, mock_logger):
         config_path = "some_path"
         self.azure_client = cfa_azure.clients.AzureClient(config_path)
@@ -46,6 +47,7 @@ class TestClients(unittest.TestCase):
         mock_logger.info.assert_called_with(
             "Client initialized! Happy coding!"
         )
+        self.task_id_ints = False
 
     @patch("cfa_azure.clients.logger")
     @patch(

@@ -91,6 +91,7 @@ class TestClients(unittest.TestCase):
     )
     def test_add_task_nocontainer(self):
         self.azure_client.pool_name = FAKE_BATCH_POOL
+        self.azure_client.task_id_ints = False
         task_list = self.azure_client.add_task(
             "test_job_id",
             docker_cmd=["some", "docker", "command"],
@@ -108,6 +109,7 @@ class TestClients(unittest.TestCase):
     )
     def test_add_task_inputfiles(self):
         self.azure_client.pool_name = FAKE_BATCH_POOL
+        self.azure_client.task_id_ints = False
         task_list = self.azure_client.add_task(
             "test_job_id",
             docker_cmd=["some", "docker", "command"],
@@ -126,6 +128,7 @@ class TestClients(unittest.TestCase):
     )
     def test_add_task_dependencies(self):
         self.azure_client.pool_name = FAKE_BATCH_POOL
+        self.azure_client.task_id_ints = False
         task_1 = self.azure_client.add_task(
             "test_job_id",
             docker_cmd=["some", "docker", "command"],
@@ -146,6 +149,7 @@ class TestClients(unittest.TestCase):
         MagicMock(return_value=FAKE_CONTAINER_IMAGE),
     )
     def test_add_task(self):
+        self.azure_client.task_id_ints = False
         task_list = self.azure_client.add_task(
             "test_job_id",
             docker_cmd=["some", "docker", "command"],

@@ -815,10 +815,12 @@ def add_task_to_job(
     input_files: list[str] | None = None,
     mounts: list | None = None,
     depends_on: str | list[str] | None = None,
+    depends_on_range: tuple | None = None,
     run_dependent_tasks_on_fail: bool = False,
     batch_client: object | None = None,
     full_container_name: str | None = None,
     task_id_max: int = 0,
+    task_id_ints: bool = False,
 ):
     """add a defined task(s) to a job in the pool
 
@@ -831,12 +833,13 @@ def add_task_to_job(
         name_suffix (str): suffix to append to task name. Default is empty string.
         input_files (list[str]): a  list of input files
         mounts (list[tuple]): a list of tuples in the form (container_name, relative_mount_directory)
-        depends_on (str | list[str]): list of tasks this task depends on
+        depends_on (str | list[str]): list of tasks this task depends on. Optional.
+        depends_on_range (tuple): range of dependent tasks when task IDs are integers, given as (start_int, end_int). Optional.
         run_dependent_tasks_on_fail (bool): whether to run dependent tasks if the parent task fails. Default is False.
         batch_client (object): batch client object
         full_container_name (str): name ACR container to run task on
         task_id_max (int): current max task id in use by Batch
-
+        task_id_ints (bool): whether to use incremental integers for task IDs. Optional.
     Returns:
         list: list of task IDs created
     """
@@ -863,6 +866,15 @@ def add_task_to_job(
             depends_on = [depends_on]
             logger.debug("Adding task dependency.")
         task_deps = batchmodels.TaskDependencies(task_ids=depends_on)
+    if depends_on_range is not None:
+        task_deps = batchmodels.TaskDependencies(
+            task_id_ranges=[
+                batchmodels.TaskIdRange(
+                    start=int(depends_on_range[0]),
+                    end=int(depends_on_range[1]),
+                )
+            ]
+        )
 
     job_action = JobAction.none
     if check_job_exists(job_id, batch_client):
@@ -918,7 +930,11 @@ def add_task_to_job(
                 + az_mount_dir
                 + f"/{mount[1]},target=/{mount[1]} "
             )
-    task_id = f"{task_id_base}-{name_suffix}-{str(task_id_max + 1)}"
+    if task_id_ints:
+        task_id = str(task_id_max)
+    else:
+        task_id = f"{task_id_base}-{name_suffix}-{str(task_id_max + 1)}"
+
     if save_logs_rel_path is not None:
         if save_logs_rel_path == "ERROR!":
             logger.warning("could not find rel path")

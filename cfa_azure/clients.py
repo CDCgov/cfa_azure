@@ -1071,6 +1071,7 @@ class AzureClient:
         logs_folder: str | None = None,
         task_retries: int = 0,
         mark_complete_after_tasks_run: bool = False,
+        task_id_ints: bool = False,
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
@@ -1081,6 +1082,7 @@ class AzureClient:
             logs_folder (str|None): the folder structure to use when saving logs to blob. Default None will save to /stdout_stderr/ folder in specified blob container.
             task_retries (int): number of times to retry a task that fails. Default 0.
             mark_complete_after_tasks_run (bool): whether to mark the job as completed when all tasks finish running. Default False.
+            task_id_ints (bool): whether to use incremental integer values for task id values rather than a string. Default False.
         """
         # make sure the job_id does not have spaces
         job_id_r = job_id.replace(" ", "")
@@ -1106,6 +1108,12 @@ class AzureClient:
                 logs_folder = logs_folder[:-1]
             self.logs_folder = logs_folder
 
+        if task_id_ints:
+            self.task_id_ints = True
+        else:
+            self.task_id_ints = False
+        self.task_id_max = 1
+
         # add the job to the pool
         logger.debug(f"Attempting to add job {job_id_r}.")
         helpers.add_job(
@@ -1125,6 +1133,7 @@ class AzureClient:
         use_uploaded_files: bool = False,
         input_files: list[str] | None = None,
         depends_on: list[str] | None = None,
+        depends_on_range: tuple | None = None,
         run_dependent_tasks_on_fail: bool = False,
         container: str = None,
     ) -> list[str]:
@@ -1141,9 +1150,9 @@ class AzureClient:
                 and create a task for each input file uploaded or specified in input_files. Default is False.
             input_files (list[str]): a list of file names. Each file will be assigned its own task and executed against the docker command provided. Default is [].
             depends_on (list[str]): a list of tasks this task depends on. Default is None.
+            depends_on_range (tuple)
             run_dependent_tasks_on_fail (bool): whether to run the dependent tasks if parent task fails. Default is False.
             container (str): name of ACR container in form "registry_name/repo_name:tag_name". Default is None to use container attached to client.
-
 
         Returns:
             list: list of task IDs created
@@ -1230,10 +1239,12 @@ class AzureClient:
             input_files=in_files,
             mounts=self.mounts,
             depends_on=depends_on,
+            depends_on_range=depends_on_range,
             run_dependent_tasks_on_fail=run_dependent_tasks_on_fail,
             batch_client=self.batch_client,
             full_container_name=container_name,
             task_id_max=self.task_id_max,
+            task_id_ints=self.task_id_ints,
         )
         self.task_id_max += 1
         return task_ids

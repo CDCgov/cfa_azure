@@ -473,7 +473,7 @@ class TestHelpers(unittest.TestCase):
             docker_command=["some", "docker", "command"],
             batch_client=batch_mgmt_client,
             task_id_max=0,
-            task_id_ints = False
+            task_id_ints=False,
         )
         self.assertIsNotNone(task_list)
 
@@ -488,7 +488,7 @@ class TestHelpers(unittest.TestCase):
             batch_client=batch_mgmt_client,
             full_container_name=FAKE_INPUT_CONTAINER,
             task_id_max=0,
-            task_id_ints = False
+            task_id_ints=False,
         )
         self.assertIsNotNone(task_list)
 

@@ -311,6 +311,18 @@ client.upload_files_to_container(
   )
   ```
 
+  **Example**: Use integer values for task IDs and specify dependent tasks as a range.
+  ```
+  #create job
+client.add_job(job_id = "task_dep_range",task_id_ints = True)
+#submit tasks
+for item in range(20):
+    <submit tasks>
+  
+#add dependent task which depends on tasks 1 to 20.
+client.add_task("python3 some_cmd.py", depends_on_range = (1, 20))
+  ```
+
 ## automation
 Please view [this documentation](docs/automation_README.md) on getting started with the `automation` module.
 

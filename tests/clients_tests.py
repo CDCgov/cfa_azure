@@ -94,7 +94,6 @@ class TestClients(unittest.TestCase):
         task_list = self.azure_client.add_task(
             "test_job_id",
             docker_cmd=["some", "docker", "command"],
-            use_uploaded_files=False,
         )
         self.assertIsNotNone(task_list)
 
@@ -110,10 +109,7 @@ class TestClients(unittest.TestCase):
         self.azure_client.pool_name = FAKE_BATCH_POOL
         self.azure_client.task_id_ints = False
         task_list = self.azure_client.add_task(
-            "test_job_id",
-            docker_cmd=["some", "docker", "command"],
-            use_uploaded_files=False,
-            input_files=["test_file_1.sh"],
+            "test_job_id", docker_cmd=["some", "docker", "command"]
         )
         self.assertIsNotNone(task_list)
 
@@ -129,17 +125,12 @@ class TestClients(unittest.TestCase):
         self.azure_client.pool_name = FAKE_BATCH_POOL
         self.azure_client.task_id_ints = False
         task_1 = self.azure_client.add_task(
-            "test_job_id",
-            docker_cmd=["some", "docker", "command"],
-            use_uploaded_files=False,
-            input_files=["test_file_1.sh"],
+            "test_job_id", docker_cmd=["some", "docker", "command"]
         )
         task_2 = self.azure_client.add_task(
             "test_job_id",
             docker_cmd=["some", "docker", "command"],
-            use_uploaded_files=False,
             depends_on=[task_1],
-            input_files=["test_file_1.sh"],
         )
         self.assertIsNotNone(task_2)
 
@@ -152,7 +143,6 @@ class TestClients(unittest.TestCase):
         task_list = self.azure_client.add_task(
             "test_job_id",
             docker_cmd=["some", "docker", "command"],
-            use_uploaded_files=False,
             container=FAKE_INPUT_CONTAINER,
         )
         self.assertIsNotNone(task_list)

@@ -483,7 +483,6 @@ class TestHelpers(unittest.TestCase):
             "test_job_id",
             "task_id_base",
             docker_command=["some", "docker", "command"],
-            input_files=["test_file_1.sh"],
             mounts=["some_mount"],
             batch_client=batch_mgmt_client,
             full_container_name=FAKE_INPUT_CONTAINER,

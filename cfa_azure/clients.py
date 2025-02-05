@@ -1130,16 +1130,12 @@ class AzureClient:
         job_id: str,
         docker_cmd: list[str],
         name_suffix: str = "",
-        use_uploaded_files: bool = False,
         depends_on: list[str] | None = None,
         depends_on_range: tuple | None = None,
         run_dependent_tasks_on_fail: bool = False,
         container: str = None,
     ) -> str:
         """adds task to existing job.
-        If files have been uploaded, the docker command will be applied to each file.
-        If input files are specified, the docker command will be applied to only those files.
-        If no input files are specified, only the docker command will be run.
 
         Args:
             job_id (str): job id

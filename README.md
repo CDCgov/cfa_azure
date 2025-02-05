@@ -20,6 +20,9 @@ The expected configuration.toml has changed several keys to make it easier on us
 
 Refer to the example_config.toml in the examples folder, found [here](examples/example_config.toml) to view the required keys/values needed in the configuration file.
 
+## ***Version 1.3.x WARNING***
+The method `add_task()` no longer accepts parameters `use_uploaded_files` or `input_files`. Any files will need to be accounted for when specifying the docker command to run the task.
+
 # Outline
 - [Description](#description)
 - [Getting Started](#getting-started)
@@ -243,13 +246,10 @@ client.upload_files_to_container(
   task_1 = client.add_task(
       "test_job_id",
       docker_cmd=["some", "docker", "command"],  # replace with actual command
-      input_files=["test_file_1.sh"]
   )
   task_2 = client.add_task(
       "test_job_id",
       docker_cmd=["some", "other", "docker", "command"], # replace with actual command
-      use_uploaded_files=False,
-      input_files=["test_file_2.sh"]
   )
   ```
 **Example:** Run tasks sequentially and terminate the job if parent task fails
@@ -257,15 +257,11 @@ client.upload_files_to_container(
   parent_task = client.add_task(
       "test_job_id",
       docker_cmd=["some", "docker", "command"],  # replace with actual command
-      use_uploaded_files=False,
-      input_files=["test_file_1.sh"]
   )
   child_task = client.add_task(
       "test_job_id",
       docker_cmd=["some", "other", "docker", "command"], # replace with actual command
-      use_uploaded_files=False,
       depends_on=parent_task,
-      input_files=["test_file_2.sh"]
   )
   ```
 **Example:** Run tasks sequentially with 1-to-many dependency. Run the child tasks even if parent task fails.
@@ -273,21 +269,17 @@ client.upload_files_to_container(
   parent_task = client.add_task(
       "test_job_id",
       docker_cmd=["some", "docker", "command"],  # replace with actual command
-      use_uploaded_files=False,
       run_dependent_tasks_on_fail=True,
-      input_files=["test_file_1.sh"]
   )
   child_task_1 = client.add_task(
       "test_job_id",
       docker_cmd=["some", "other", "docker", "command"], # replace with actual command
       depends_on=parent_task,
-      input_files=["test_file_2.sh"]
   )
   child_task_2 = client.add_task(
       "test_job_id",
       docker_cmd=["another", "docker", "command"], # replace with actual command
       depends_on=parent_task,
-      input_files=["test_file_3.sh"]
   )
   ```
 **Example:** Create many-to-1 dependency with 2 parent tasks that run before child task. Second parent task is optional: job should not terminate if it fails.
@@ -295,19 +287,16 @@ client.upload_files_to_container(
   parent_task_1 = client.add_task(
       "test_job_id",
       docker_cmd=["some", "docker", "command"],  # replace with actual command
-      input_files=["test_file_1.sh"]
   )
   parent_task_2 = client.add_task(
       "test_job_id",
       docker_cmd=["some", "other", "docker", "command"],  # replace with actual command
       run_dependent_tasks_on_fail=True,
-      input_files=["test_file_2.sh"]
   )
   child_task = client.add_task(
       "test_job_id",
       docker_cmd=["another", "docker", "command"], # replace with actual command
-      depends_on=(parent_task_1 + parent_task_2)
-      input_files=["test_file_2.sh"]
+      depends_on=[parent_task_1, parent_task_2]
   )
   ```
 

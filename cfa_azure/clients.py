@@ -1209,7 +1209,7 @@ class AzureClient:
 
         # run tasks for input files
         logger.debug("Adding tasks to job.")
-        task_ids = helpers.add_task_to_job(
+        task_id = helpers.add_task_to_job(
             job_id=job_id,
             task_id_base=job_id,
             docker_command=docker_cmd,
@@ -1226,7 +1226,7 @@ class AzureClient:
             task_id_ints=self.task_id_ints,
         )
         self.task_id_max += 1
-        return task_ids
+        return task_id
 
     def monitor_job(
         self,

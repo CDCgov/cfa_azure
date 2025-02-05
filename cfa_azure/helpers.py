@@ -820,7 +820,7 @@ def add_task_to_job(
     full_container_name: str | None = None,
     task_id_max: int = 0,
     task_id_ints: bool = False,
-):
+) -> str:
     """add a defined task(s) to a job in the pool
 
     Args:

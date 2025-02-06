@@ -1130,45 +1130,25 @@ class AzureClient:
         job_id: str,
         docker_cmd: list[str],
         name_suffix: str = "",
-        use_uploaded_files: bool = False,
-        input_files: list[str] | None = None,
         depends_on: list[str] | None = None,
         depends_on_range: tuple | None = None,
         run_dependent_tasks_on_fail: bool = False,
         container: str = None,
-    ) -> list[str]:
+    ) -> str:
         """adds task to existing job.
-        If files have been uploaded, the docker command will be applied to each file.
-        If input files are specified, the docker command will be applied to only those files.
-        If no input files are specified, only the docker command will be run.
 
         Args:
             job_id (str): job id
             docker_cmd (list[str]): docker command to run
             name_suffix (str): suffix to add to task name for task identification. Default is an empty string.
-            use_uploaded_files (bool): whether to use uploaded files with the docker command. This will append the docker command with the names of the input files
-                and create a task for each input file uploaded or specified in input_files. Default is False.
-            input_files (list[str]): a list of file names. Each file will be assigned its own task and executed against the docker command provided. Default is [].
             depends_on (list[str]): a list of tasks this task depends on. Default is None.
             depends_on_range (tuple): range of dependent tasks when task IDs are integers, given as (start_int, end_int). Optional.
             run_dependent_tasks_on_fail (bool): whether to run the dependent tasks if parent task fails. Default is False.
             container (str): name of ACR container in form "registry_name/repo_name:tag_name". Default is None to use container attached to client.
 
         Returns:
-            list: list of task IDs created
+            str: task ID created
         """
-        if use_uploaded_files:
-            if input_files:
-                in_files = input_files
-            elif self.files:
-                in_files = self.files
-            else:
-                logger.warning(
-                    "use_uploaded_files set to True but no input files found."
-                )
-        else:
-            in_files = None
-
         if container is not None:
             # check container exists
             logger.debug("Checking the container exists.")
@@ -1229,14 +1209,13 @@ class AzureClient:
 
         # run tasks for input files
         logger.debug("Adding tasks to job.")
-        task_ids = helpers.add_task_to_job(
+        task_id = helpers.add_task_to_job(
             job_id=job_id,
             task_id_base=job_id,
             docker_command=docker_cmd,
             save_logs_rel_path=rel_mnt_path,
             logs_folder=self.logs_folder,
             name_suffix=name_suffix,
-            input_files=in_files,
             mounts=self.mounts,
             depends_on=depends_on,
             depends_on_range=depends_on_range,
@@ -1247,7 +1226,7 @@ class AzureClient:
             task_id_ints=self.task_id_ints,
         )
         self.task_id_max += 1
-        return task_ids
+        return task_id
 
     def monitor_job(
         self,

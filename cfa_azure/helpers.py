@@ -812,7 +812,6 @@ def add_task_to_job(
     save_logs_rel_path: str | None = None,
     logs_folder: str = "stdout_stderr",
     name_suffix: str = "",
-    input_files: list[str] | None = None,
     mounts: list | None = None,
     depends_on: str | list[str] | None = None,
     depends_on_range: tuple | None = None,
@@ -821,7 +820,7 @@ def add_task_to_job(
     full_container_name: str | None = None,
     task_id_max: int = 0,
     task_id_ints: bool = False,
-):
+) -> str:
     """add a defined task(s) to a job in the pool
 
     Args:
@@ -831,7 +830,6 @@ def add_task_to_job(
         save_logs_rel_path (str): relative path to blob where logs should be stored. Default None for not saving logs.
         logs_folder (str): folder structure to save stdout logs to in blob container. Default is stdout_stderr.
         name_suffix (str): suffix to append to task name. Default is empty string.
-        input_files (list[str]): a  list of input files
         mounts (list[tuple]): a list of tuples in the form (container_name, relative_mount_directory)
         depends_on (str | list[str]): list of tasks this task depends on. Optional.
         depends_on_range (tuple): range of dependent tasks when task IDs are integers, given as (start_int, end_int). Optional.
@@ -841,7 +839,7 @@ def add_task_to_job(
         task_id_max (int): current max task id in use by Batch
         task_id_ints (bool): whether to use incremental integers for task IDs. Optional.
     Returns:
-        list: list of task IDs created
+        str: task ID created
     """
     logger.debug("Adding add_task process.")
     # convert docker command to string if in list format
@@ -954,47 +952,23 @@ def add_task_to_job(
     else:
         full_cmd = d_cmd_str
 
-    if input_files:
-        tasks = []
-        for i, input_file in enumerate(input_files):
-            config_stem = "_".join(input_file.split(".")[:-1]).split("/")[-1]
-            id = task_id_base + "-" + config_stem
-            # shorten the id name to fit the 64 char limit of task ids
-            if len(id) > 64:
-                id = id[:60] + "_" + str(i)
-            tasks.append(id)
-            task = batchmodels.TaskAddParameter(
-                id=id,
-                command_line=d_cmd_str + " " + input_file,
-                container_settings=batchmodels.TaskContainerSettings(
-                    image_name=full_container_name,
-                    container_run_options=f"--name={job_id} --rm " + mount_str,
-                ),
-                user_identity=user_identity,
-                depends_on=task_deps,
-                exit_conditions=exit_conditions,
-            )
-            batch_client.task.add(job_id=job_id, task=task)
-            print(f"Task '{id}' added to job '{job_id}'.")
-        return tasks
-    else:
-        command_line = full_cmd
-        logger.debug(f"Adding task {task_id}")
-        task = batchmodels.TaskAddParameter(
-            id=task_id,
-            command_line=command_line,
-            container_settings=batchmodels.TaskContainerSettings(
-                image_name=full_container_name,
-                container_run_options=f"--name={job_id}_{str(task_id_max+1)} --rm "
-                + mount_str,
-            ),
-            user_identity=user_identity,
-            depends_on=task_deps,
-            exit_conditions=exit_conditions,
-        )
-        batch_client.task.add(job_id=job_id, task=task)
-        logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
-        return task_id
+    command_line = full_cmd
+    logger.debug(f"Adding task {task_id}")
+    task = batchmodels.TaskAddParameter(
+        id=task_id,
+        command_line=command_line,
+        container_settings=batchmodels.TaskContainerSettings(
+            image_name=full_container_name,
+            container_run_options=f"--name={job_id}_{str(task_id_max+1)} --rm "
+            + mount_str,
+        ),
+        user_identity=user_identity,
+        depends_on=task_deps,
+        exit_conditions=exit_conditions,
+    )
+    batch_client.task.add(job_id=job_id, task=task)
+    logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
+    return task_id
 
 
 def monitor_tasks(job_id: str, timeout: int, batch_client: object):

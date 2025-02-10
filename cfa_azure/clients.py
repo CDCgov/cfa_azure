@@ -1112,7 +1112,7 @@ class AzureClient:
             self.task_id_ints = True
         else:
             self.task_id_ints = False
-        self.task_id_max = 1
+        self.task_id_max = 0
 
         # add the job to the pool
         logger.debug(f"Attempting to add job {job_id_r}.")

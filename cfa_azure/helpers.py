@@ -929,7 +929,7 @@ def add_task_to_job(
                 + f"/{mount[1]},target=/{mount[1]} "
             )
     if task_id_ints:
-        task_id = str(task_id_max)
+        task_id = str(task_id_max + 1)
     else:
         task_id = f"{task_id_base}-{name_suffix}-{str(task_id_max + 1)}"
 

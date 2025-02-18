@@ -178,7 +178,8 @@ class AzureClient:
         # Create pool
         self._initialize_pool()
         # Set up containers
-        self._initialize_containers()
+        if "Container" in self.config.keys():
+            self._initialize_containers()
         if self.pool_name and self.pool_parameters:
             self.create_pool(self.pool_name)
         logger.info("Client initialized! Happy coding!")

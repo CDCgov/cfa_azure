@@ -282,7 +282,7 @@ class AzureClient:
         else:
             self.registry_url = None
             registry_name = None
-            repo_name = None
+            repository_name = None
 
         if registry_name and repository_name:
             self.set_azure_container(

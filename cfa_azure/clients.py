@@ -262,20 +262,26 @@ class AzureClient:
         self.container_image_name = None
         self.full_container_name = None
         registry_name = None
-        if "registry_name" in self.config["Container"].keys():
-            registry_name = self.config["Container"]["registry_name"]
-            self.container_registry_server = f"{registry_name}.azurecr.io"
-            self.registry_url = f"https://{self.container_registry_server}"
+
+        if "Container" in self.config.keys():
+            if "registry_name" in self.config["Container"].keys():
+                registry_name = self.config["Container"]["registry_name"]
+                self.container_registry_server = f"{registry_name}.azurecr.io"
+                self.registry_url = f"https://{self.container_registry_server}"
+            else:
+                self.registry_url = None
+
+            if "repository_name" in self.config["Container"].keys():
+                repository_name = self.config["Container"]["repository_name"]
+
+            if "tag_name" in self.config["Container"].keys():
+                tag_name = self.config["Container"]["tag_name"]
+            else:
+                tag_name = "latest"
         else:
             self.registry_url = None
-
-        if "repository_name" in self.config["Container"].keys():
-            repository_name = self.config["Container"]["repository_name"]
-
-        if "tag_name" in self.config["Container"].keys():
-            tag_name = self.config["Container"]["tag_name"]
-        else:
-            tag_name = "latest"
+            registry_name = None
+            repo_name = None
 
         if registry_name and repository_name:
             self.set_azure_container(

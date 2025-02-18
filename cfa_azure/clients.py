@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class AzureClient:
     def __init__(
         self,
-        config_path: str,
+        config_path: str | None = None,
         credential_method: str = "identity",
         use_env_vars: bool = False,
     ):

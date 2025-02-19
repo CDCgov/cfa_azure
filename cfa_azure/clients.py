@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class AzureClient:
     def __init__(
         self,
-        config_path: str,
+        config_path: str | None = None,
         credential_method: str = "identity",
         use_env_vars: bool = False,
     ):
@@ -178,7 +178,8 @@ class AzureClient:
         # Create pool
         self._initialize_pool()
         # Set up containers
-        self._initialize_containers()
+        if "Container" in self.config.keys():
+            self._initialize_containers()
         if self.pool_name and self.pool_parameters:
             self.create_pool(self.pool_name)
         logger.info("Client initialized! Happy coding!")
@@ -262,20 +263,26 @@ class AzureClient:
         self.container_image_name = None
         self.full_container_name = None
         registry_name = None
-        if "registry_name" in self.config["Container"].keys():
-            registry_name = self.config["Container"]["registry_name"]
-            self.container_registry_server = f"{registry_name}.azurecr.io"
-            self.registry_url = f"https://{self.container_registry_server}"
+
+        if "Container" in self.config.keys():
+            if "registry_name" in self.config["Container"].keys():
+                registry_name = self.config["Container"]["registry_name"]
+                self.container_registry_server = f"{registry_name}.azurecr.io"
+                self.registry_url = f"https://{self.container_registry_server}"
+            else:
+                self.registry_url = None
+
+            if "repository_name" in self.config["Container"].keys():
+                repository_name = self.config["Container"]["repository_name"]
+
+            if "tag_name" in self.config["Container"].keys():
+                tag_name = self.config["Container"]["tag_name"]
+            else:
+                tag_name = "latest"
         else:
             self.registry_url = None
-
-        if "repository_name" in self.config["Container"].keys():
-            repository_name = self.config["Container"]["repository_name"]
-
-        if "tag_name" in self.config["Container"].keys():
-            tag_name = self.config["Container"]["tag_name"]
-        else:
-            tag_name = "latest"
+            registry_name = None
+            repository_name = None
 
         if registry_name and repository_name:
             self.set_azure_container(

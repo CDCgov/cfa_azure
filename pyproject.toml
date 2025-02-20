@@ -21,6 +21,8 @@ pandas = "*"
 pathlib = "*"
 docker = "*"
 pyyaml = "*"
+adlfs = "*"
+fsspec = "*"
 
 [build-system]
 requires = ["poetry-core"]

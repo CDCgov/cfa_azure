@@ -20,7 +20,6 @@ scaling_mode="fixed"
 [Storage]
 storage_account_name="cfaazurebatchprd"
 storage_account_url="https://cfaazurebatchprd.blob.core.windows.net"
-storage_account_key="REPLACE_WITH_STORAGE_ACCOUNT_ACCESS_KEY"
 
 [Container]
 container_registry_username="cfaprdbatchcr"

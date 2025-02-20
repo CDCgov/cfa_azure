@@ -2,14 +2,17 @@ import datetime
 import json
 import logging
 import os
-from time import sleep
-import pandas as pd
 from enum import Enum
+from time import sleep
+
+import pandas as pd
+
 
 class BlobFileType(Enum):
     CSV = 1
     PARQUET = 2
     JSON = 3
+
 
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.core.exceptions import HttpResponseError
@@ -183,10 +186,12 @@ class AzureClient:
             self.config, self.batch_cred
         )
         # Initialize storages
-        if 'Storage' in self.config:
-            self.storage_account_name = self.config['Storage'].get('storage_account_name')
-            self.storage_account_key = self.config['Storage'].get(
-                'storage_account_key', os.getenv("AZURE_STORAGE_ACCOUNT_KEY")
+        if "Storage" in self.config:
+            self.storage_account_name = self.config["Storage"].get(
+                "storage_account_name"
+            )
+            self.storage_account_key = self.config["Storage"].get(
+                "storage_account_key", os.getenv("AZURE_STORAGE_ACCOUNT_KEY")
             )
 
         # Create pool
@@ -1597,41 +1602,40 @@ class AzureClient:
         return filenames
 
     def read_blob_file(
-        self, 
-        container_name:str, 
-        file_path:str, 
-        delimiter:str=',',
-        file_type:BlobFileType=BlobFileType.CSV
+        self,
+        container_name: str,
+        file_path: str,
+        delimiter: str = ",",
+        file_type: BlobFileType = BlobFileType.CSV,
     ) -> pd.DataFrame:
         """
         Args:
             container_name (str): name of container in Azure blob storage account where data is located
             file_path (str): relative path of data file within container
-            delimiter (str): separator used in data such as comma, pipe or tab 
+            delimiter (str): separator used in data such as comma, pipe or tab
             file_type (int): type of file to read e.g. CSV (default), Parquet, JSON
         """
         data = pd.DataFrame()
-        blob_url = f'abfs:///{container_name}/{file_path}'
+        blob_url = f"abfs:///{container_name}/{file_path}"
         if file_type == BlobFileType.CSV:
             data = pd.read_csv(
-                blob_url, 
+                blob_url,
                 delimiter=delimiter,
                 storage_options={
-                    "account_name": self.storage_account_name, 
-                    "connection_string": f"DefaultEndpointsProtocol=https;AccountName={self.storage_account_name};AccountKey={self.storage_account_key};EndpointSuffix=core.windows.net"
-                }
+                    "account_name": self.storage_account_name,
+                    "connection_string": f"DefaultEndpointsProtocol=https;AccountName={self.storage_account_name};AccountKey={self.storage_account_key};EndpointSuffix=core.windows.net",
+                },
             )
         return data
 
-
     def write_blob_file(
-        self, 
-        data:pd.DataFrame,
-        container_name:str, 
-        file_path:str, 
-        index:bool=False,
-        delimiter:str=',',
-        file_type:BlobFileType=BlobFileType.CSV
+        self,
+        data: pd.DataFrame,
+        container_name: str,
+        file_path: str,
+        index: bool = False,
+        delimiter: str = ",",
+        file_type: BlobFileType = BlobFileType.CSV,
     ) -> bool:
         """
         Args:
@@ -1639,19 +1643,19 @@ class AzureClient:
             container_name (str): name of container in Azure blob storage account where data is located
             file_path (str): relative path of data file within container
             index (bool): write row names or not (default: False)
-            delimiter (str): separator used in data such as comma, pipe or tab 
+            delimiter (str): separator used in data such as comma, pipe or tab
             file_type (int): type of file to read e.g. CSV (default), Parquet, JSON
         """
-        blob_url = f'abfs:///{container_name}/{file_path}'
+        blob_url = f"abfs:///{container_name}/{file_path}"
         if file_type == BlobFileType.CSV:
             data.to_csv(
                 blob_url,
                 delimiter=delimiter,
                 index=index,
                 storage_options={
-                    "account_name": self.storage_account_name, 
-                    "connection_string": f"DefaultEndpointsProtocol=https;AccountName={self.storage_account_name};AccountKey={self.storage_account_key};EndpointSuffix=core.windows.net"
-                }
+                    "account_name": self.storage_account_name,
+                    "connection_string": f"DefaultEndpointsProtocol=https;AccountName={self.storage_account_name};AccountKey={self.storage_account_key};EndpointSuffix=core.windows.net",
+                },
             )
         return True
 

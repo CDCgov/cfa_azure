@@ -22,6 +22,6 @@ setup(
         "docker",
         "pyyaml",
         "adlfs",
-        "fsspec"
+        "fsspec",
     ],
 )

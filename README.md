@@ -437,17 +437,15 @@ delete_blob_snapshots("blob_name", "container_name", blob_service_client)
 ```
 - `delete_blob_folder`: deletes all blobs in a specified folder in a container
 ```
-read_blob_file("container_name", "file_path")
-```
+delete_blob_folder("folder_path", "container_name", blob_service_client)
 ```
 - `read_blob_file`: reads file from specified container in Azure Storage into a Pandas data frame without mounting the container to a local filesystem
 ```
-write_blob_file("data", "container_name", "file_path")
-```
+read_blob_file("container_name", "file_path")
 ```
 - `write_blob_file`: write Pandas dataframe to a file in specified container in Azure Storage
 ```
-delete_blob_folder("folder_path", "container_name", blob_service_client)
+write_blob_file("data", "container_name", "file_path")
 ```
 - `format_extensions`: formats file extensions into a standard format for use
 ```

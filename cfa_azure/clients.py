@@ -61,6 +61,8 @@ class AzureClient:
         self.timeout = None
         self.save_logs_to_blob = None
         self.logs_folder = "stdout_stderr"
+        self.pool_name = None
+        self.pool_parameters = None
 
         logger.debug("Attributes initialized in client.")
 
@@ -181,21 +183,20 @@ class AzureClient:
             config=self.config, credential=self.secret_cred
         )
         logger.debug("generated Batch Management Client.")
-        # create batch service client
-        self.batch_client = helpers.get_batch_service_client(
-            self.config, self.batch_cred
-        )
         # Initialize storages
-        if "Storage" in self.config:
+        if "Storage" in self.config.keys():
             self.storage_account_name = self.config["Storage"].get(
                 "storage_account_name"
             )
-            self.storage_account_key = self.config["Storage"].get(
-                "storage_account_key", os.getenv("AZURE_STORAGE_ACCOUNT_KEY")
-            )
 
-        # Create pool
-        self._initialize_pool()
+        # create batch service client
+        if "Batch" in self.config.keys():
+            self.batch_client = helpers.get_batch_service_client(
+                self.config, self.batch_cred
+            )
+            # Create pool
+            self._initialize_pool()
+
         # Set up containers
         if "Container" in self.config.keys():
             self._initialize_containers()
@@ -1617,13 +1618,22 @@ class AzureClient:
         """
         data = pd.DataFrame()
         blob_url = f"abfs:///{container_name}/{file_path}"
+        client_secret = helpers.get_sp_secret(
+            self.config, ManagedIdentityCredential()
+        )
         if file_type == BlobFileType.CSV:
             data = pd.read_csv(
                 blob_url,
                 delimiter=delimiter,
                 storage_options={
                     "account_name": self.storage_account_name,
-                    "connection_string": f"DefaultEndpointsProtocol=https;AccountName={self.storage_account_name};AccountKey={self.storage_account_key};EndpointSuffix=core.windows.net",
+                    "tenant_id": self.config["Authentication"].get(
+                        "tenant_id"
+                    ),
+                    "client_id": self.config["Authentication"].get(
+                        "sp_application_id"
+                    ),
+                    "client_secret": client_secret,
                 },
             )
         return data
@@ -1647,14 +1657,23 @@ class AzureClient:
             file_type (int): type of file to read e.g. CSV (default), Parquet, JSON
         """
         blob_url = f"abfs:///{container_name}/{file_path}"
+        client_secret = helpers.get_sp_secret(
+            self.config, ManagedIdentityCredential()
+        )
         if file_type == BlobFileType.CSV:
             data.to_csv(
                 blob_url,
-                delimiter=delimiter,
+                sep=delimiter,
                 index=index,
                 storage_options={
                     "account_name": self.storage_account_name,
-                    "connection_string": f"DefaultEndpointsProtocol=https;AccountName={self.storage_account_name};AccountKey={self.storage_account_key};EndpointSuffix=core.windows.net",
+                    "tenant_id": self.config["Authentication"].get(
+                        "tenant_id"
+                    ),
+                    "client_id": self.config["Authentication"].get(
+                        "sp_application_id"
+                    ),
+                    "client_secret": client_secret,
                 },
             )
         return True

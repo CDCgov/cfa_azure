@@ -2,8 +2,10 @@ import datetime
 import json
 import logging
 import os
+from enum import Enum
 from time import sleep
 
+import pandas as pd
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.core.exceptions import HttpResponseError
 from azure.identity import (
@@ -13,6 +15,13 @@ from azure.identity import (
 )
 
 from cfa_azure import helpers
+
+
+class BlobFileType(Enum):
+    CSV = 1
+    PARQUET = 2
+    JSON = 3
+
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +60,8 @@ class AzureClient:
         self.timeout = None
         self.save_logs_to_blob = None
         self.logs_folder = "stdout_stderr"
+        self.pool_name = None
+        self.pool_parameters = None
 
         logger.debug("Attributes initialized in client.")
 
@@ -171,12 +182,20 @@ class AzureClient:
             config=self.config, credential=self.secret_cred
         )
         logger.debug("generated Batch Management Client.")
+        # Initialize storages
+        if "Storage" in self.config.keys():
+            self.storage_account_name = self.config["Storage"].get(
+                "storage_account_name"
+            )
+
         # create batch service client
-        self.batch_client = helpers.get_batch_service_client(
-            self.config, self.batch_cred
-        )
-        # Create pool
-        self._initialize_pool()
+        if "Batch" in self.config.keys():
+            self.batch_client = helpers.get_batch_service_client(
+                self.config, self.batch_cred
+            )
+            # Create pool
+            self._initialize_pool()
+
         # Set up containers
         if "Container" in self.config.keys():
             self._initialize_containers()
@@ -1581,6 +1600,82 @@ class AzureClient:
                 )
                 filenames += _files
         return filenames
+
+    def read_blob_file(
+        self,
+        container_name: str,
+        file_path: str,
+        delimiter: str = ",",
+        file_type: BlobFileType = BlobFileType.CSV,
+    ) -> pd.DataFrame:
+        """
+        Args:
+            container_name (str): name of container in Azure blob storage account where data is located
+            file_path (str): relative path of data file within container
+            delimiter (str): separator used in data such as comma, pipe or tab
+            file_type (int): type of file to read e.g. CSV (default), Parquet, JSON
+        """
+        data = pd.DataFrame()
+        blob_url = f"abfs:///{container_name}/{file_path}"
+        client_secret = helpers.get_sp_secret(
+            self.config, ManagedIdentityCredential()
+        )
+        if file_type == BlobFileType.CSV:
+            data = pd.read_csv(
+                blob_url,
+                delimiter=delimiter,
+                storage_options={
+                    "account_name": self.storage_account_name,
+                    "tenant_id": self.config["Authentication"].get(
+                        "tenant_id"
+                    ),
+                    "client_id": self.config["Authentication"].get(
+                        "sp_application_id"
+                    ),
+                    "client_secret": client_secret,
+                },
+            )
+        return data
+
+    def write_blob_file(
+        self,
+        data: pd.DataFrame,
+        container_name: str,
+        file_path: str,
+        index: bool = False,
+        delimiter: str = ",",
+        file_type: BlobFileType = BlobFileType.CSV,
+    ) -> bool:
+        """
+        Args:
+            data (Pandas.DataFrame): data to be persisted
+            container_name (str): name of container in Azure blob storage account where data is located
+            file_path (str): relative path of data file within container
+            index (bool): write row names or not (default: False)
+            delimiter (str): separator used in data such as comma, pipe or tab
+            file_type (int): type of file to read e.g. CSV (default), Parquet, JSON
+        """
+        blob_url = f"abfs:///{container_name}/{file_path}"
+        client_secret = helpers.get_sp_secret(
+            self.config, ManagedIdentityCredential()
+        )
+        if file_type == BlobFileType.CSV:
+            data.to_csv(
+                blob_url,
+                sep=delimiter,
+                index=index,
+                storage_options={
+                    "account_name": self.storage_account_name,
+                    "tenant_id": self.config["Authentication"].get(
+                        "tenant_id"
+                    ),
+                    "client_id": self.config["Authentication"].get(
+                        "sp_application_id"
+                    ),
+                    "client_secret": client_secret,
+                },
+            )
+        return True
 
     def delete_blob_file(self, blob_name: str, container_name: str):
         """

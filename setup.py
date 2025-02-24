@@ -20,6 +20,7 @@ setup(
         "pandas",
         "pathlib",
         "docker",
+        "polars",
         "pyyaml",
         "griddler @ git+https://github.com/CDCgov/pygriddler.git@main#egg=griddler",
     ],

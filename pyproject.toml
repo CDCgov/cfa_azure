@@ -21,6 +21,7 @@ pandas = "*"
 pathlib = "*"
 docker = "*"
 pyyaml = "*"
+polars = "*"
 griddler = {git = "https://github.com/CDCgov/pygriddler.git"}
 
 [build-system]

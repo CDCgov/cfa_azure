@@ -1601,80 +1601,49 @@ class AzureClient:
                 filenames += _files
         return filenames
 
-    def read_blob_file(
-        self,
-        container_name: str,
-        file_path: str,
-        delimiter: str = ",",
-        file_type: BlobFileType = BlobFileType.CSV,
-    ) -> pd.DataFrame:
-        """
-        Args:
-            container_name (str): name of container in Azure blob storage account where data is located
-            file_path (str): relative path of data file within container
-            delimiter (str): separator used in data such as comma, pipe or tab
-            file_type (int): type of file to read e.g. CSV (default), Parquet, JSON
-        """
-        data = pd.DataFrame()
-        blob_url = f"abfs:///{container_name}/{file_path}"
+    def _get_blob_storage_options(self):
         client_secret = helpers.get_sp_secret(
             self.config, ManagedIdentityCredential()
         )
-        if file_type == BlobFileType.CSV:
-            data = pd.read_csv(
-                blob_url,
-                delimiter=delimiter,
-                storage_options={
-                    "account_name": self.storage_account_name,
-                    "tenant_id": self.config["Authentication"].get(
-                        "tenant_id"
-                    ),
-                    "client_id": self.config["Authentication"].get(
-                        "sp_application_id"
-                    ),
-                    "client_secret": client_secret,
-                },
-            )
-        return data
+        return {
+            "account_name": self.storage_account_name,
+            "tenant_id": self.config["Authentication"].get("tenant_id"),
+            "client_id": self.config["Authentication"].get(
+                "sp_application_id"
+            ),
+            "client_secret": client_secret,
+        }
 
-    def write_blob_file(
-        self,
-        data: pd.DataFrame,
-        container_name: str,
-        file_path: str,
-        index: bool = False,
-        delimiter: str = ",",
-        file_type: BlobFileType = BlobFileType.CSV,
+    def invoke_blob_data(
+        self, module_name: any, method_name: str, blob_url: str, **kwargs
+    ):
+        kwargs["storage_options"] = self._get_blob_storage_options()
+        return getattr(module_name, method_name)(blob_url, **kwargs)
+
+    def read_blob_data(self, blob_url: str, **kwargs) -> pd.DataFrame:
+        """
+        Args:
+            blob_url (str): ABFS Url of Blob Storage location
+            kwargs (str): dictionary of options
+        """
+        file_format = kwargs.get("file_format", "csv")  # Default is csv
+        kwargs.pop("file_format")
+        method_name = f"read_{file_format}"
+        return self.invoke_blob_data(pd, method_name, blob_url, **kwargs)
+
+    def write_blob_data(
+        self, data: pd.DataFrame, blob_url: str, **kwargs
     ) -> bool:
         """
         Args:
             data (Pandas.DataFrame): data to be persisted
-            container_name (str): name of container in Azure blob storage account where data is located
-            file_path (str): relative path of data file within container
-            index (bool): write row names or not (default: False)
-            delimiter (str): separator used in data such as comma, pipe or tab
-            file_type (int): type of file to read e.g. CSV (default), Parquet, JSON
+            blob_url (str): ABFS Url of Blob Storage location
+            kwargs (str): dictionary of options
         """
-        blob_url = f"abfs:///{container_name}/{file_path}"
-        client_secret = helpers.get_sp_secret(
-            self.config, ManagedIdentityCredential()
-        )
-        if file_type == BlobFileType.CSV:
-            data.to_csv(
-                blob_url,
-                sep=delimiter,
-                index=index,
-                storage_options={
-                    "account_name": self.storage_account_name,
-                    "tenant_id": self.config["Authentication"].get(
-                        "tenant_id"
-                    ),
-                    "client_id": self.config["Authentication"].get(
-                        "sp_application_id"
-                    ),
-                    "client_secret": client_secret,
-                },
-            )
+        file_format = kwargs.get("file_format", "csv")  # Default is csv
+        kwargs.pop("file_format")
+        method_name = f"to_{file_format}"
+        self.invoke_blob_data(data, method_name, blob_url, **kwargs)
         return True
 
     def delete_blob_file(self, blob_name: str, container_name: str):

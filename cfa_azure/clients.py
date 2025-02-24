@@ -15,7 +15,6 @@ from azure.identity import (
 
 from cfa_azure import helpers
 
-
 logger = logging.getLogger(__name__)
 
 

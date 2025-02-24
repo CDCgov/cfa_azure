@@ -2,7 +2,6 @@ import datetime
 import json
 import logging
 import os
-from enum import Enum
 from time import sleep
 
 import pandas as pd
@@ -15,12 +14,6 @@ from azure.identity import (
 )
 
 from cfa_azure import helpers
-
-
-class BlobFileType(Enum):
-    CSV = 1
-    PARQUET = 2
-    JSON = 3
 
 
 logger = logging.getLogger(__name__)

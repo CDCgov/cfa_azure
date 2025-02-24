@@ -36,6 +36,7 @@ from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
 from azure.storage.blob import BlobServiceClient, ContainerClient
 from docker.errors import DockerException
+from griddler import griddle
 from yaml import SafeLoader, dump, load
 
 logger = logging.getLogger(__name__)
@@ -2445,3 +2446,35 @@ def download_job_stats(
             writer.writerow(fields)
             logger.debug("wrote task to job statistic csv.")
     print(f"Downloaded job statistics report to {file_name}.csv.")
+
+
+def get_args_from_yaml(file_path: str) -> list[str]:
+    """
+    get_args_from_yaml _summary_
+
+    Args:
+        file_path (str): _description_
+
+    Returns:
+        list[str]: _description_
+    """
+    parameter_sets = griddle.read(file_path)
+    output = []
+    for i in parameter_sets:
+        full_cmd = []
+        for key, value in i.items():
+            if key.endswith("(flag)"):
+                if value != "":
+                    full_cmd += f""" --{key.split("(flag)")[0]}"""
+            else:
+                full_cmd += f" --{key} {value}"
+        output.append(full_cmd)
+    return output
+
+
+def get_tasks_from_yaml(base_cmd: str, file_path: str) -> list[str]:
+    cmds = []
+    arg_list = get_args_from_yaml(file_path)
+    for s in arg_list:
+        cmds.append(f"{base_cmd} {s}")
+    return cmds

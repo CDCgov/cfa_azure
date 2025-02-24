@@ -21,5 +21,6 @@ setup(
         "pathlib",
         "docker",
         "pyyaml",
+        "pygriddler @ git+https://github.com/CDCgov/pygriddler.git",
     ],
 )

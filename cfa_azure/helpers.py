@@ -2461,7 +2461,7 @@ def get_args_from_yaml(file_path: str) -> list[str]:
     parameter_sets = griddle.read(file_path)
     output = []
     for i in parameter_sets:
-        full_cmd = []
+        full_cmd = ""
         for key, value in i.items():
             if key.endswith("(flag)"):
                 if value != "":

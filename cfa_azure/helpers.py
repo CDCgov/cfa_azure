@@ -2450,13 +2450,13 @@ def download_job_stats(
 
 def get_args_from_yaml(file_path: str) -> list[str]:
     """
-    get_args_from_yaml _summary_
+    parses yaml file and returns list of strings containing command line arguments and flags captured in the yaml.
 
     Args:
-        file_path (str): _description_
+        file_path (str): path to yaml file
 
     Returns:
-        list[str]: _description_
+        list[str]: list of command line arguments
     """
     parameter_sets = griddle.read(file_path)
     output = []
@@ -2473,6 +2473,16 @@ def get_args_from_yaml(file_path: str) -> list[str]:
 
 
 def get_tasks_from_yaml(base_cmd: str, file_path: str) -> list[str]:
+    """
+    combines output of get_args_from_yaml with a base command to get a complete command
+
+    Args:
+        base_cmd (str): base command to append the rest of the yaml arguments to
+        file_path (str): path to yaml file
+
+    Returns:
+        list[str]: list of full commands created by joining the base command with each set of parameters
+    """
     cmds = []
     arg_list = get_args_from_yaml(file_path)
     for s in arg_list:

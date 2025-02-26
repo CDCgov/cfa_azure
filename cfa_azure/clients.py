@@ -1622,7 +1622,18 @@ class AzureClient:
 
     def add_tasks_from_yaml(
         self, job_id: str, base_cmd: str, file_path: str, **kwargs
-    ):
+    ) -> list[str]:
+        """
+        parses yaml file to append parameters to a base command as command line arguments, which get submitted to the specified job.
+
+        Args:
+            job_id (str): name of job
+            base_cmd (str): base command to which yaml parameters will be added
+            file_path (str): path to yaml file
+
+        Returns:
+            list[str]: list of task IDs from submitted tasks
+        """
         # get tasks from yaml
         task_strs = helpers.get_tasks_from_yaml(
             base_cmd=base_cmd, file_path=file_path

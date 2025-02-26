@@ -1619,3 +1619,17 @@ class AzureClient:
             batch_service_client=self.batch_client,
             file_name=file_name,
         )
+
+    def add_tasks_from_yaml(
+        self, job_id: str, base_cmd: str, file_path: str, **kwargs
+    ):
+        # get tasks from yaml
+        task_strs = helpers.get_tasks_from_yaml(
+            base_cmd=base_cmd, file_path=file_path
+        )
+        # submit tasks
+        task_list = []
+        for task_str in task_strs:
+            tid = self.add_task(job_id=job_id, docker_cmd=task_str, **kwargs)
+            task_list.append(tid)
+        return task_list

@@ -4,6 +4,7 @@ import logging
 import os
 from time import sleep
 
+import adlfs
 import pandas as pd
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.core.exceptions import HttpResponseError
@@ -1593,7 +1594,18 @@ class AzureClient:
                 filenames += _files
         return filenames
 
-    def _get_blob_storage_options(self):
+    def __get_blob_acccess(self):
+        client_secret = helpers.get_sp_secret(
+            self.config, ManagedIdentityCredential()
+        )
+        return adlfs.AzureBlobFileSystem(
+            account_name=self.storage_account_name,
+            client_secret=client_secret,
+            tenant_id=self.config["Authentication"].get("tenant_id"),
+            client_id=self.config["Authentication"].get("sp_application_id"),
+        )
+
+    def __get_blob_storage_options(self):
         client_secret = helpers.get_sp_secret(
             self.config, ManagedIdentityCredential()
         )
@@ -1606,10 +1618,10 @@ class AzureClient:
             "client_secret": client_secret,
         }
 
-    def invoke_blob_data(
+    def __invoke_blob_data(
         self, module_name: any, method_name: str, blob_url: str, **kwargs
     ):
-        kwargs["storage_options"] = self._get_blob_storage_options()
+        kwargs["storage_options"] = self.__get_blob_storage_options()
         return getattr(module_name, method_name)(blob_url, **kwargs)
 
     def read_blob_data(self, blob_url: str, **kwargs) -> pd.DataFrame:
@@ -1621,7 +1633,17 @@ class AzureClient:
         file_format = kwargs.get("file_format", "csv")  # Default is csv
         kwargs.pop("file_format")
         method_name = f"read_{file_format}"
-        return self.invoke_blob_data(pd, method_name, blob_url, **kwargs)
+        return self.__invoke_blob_data(pd, method_name, blob_url, **kwargs)
+
+    def read_blob(self, blob_url: str):
+        """
+        Args:
+            blob_url (str): ABFS Url of Blob Storage location
+        """
+        data = None
+        with self.__get_blob_acccess().open(blob_url, "rb") as f:
+            data = f.read()
+        return data
 
     def write_blob_data(
         self, data: pd.DataFrame, blob_url: str, **kwargs
@@ -1635,7 +1657,17 @@ class AzureClient:
         file_format = kwargs.get("file_format", "csv")  # Default is csv
         kwargs.pop("file_format")
         method_name = f"to_{file_format}"
-        self.invoke_blob_data(data, method_name, blob_url, **kwargs)
+        self.__invoke_blob_data(data, method_name, blob_url, **kwargs)
+        return True
+
+    def write_blob(self, data, blob_url: str) -> bool:
+        """
+        Args:
+            data: bytes data to be persisted
+            blob_url (str): ABFS Url of Blob Storage location
+        """
+        with self.__get_blob_acccess().open(blob_url, "wb") as f:
+            f.write(data)
         return True
 
     def delete_blob_file(self, blob_name: str, container_name: str):

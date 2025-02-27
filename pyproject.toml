@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "cfa_azure"
-version = "1.3.3"
+version = "1.3.4"
 description = "module for use with Azure and Azure Batch"
 authors = ["Ryan Raasch <xng3@cdc.gov>"]
 readme = "README.md"
 packages = [{include = "cfa_azure"}]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.10"
 azure-identity = "^1.16.1"
 azure-keyvault = "^4.2.0"
 azure-batch = "^14.0.0"
@@ -21,6 +21,8 @@ pandas = "*"
 pathlib = "*"
 docker = "*"
 pyyaml = "*"
+polars = "*"
+griddler = {git = "https://github.com/CDCgov/pygriddler.git"}
 adlfs = "*"
 fsspec = "*"
 

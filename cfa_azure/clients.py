@@ -4,6 +4,7 @@ import logging
 import os
 from time import sleep
 
+import pandas as pd
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.core.exceptions import HttpResponseError
 from azure.identity import (
@@ -51,6 +52,8 @@ class AzureClient:
         self.timeout = None
         self.save_logs_to_blob = None
         self.logs_folder = "stdout_stderr"
+        self.pool_name = None
+        self.pool_parameters = None
 
         logger.debug("Attributes initialized in client.")
 
@@ -171,12 +174,20 @@ class AzureClient:
             config=self.config, credential=self.secret_cred
         )
         logger.debug("generated Batch Management Client.")
+        # Initialize storages
+        if "Storage" in self.config.keys():
+            self.storage_account_name = self.config["Storage"].get(
+                "storage_account_name"
+            )
+
         # create batch service client
-        self.batch_client = helpers.get_batch_service_client(
-            self.config, self.batch_cred
-        )
-        # Create pool
-        self._initialize_pool()
+        if "Batch" in self.config.keys():
+            self.batch_client = helpers.get_batch_service_client(
+                self.config, self.batch_cred
+            )
+            # Create pool
+            self._initialize_pool()
+
         # Set up containers
         if "Container" in self.config.keys():
             self._initialize_containers()
@@ -1581,6 +1592,51 @@ class AzureClient:
                 )
                 filenames += _files
         return filenames
+
+    def _get_blob_storage_options(self):
+        client_secret = helpers.get_sp_secret(
+            self.config, ManagedIdentityCredential()
+        )
+        return {
+            "account_name": self.storage_account_name,
+            "tenant_id": self.config["Authentication"].get("tenant_id"),
+            "client_id": self.config["Authentication"].get(
+                "sp_application_id"
+            ),
+            "client_secret": client_secret,
+        }
+
+    def invoke_blob_data(
+        self, module_name: any, method_name: str, blob_url: str, **kwargs
+    ):
+        kwargs["storage_options"] = self._get_blob_storage_options()
+        return getattr(module_name, method_name)(blob_url, **kwargs)
+
+    def read_blob_data(self, blob_url: str, **kwargs) -> pd.DataFrame:
+        """
+        Args:
+            blob_url (str): ABFS Url of Blob Storage location
+            kwargs (str): dictionary of options
+        """
+        file_format = kwargs.get("file_format", "csv")  # Default is csv
+        kwargs.pop("file_format")
+        method_name = f"read_{file_format}"
+        return self.invoke_blob_data(pd, method_name, blob_url, **kwargs)
+
+    def write_blob_data(
+        self, data: pd.DataFrame, blob_url: str, **kwargs
+    ) -> bool:
+        """
+        Args:
+            data (Pandas.DataFrame): data to be persisted
+            blob_url (str): ABFS Url of Blob Storage location
+            kwargs (str): dictionary of options
+        """
+        file_format = kwargs.get("file_format", "csv")  # Default is csv
+        kwargs.pop("file_format")
+        method_name = f"to_{file_format}"
+        self.invoke_blob_data(data, method_name, blob_url, **kwargs)
+        return True
 
     def delete_blob_file(self, blob_name: str, container_name: str):
         """

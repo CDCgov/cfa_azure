@@ -36,6 +36,7 @@ from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
 from azure.storage.blob import BlobServiceClient, ContainerClient
 from docker.errors import DockerException
+from griddler import griddle
 from yaml import SafeLoader, dump, load
 
 logger = logging.getLogger(__name__)
@@ -2445,3 +2446,45 @@ def download_job_stats(
             writer.writerow(fields)
             logger.debug("wrote task to job statistic csv.")
     print(f"Downloaded job statistics report to {file_name}.csv.")
+
+
+def get_args_from_yaml(file_path: str) -> list[str]:
+    """
+    parses yaml file and returns list of strings containing command line arguments and flags captured in the yaml.
+
+    Args:
+        file_path (str): path to yaml file
+
+    Returns:
+        list[str]: list of command line arguments
+    """
+    parameter_sets = griddle.read(file_path)
+    output = []
+    for i in parameter_sets:
+        full_cmd = ""
+        for key, value in i.items():
+            if key.endswith("(flag)"):
+                if value != "":
+                    full_cmd += f""" --{key.split("(flag)")[0]}"""
+            else:
+                full_cmd += f" --{key} {value}"
+        output.append(full_cmd)
+    return output
+
+
+def get_tasks_from_yaml(base_cmd: str, file_path: str) -> list[str]:
+    """
+    combines output of get_args_from_yaml with a base command to get a complete command
+
+    Args:
+        base_cmd (str): base command to append the rest of the yaml arguments to
+        file_path (str): path to yaml file
+
+    Returns:
+        list[str]: list of full commands created by joining the base command with each set of parameters
+    """
+    cmds = []
+    arg_list = get_args_from_yaml(file_path)
+    for s in arg_list:
+        cmds.append(f"{base_cmd} {s}")
+    return cmds

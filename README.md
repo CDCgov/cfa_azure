@@ -36,6 +36,7 @@ The method `add_task()` no longer accepts parameters `use_uploaded_files` or `in
     - [Configuration](#configuration)
     - [AzureClient Methods](#azureclient-methods)
     - [Running Jobs and Tasks](#running-jobs-and-tasks)
+    - [Running Tasks from Yaml](#)
   - [automation](#automation)
   - [helpers](#helpers)
     - [Helpers Functions](#helpers-functions)
@@ -311,6 +312,46 @@ for item in range(20):
 #add dependent task which depends on tasks 1 to 20.
 client.add_task("python3 some_cmd.py", depends_on_range = (1, 20))
   ```
+
+### Running Tasks from Yaml
+Tasks can also be added to a job based on a yaml file containing various parameters and flags. The yaml is parsed into command line arguments and appended to a base command to be used as the docker command in Azure Batch. The yaml/argument parsing utilizes [pygriddler](https://github.com/CDCgov/pygriddler). The basic structure for this method is `client.add_tasks_from_yaml(job_id, base_cmd, file_path)`.
+For example, a yaml called params.yaml that has the following structure
+```
+baseline_parameters:
+  p_infected_initial: 0.001
+
+grid_parameters:
+  scenario: [pessimistic, optimistic]
+  run: [1, 2, 3]
+
+nested_parameters:
+  - scenario: pessimistic
+    R0: 4.0
+    p_infected_initial: 66
+    infectious_period: 2.0
+    infer(flag): x
+    run_checks(flag): x
+  - scenario: optimistic
+    R0: 2.0
+    infectious_period: 0.5
+```
+run with the following method
+```
+client.add_tasks_from_yaml(job_id = "args_example",
+  base_cmd = "python3 main.py",
+  file_path = "params.yaml"
+  )
+```
+will produce 6 tasks with the following docker_cmds passed to Batch:
+```
+'python3 main.py  --scenario pessimistic --run 1 --p_infected_initial 66 --R0 4.0 --infectious_period 2.0 --infer --run_checks'
+'python3 main.py  --scenario pessimistic --run 2 --p_infected_initial 66 --R0 4.0 --infectious_period 2.0 --infer --run_checks'
+'python3 main.py  --scenario pessimistic --run 3 --p_infected_initial 66 --R0 4.0 --infectious_period 2.0 --infer --run_checks'
+'python3 main.py  --scenario optimistic --run 1 --p_infected_initial 0.001 --R0 2.0 --infectious_period 0.5'
+'python3 main.py  --scenario optimistic --run 2 --p_infected_initial 0.001 --R0 2.0 --infectious_period 0.5'
+'python3 main.py  --scenario optimistic --run 3 --p_infected_initial 0.001 --R0 2.0 --infectious_period 0.5'
+```
+
 
 ## automation
 Please view [this documentation](docs/automation_README.md) on getting started with the `automation` module.

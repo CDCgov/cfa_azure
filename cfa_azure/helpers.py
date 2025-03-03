@@ -2065,7 +2065,7 @@ def check_azure_container_exists(
         return None
 
 
-def generate_autoscale_formula(max_nodes: int = 8) -> str:
+def generate_autoscale_formula(max_nodes: int = 5) -> str:
     """
     Generate a generic autoscale formula for use based on maximum number of nodes to scale up to.
 
@@ -2084,10 +2084,10 @@ def generate_autoscale_formula(max_nodes: int = 8) -> str:
     $tasks = $samples < 70 ? max(0, $ActiveTasks.GetSample(1)) :
     max( $ActiveTasks.GetSample(1), avg($ActiveTasks.GetSample(TimeInterval_Minute * 10)));
     // If number of pending tasks is not 0, set targetVM to pending tasks, otherwise half of current dedicated.
-    $targetVMs = $tasks > 0 ? $tasks : max(0, $TargetDedicatedNodes / 2);
+    $targetVMs = $tasks > 0 ? $tasks : max(0, $TargetLowPriorityNodes / 2);
     // The pool size is capped to max_nodes input
     cappedPoolSize = {max_nodes};
-    $TargetDedicatedNodes = max(0, min($targetVMs, cappedPoolSize));
+    $TargetLowPriorityNodes = max(0, min($targetVMs, cappedPoolSize));
     // Set node deallocation mode - keep nodes active only until tasks finish
     $NodeDeallocationOption = taskcompletion;
     """

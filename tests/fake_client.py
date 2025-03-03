@@ -179,8 +179,8 @@ class FakeClient:
 
         def create_container(self):
             return True
-        
-        def download_blob(self, blob:str):
+
+        def download_blob(self, blob: str):
             return "fake_stream"
 
         def list_blobs(self, name_starts_with=None):

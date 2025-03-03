@@ -742,5 +742,7 @@ class TestClients(unittest.TestCase):
     )
     def test_read_blob(self):
         self.azure_client.blob_service_client = FakeClient()
-        data = self.azure_client.read_blob(blob_url="somefolder/somefile.csv", container="some_container")
+        data = self.azure_client.read_blob(
+            blob_url="somefolder/somefile.csv", container="some_container"
+        )
         self.assertIsNotNone(data)

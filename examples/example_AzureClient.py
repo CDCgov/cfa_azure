@@ -44,5 +44,13 @@ docker_cmd = "java -jar /app.jar"
 client.add_task(job_id="run_test", docker_cmd=docker_cmd)
 client.monitor_job(job_id="run_test")
 
+# download job output from blob storage to local
+client.download_after_job(
+    job_id="run_test",
+    blob_paths=["folder1", "folder/subfolder", "file.txt"],
+    target="local_folder",
+    container_name="output-test",
+)
+
 # close down the jobs, required when using debug is True
 client.delete_job(job_id="run_test")

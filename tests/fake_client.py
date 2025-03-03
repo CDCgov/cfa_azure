@@ -174,8 +174,14 @@ class FakeClient:
         def exists(self):
             return False
 
+        def get_blob_client(self, blob):
+            return FakeClient.FakeContainerClient()
+
         def create_container(self):
             return True
+        
+        def download_blob(self, blob:str):
+            return "fake_stream"
 
         def list_blobs(self, name_starts_with=None):
             return [FakeClient.FakeBlob(f) for f in FAKE_BLOBS]

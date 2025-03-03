@@ -17,6 +17,5 @@ pytest
 pytest-xdist
 pyyaml
 toml==0.10.2
-adlfs
 griddler @ git+https://github.com/CDCgov/pygriddler.git@main
 polars

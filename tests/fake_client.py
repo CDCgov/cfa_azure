@@ -2,7 +2,7 @@
 
 import json
 from datetime import datetime, timedelta
-
+import random
 import azure.batch.models as batchmodels
 
 FAKE_ACCOUNT = "Test Account"
@@ -138,13 +138,61 @@ class FakeClient:
         def readall(self):
             return bytes(FAKE_BLOB_CONTENT, "utf-8")
 
+
     class FakeTask:
+
+        class FakeExecutionInfo:
+            @property
+            def result(self):
+                return "success"
+
+            @property
+            def exit_code(self):
+                return 0
+
+            @property
+            def start_time(self):
+                return (datetime.now() - timedelta(minutes=5))
+            
+            @property
+            def end_time(self):
+                return datetime.now()
+            
+        class FakeNodeInfo:
+            @property
+            def node_id(self):
+                return random.randint(1, 100)
+
+            @property
+            def pool_id (self):
+                return random.randint(1, 100)
+
+        @property
+        def id(self):
+            return random.randint(1, 100)
+
         @property
         def state(self):
             return batchmodels.TaskState.completed
 
         def add(self, job_id, task):
             return True
+
+        @property
+        def command_line(self):
+            return "some random command"
+
+        @property
+        def creation_time(self):
+            return (datetime.now() - timedelta(minutes=6))
+
+        @property
+        def node_info(self):
+            return FakeClient.FakeTask.FakeNodeInfo()
+
+        @property
+        def execution_info(self):
+            return FakeClient.FakeTask.FakeExecutionInfo()
 
         def as_dict(self):
             return {"execution_info": {"result": "success"}}

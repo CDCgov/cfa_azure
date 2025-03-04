@@ -1700,3 +1700,43 @@ class AzureClient:
             tid = self.add_task(job_id=job_id, docker_cmd=task_str, **kwargs)
             task_list.append(tid)
         return task_list
+
+    def download_after_job(
+        self,
+        job_id: str,
+        blob_paths: list[str],
+        target: str,
+        container_name: str,
+        **kwargs,
+    ):
+        """
+        download specified blob files to be downloaded after a job completes
+
+        Args:
+            job_id (str): name of job to monitor
+            blob_paths (list[str]): list of blob paths for directories/files to download
+            target (str): local folder path for where to store downloaded objects
+            container_name (str): Blob container name where objects will live
+        """
+        # check job for completion
+        helpers.monitor_tasks(
+            job_id=job_id, timeout=None, batch_client=self.batch_client
+        )
+
+        # loop through blob_paths:
+        os.makedirs(target, exist_ok=True)
+
+        for path in blob_paths:
+            if "." in path:
+                self.download_file(
+                    src_path=path,
+                    dest_path=os.path.join(target, path),
+                    container_name=container_name,
+                )
+            else:
+                self.download_directory(
+                    src_path=path,
+                    dest_path=os.path.join(target),
+                    container_name=container_name,
+                    **kwargs,
+                )

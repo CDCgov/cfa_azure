@@ -46,7 +46,7 @@ See the example [experiment config](examples/automation/exp_config.toml) and [ta
 
 The `run_experiment` function is meant for applying all permutations of a set of variables to a common base command. For example, if you have variables var1 and var2, where var1 can be values 10 or 11 and var2 can be 98 or 99, and you need to apply all combinations (really permutations) of these variables to a single command, this is the function to use. It would create 4 tasks with (var1, var2) values of (10, 98), (10, 99), (11, 98), and (11, 99), passed into the command as determined in the config file.
 
-If you have tasks you'd like to run based on a yaml file composed of the various command line arguments, this is accepted here as well. Rather than listing each parameter with the possible values, the [experiment] section will have a `base_command` and a `exp_yaml`, which defines the command and the file path to the yaml. The yaml will be structured as describe in the [README](/README.md).
+If you have tasks you'd like to run based on a yaml file composed of the various command line arguments, this is accepted here as well. Rather than listing each parameter with the possible values, the [experiment] section will have a `base_command` and a `exp_yaml` key, which defines the command and the file path to the yaml. The yaml will be structured as described in the [README](/README.md).
 
 Here's a more concrete example of the first case. Suppose we have the following experiment section in the experiment config:
 ```

@@ -36,7 +36,8 @@ The method `add_task()` no longer accepts parameters `use_uploaded_files` or `in
     - [Configuration](#configuration)
     - [AzureClient Methods](#azureclient-methods)
     - [Running Jobs and Tasks](#running-jobs-and-tasks)
-    - [Running Tasks from Yaml](#)
+    - [Running Tasks from Yaml](#running-tasks-from-yaml)
+    - [Download Blob Files After Job Completes](#download-blob-files-after-job-completes)
   - [automation](#automation)
   - [helpers](#helpers)
     - [Helpers Functions](#helpers-functions)
@@ -352,6 +353,17 @@ will produce 6 tasks with the following docker_cmds passed to Batch:
 'python3 main.py  --scenario optimistic --run 3 --p_infected_initial 0.001 --R0 2.0 --infectious_period 0.5'
 ```
 
+### Download Blob Files After Job Completes
+Sometimes there will be outputs from a job that you know will need to be downloaded locally. This can be accomplished by using the `download_after_job()` method. It accepts `job_id`, `blob_paths`, `target`, and `container_name` as parameters. This method should be placed at the end of your script after submitting tasks so that it monitors the job and downloads the specified output when the tasks finish running. Blob paths can be directories or specific file paths. The contents of a director will be downloaded keeping the structure of the directory that exists in Blob Storage.
+Example:
+```
+client.download_after_job(
+  job_id = "sample_job",
+  blob_paths = ["folder1", "folder2/subfolder", file.txt"],
+  target = "dload",
+  container_name = "output-test"
+)
+```
 
 ## automation
 Please view [this documentation](docs/automation_README.md) on getting started with the `automation` module.

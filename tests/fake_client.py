@@ -1,8 +1,9 @@
 # ruff: noqa: F403, F405
 
 import json
-from datetime import datetime, timedelta
 import random
+from datetime import datetime, timedelta
+
 import azure.batch.models as batchmodels
 
 FAKE_ACCOUNT = "Test Account"
@@ -138,9 +139,7 @@ class FakeClient:
         def readall(self):
             return bytes(FAKE_BLOB_CONTENT, "utf-8")
 
-
     class FakeTask:
-
         class FakeExecutionInfo:
             @property
             def result(self):
@@ -152,19 +151,19 @@ class FakeClient:
 
             @property
             def start_time(self):
-                return (datetime.now() - timedelta(minutes=5))
-            
+                return datetime.now() - timedelta(minutes=5)
+
             @property
             def end_time(self):
                 return datetime.now()
-            
+
         class FakeNodeInfo:
             @property
             def node_id(self):
                 return random.randint(1, 100)
 
             @property
-            def pool_id (self):
+            def pool_id(self):
                 return random.randint(1, 100)
 
         @property
@@ -184,7 +183,7 @@ class FakeClient:
 
         @property
         def creation_time(self):
-            return (datetime.now() - timedelta(minutes=6))
+            return datetime.now() - timedelta(minutes=6)
 
         @property
         def node_info(self):

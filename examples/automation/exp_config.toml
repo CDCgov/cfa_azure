@@ -1,7 +1,7 @@
 [setup]
-credential_method='sp' #optional
+credential_method='identity' #optional
 use_env_vars=false #optional
-pool_name='a_fixed_pool_test'
+pool_name='auto_pool_test'
 
 [upload]
 container_name='input-test'

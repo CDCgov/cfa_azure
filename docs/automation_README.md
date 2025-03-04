@@ -44,9 +44,11 @@ See the example [experiment config](examples/automation/exp_config.toml) and [ta
 
 ## run_experiment()
 
-The `run_experiment` function is meant for applying all permutations of a set of variables to common base command. For example, if you have variables var1 and var2, where var1 can be values 10 or 11 and var2 can be 98 or 99, and you need to apply all combinations (really permutations) of these variables to a single command, this is the function to use. It would create 4 tasks with (var1, var2) values of (10, 98), (10, 99), (11, 98), and (11, 99), passed into the command as determined in the config file.
+The `run_experiment` function is meant for applying all permutations of a set of variables to a common base command. For example, if you have variables var1 and var2, where var1 can be values 10 or 11 and var2 can be 98 or 99, and you need to apply all combinations (really permutations) of these variables to a single command, this is the function to use. It would create 4 tasks with (var1, var2) values of (10, 98), (10, 99), (11, 98), and (11, 99), passed into the command as determined in the config file.
 
-Here's a more concrete example. Suppose we have the following experiment section in the experiment config:
+If you have tasks you'd like to run based on a yaml file composed of the various command line arguments, this is accepted here as well. Rather than listing each parameter with the possible values, the [experiment] section will have a `base_command` and a `exp_yaml`, which defines the command and the file path to the yaml. The yaml will be structured as describe in the [README](/README.md).
+
+Here's a more concrete example of the first case. Suppose we have the following experiment section in the experiment config:
 ```
 [experiment]
 base_cmd = "python3 /input/data/vars.py --var1 {0} --var2 {1} --var3 {2}"
@@ -61,9 +63,25 @@ python3 /input/data/vars.py --var1 1 --var2 10 --var3 '99'
 python3 /input/data/vars.py --var1 1 --var2 10 --var3 '98'
 python3 /input/data/vars.py --var1 2 --var2 11 --var3 '90'
 python3 /input/data/vars.py --var1 2 --var2 11 --var3 '99'
-...
-...
 ```
+
+For the second case mentioned above in which we create tasks based on a yaml file, the [experiment] section may look like the following:
+```
+[experiment]
+base_cmd = "python3 main.py"
+exp_yaml = "path/to/file.yaml"
+```
+
+If we have a yaml file like the one [here](/examples/automation/params.yaml), the following tasks will be created for the job.
+```
+python3 main.py  --scenario pessimistic --run 1 --p_infected_initial 66 --R0 4.0 --infectious_period 2.0 --infer --run_checks
+python3 main.py  --scenario pessimistic --run 2 --p_infected_initial 66 --R0 4.0 --infectious_period 2.0 --infer --run_checks
+python3 main.py  --scenario pessimistic --run 3 --p_infected_initial 66 --R0 4.0 --infectious_period 2.0 --infer --run_checks
+python3 main.py  --scenario optimistic --run 1 --p_infected_initial 0.001 --R0 2.0 --infectious_period 0.5
+python3 main.py  --scenario optimistic --run 2 --p_infected_initial 0.001 --R0 2.0 --infectious_period 0.5
+python3 main.py  --scenario optimistic --run 3 --p_infected_initial 0.001 --R0 2.0 --infectious_period 0.5
+```
+
 
 You can use the `run_experiment` function in two lines of code, as shown below.
 ```
@@ -71,6 +89,7 @@ from cfa_azure.automation import run_experiment
 run_experiment(exp_config = "path/to/exp_config.toml",
     auth_config = "path/to/auth_config.toml")
 ```
+
 
 
 ## run_tasks()

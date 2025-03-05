@@ -1,7 +1,7 @@
 [setup]
-credential_method='sp' #optional
+credential_method='identity' #optional
 use_env_vars=false #optional
-pool_name='a_fixed_pool_test'
+pool_name='auto_pool_test'
 
 [upload]
 container_name='input-test'
@@ -18,7 +18,7 @@ monitor_job=true #optional
 #container=<optional ACR container name>
 
 [experiment]
-base_cmd = "python3 /input/data/vars.py --var1 {0} --var2 {1} --var3 {2}"
+base_cmd = "python3 /input/data/vars.py --var1 {var1} --var2 {var2} --var3 {var3}"
 var1 = [1, 2, 4]
 var2 = [10,11,12]
 var3 = ['90', '99', '98']

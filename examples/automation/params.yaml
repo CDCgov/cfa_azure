@@ -1,0 +1,17 @@
+baseline_parameters:
+  p_infected_initial: 0.001
+
+grid_parameters:
+  scenario: [pessimistic, optimistic]
+  run: [1, 2, 3]
+
+nested_parameters:
+  - scenario: pessimistic
+    R0: 4.0
+    p_infected_initial: 66
+    infectious_period: 2.0
+    infer(flag): x
+    run_checks(flag): x
+  - scenario: optimistic
+    R0: 2.0
+    infectious_period: 0.5

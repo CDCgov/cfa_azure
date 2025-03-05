@@ -51,18 +51,19 @@ If you have tasks you'd like to run based on a yaml file composed of the various
 Here's a more concrete example of the first case. Suppose we have the following experiment section in the experiment config:
 ```
 [experiment]
-base_cmd = "python3 /input/data/vars.py --var1 {0} --var2 {1} --var3 {2}"
+base_cmd = "python3 /input/data/vars.py --first {var1} --another {var2} --test {var3}"
 var1 = [1, 2, 4]
 var2 = [10,11,12]
 var3 = ['90', '99', '98']
 ```
-The base command indicates a python script vars.py will be run with three command line arguments with flags called var1, var2, and var3. For simplicity, we also use the names var1, var2, var3 for setting the list of options to cycle through. Because var1 is listed first under base_cmd it will be passed into the {0} spot of the base_cmd, since var2 is next it is passed into the {1} spot, and so on. Any number of variables can be used and the number of elements of each list do not need to be equal. This experiment will generate 27 tasks, one for each permutation of [1, 2, 3], [10, 11, 12], ['90', '99', '98']. More specifically, the following commands will be used for the tasks:
+The base command indicates a python script vars.py will be run with three command line arguments with flags called first, another, and test. To show the flexibility here, we use the names var1, var2, var3 for setting the list of options to cycle through. The values for var1 will be placed into {var1} of the base_cmd one at a time, var2 in {var2}, and var3 in {var3}. Any number of variables can be used and the number of elements of each list do not need to be equal. It's important that the names defining the lists of values match the placeholders (bracketed values, here var1, var2, var3). They do not need to match the actual flag names in the base_cmd (here first, another, test).
+This experiment will generate 27 tasks, one for each permutation of [1, 2, 3], [10, 11, 12], ['90', '99', '98']. More specifically, the following commands will be used for the tasks:
 ```
-python3 /input/data/vars.py --var1 1 --var2 10 --var3 '90'
-python3 /input/data/vars.py --var1 1 --var2 10 --var3 '99'
-python3 /input/data/vars.py --var1 1 --var2 10 --var3 '98'
-python3 /input/data/vars.py --var1 2 --var2 11 --var3 '90'
-python3 /input/data/vars.py --var1 2 --var2 11 --var3 '99'
+python3 /input/data/vars.py --first 1 --another 10 --test '90'
+python3 /input/data/vars.py --first 1 --another 10 --test '99'
+python3 /input/data/vars.py --first 1 --another 10 --test '98'
+python3 /input/data/vars.py --first 2 --another 11 --test '90'
+python3 /input/data/vars.py --first 2 --another 11 --test '99'
 ```
 
 For the second case mentioned above in which we create tasks based on a yaml file, the [experiment] section may look like the following:

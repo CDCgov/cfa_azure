@@ -120,13 +120,14 @@ def run_experiment(exp_config: str, auth_config: str | None = None):
         var_values = []
         for var in var_list:
             var_values.append(ex[var])
-
         v_v = list(itertools.product(*var_values))
-
         for params in v_v:
+            j = {}
+            for i, value in enumerate(params):
+                j.update({var_list[i]: value})
             client.add_task(
                 job_id=job_id,
-                docker_cmd=ex["base_cmd"].format(*params),
+                docker_cmd=ex["base_cmd"].format(**j),
                 container=container,
             )
 

@@ -735,3 +735,14 @@ class TestClients(unittest.TestCase):
         mock_logger.debug.assert_called_with(
             "Uploaded all files in files list."
         )
+
+    @patch(
+        "tests.fake_client.FakeClient.FakeContainerClient.exists",
+        MagicMock(return_value=True),
+    )
+    def test_read_blob(self):
+        self.azure_client.blob_service_client = FakeClient()
+        data = self.azure_client.read_blob(
+            blob_url="somefolder/somefile.csv", container="some_container"
+        )
+        self.assertIsNotNone(data)

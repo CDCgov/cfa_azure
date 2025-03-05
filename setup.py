@@ -23,7 +23,5 @@ setup(
         "polars",
         "pyyaml",
         "griddler @ git+https://github.com/CDCgov/pygriddler.git@main#egg=griddler",
-        "adlfs",
-        "fsspec",
     ],
 )

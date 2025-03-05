@@ -28,8 +28,9 @@ There are two slightly different configuration files depending on which function
 
 The experiment config will have the following additional section and keys:
 - [experiment]
-    - base_cmd: the full docker command for executing the tasks, including some indication of how the variables should be included. This usually entails a flag or argument. See the example for more details.
-    - the variable names along with their list of possible values. See the example for more details. Note that the order matters. For example, if you have variables `input` and `num` listed in that order in the config file, the values for `input` will be put into the {0} spot in the base_cmd and the values for `num` will be put into the {1} spot. Each variable should be on its own line in the form `var_name=[val1, val2, ...]`.
+    - base_cmd: the full docker command for executing the tasks, including some indication of how the variables should be included, if applicable. This usually entails a flag or argument. See the example for more details.
+    - the variable names along with their list of possible values. See the example for more details.
+    - exp_yaml: path to the experiment yaml file if not using variable names. This will create tasks based on the base_cmd and the yaml file. See example for more details.
 
 The task config will have the following additional section(s) and keys:
 - [[task]]

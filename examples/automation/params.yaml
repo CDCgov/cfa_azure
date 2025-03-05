@@ -15,4 +15,3 @@ nested_parameters:
   - scenario: optimistic
     R0: 2.0
     infectious_period: 0.5
-

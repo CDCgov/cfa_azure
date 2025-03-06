@@ -2,6 +2,7 @@
 
 import logging
 import unittest
+from io import StringIO
 from unittest.mock import MagicMock, call, mock_open, patch
 
 from callee import Contains
@@ -525,6 +526,17 @@ class TestHelpers(unittest.TestCase):
             verbose=True,
         )
         mock_logger.debug.assert_called_with("Download complete.")
+
+    @patch("cfa_azure.helpers.logger")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("sys.stdout", new_callable=StringIO)
+    @patch("cfa_azure.helpers.download_file", MagicMock(return_value=True))
+    def test_download_job_stats(self, mock_logger, mock_file, mock_stdout):
+        batch_service_client = FakeClient()
+        cfa_azure.helpers.download_job_stats(
+            job_id="my_job_id", batch_service_client=batch_service_client
+        )
+        mock_file.assert_called_with("my_job_id-stats.csv", "a")
 
     @patch("cfa_azure.helpers.logger")
     @patch(

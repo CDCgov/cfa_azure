@@ -1992,13 +1992,14 @@ def check_config_req(config: str):
     check = req - loaded == set()
     if check:
         logger.debug("All required keys exist in the config.")
-        return True
+        return None
     else:
+        missing = str(list(req - loaded))
         logger.warning(
-            "%s missing from the config file and will be required by client.",
-            str(list(req - loaded)),
+            "%s missing from the config file and may be required by client.",
+            missing,
         )
-        return False
+        return missing
 
 
 def get_container_registry_client(

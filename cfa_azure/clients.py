@@ -13,7 +13,7 @@ from azure.identity import (
     EnvironmentCredential,
     ManagedIdentityCredential,
 )
-
+from azure.storage.blob import StorageStreamDownloader
 from cfa_azure import helpers
 
 logger = logging.getLogger(__name__)
@@ -55,6 +55,7 @@ class AzureClient:
         self.timeout = None
         self.save_logs_to_blob = None
         self.logs_folder = "stdout_stderr"
+        self.account_name = None
         self.pool_name = None
         self.pool_parameters = None
 
@@ -371,6 +372,7 @@ class AzureClient:
             self.input_container_name
             and self.output_container_name
             and self.pool_name
+            and self.account_name
         ):
             self.update_containers(
                 pool_name=self.pool_name,
@@ -1601,7 +1603,7 @@ class AzureClient:
                 filenames += _files
         return filenames
 
-    def read_blob(self, blob_url: str, **kwargs):
+    def read_blob(self, blob_url: str, **kwargs) -> StorageStreamDownloader[str]:
         """
         Args:
             blob_url (str): Url of Blob Storage location
@@ -1619,60 +1621,7 @@ class AzureClient:
         )
         return helpers.read_blob(container_client, blob_url, do_check=True)
 
-    def read_blob_data(self, blob_url: str, **kwargs) -> pd.DataFrame:
-        """
-        Args:
-            blob_url (str): Url of Blob Storage location
-            kwargs (str): dictionary of options
-        """
-        container = kwargs.get("container", self.input_container_name)
-        if "container" in kwargs:
-            kwargs.pop("container")
-        if not container:
-            raise Exception(
-                "No container provided in **kwargs or [Container] section of configuration file."
-            )
-        container_client = self.blob_service_client.get_container_client(
-            container=container
-        )
-        download_stream = helpers.read_blob(
-            container_client, blob_url, do_check=True
-        )
-        file_format = kwargs.get("file_format", "csv")  # Default is csv
-        kwargs.pop("file_format")
-        method_name = f"read_{file_format}"
-        return getattr(pd, method_name)(download_stream, **kwargs)
-
-    def write_blob_data(
-        self, data: pd.DataFrame, blob_url: str, **kwargs
-    ) -> bool:
-        """
-        Args:
-            data (Pandas.DataFrame): data to be persisted
-            blob_url (str): Url of Blob Storage location
-            kwargs (str): dictionary of options
-        """
-        container = kwargs.get("container", self.output_container_name)
-        if "container" in kwargs:
-            kwargs.pop("container")
-        if not container:
-            raise Exception(
-                "No container provided in **kwargs or [Container] section of configuration file."
-            )
-        file_format = kwargs.get("file_format", "csv")  # Default is csv
-        kwargs.pop("file_format")
-        method_name = f"to_{file_format}"
-        container_client = self.blob_service_client.get_container_client(
-            container=container
-        )
-        csv_buffer = StringIO()
-        getattr(data, method_name)(csv_buffer, **kwargs)
-        csv_buffer.seek(0)
-        data = csv_buffer.getvalue().encode("utf-8")
-        container_client.upload_blob(name=blob_url, data=data, overwrite=True)
-        return True
-
-    def write_blob(self, data, blob_url: str, container: str = None) -> bool:
+    def write_blob(self, data:bytes, blob_url:str, container:str = None) -> bool:
         """
         Args:
             data: bytes data to be persisted

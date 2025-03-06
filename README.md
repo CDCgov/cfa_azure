@@ -483,18 +483,9 @@ delete_blob_folder("folder_path", "container_name", blob_service_client)
 - `read_blob`: reads file from specified path in Azure Storage and return its contents as bytes without mounting the container to a local filesystem
 ```
 read_blob("file_path")
-```
-- `read_blob_data`: reads file from specified path in Azure Storage into a Pandas data frame without mounting the container to a local filesystem
-```
-read_blob_data("file_path", file_format="file_format, sep='delimiter')
-```
 - `write_blob`: write bytes to a file in specified path
 ```
 write_blob("data", "file_path")
-```
-- `write_blob_data`: write Pandas dataframe to a file in specified path
-```
-write_blob_data("data", "file_path", file_format="file_format, sep='delimiter')
 ```
 - `format_extensions`: formats file extensions into a standard format for use
 ```

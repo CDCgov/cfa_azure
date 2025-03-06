@@ -224,7 +224,7 @@ def get_batch_mgmt_client(config: dict, credential: object):
             f"Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section.",
         )
         print(
-            f"WARNING: Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section if necessary."
+            f"WARNING creating BatchManagementClient: Configuration error: '{e}' does not exist in the config file. Please add it to the Authentication section if necessary."
         )
         print("Some functionality may be unavailable.")
         return None

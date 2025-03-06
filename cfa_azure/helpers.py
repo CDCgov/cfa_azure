@@ -35,9 +35,9 @@ from azure.core.exceptions import HttpResponseError
 from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
 from azure.storage.blob import (
-    BlobServiceClient, 
-    ContainerClient, 
-    StorageStreamDownloader 
+    BlobServiceClient,
+    ContainerClient,
+    StorageStreamDownloader,
 )
 from docker.errors import DockerException
 from griddler import griddle

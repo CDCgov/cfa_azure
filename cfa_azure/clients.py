@@ -14,6 +14,7 @@ from azure.identity import (
     ManagedIdentityCredential,
 )
 from azure.storage.blob import StorageStreamDownloader
+
 from cfa_azure import helpers
 
 logger = logging.getLogger(__name__)
@@ -1603,7 +1604,9 @@ class AzureClient:
                 filenames += _files
         return filenames
 
-    def read_blob(self, blob_url: str, **kwargs) -> StorageStreamDownloader[str]:
+    def read_blob(
+        self, blob_url: str, **kwargs
+    ) -> StorageStreamDownloader[str]:
         """
         Args:
             blob_url (str): Url of Blob Storage location
@@ -1621,7 +1624,9 @@ class AzureClient:
         )
         return helpers.read_blob(container_client, blob_url, do_check=True)
 
-    def write_blob(self, data:bytes, blob_url:str, container:str = None) -> bool:
+    def write_blob(
+        self, data: bytes, blob_url: str, container: str = None
+    ) -> bool:
         """
         Args:
             data: bytes data to be persisted

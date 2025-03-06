@@ -1497,6 +1497,28 @@ def check_virtual_directory_existence(
         raise e
 
 
+def read_blob(c_client: ContainerClient, src_path: str, do_check: bool = True):
+    """
+    Download a file from Azure Blob storage
+
+    Args:
+        c_client (ContainerClient):
+            Instance of ContainerClient provided with the storage account
+        src_path (str):
+            Path within the container to the desired file (including filename)
+        do_check (bool):
+            Whether or not to do an existence check
+
+    Raises:
+        ValueError:
+            When no blobs exist with the specified name (src_path)
+    """
+    if do_check and not check_blob_existence(c_client, src_path):
+        raise ValueError(f"Source blob: {src_path} does not exist.")
+    download_stream = c_client.download_blob(blob=src_path)
+    return download_stream
+
+
 def download_file(
     c_client: ContainerClient,
     src_path: str,
@@ -1525,12 +1547,10 @@ def download_file(
         ValueError:
             When no blobs exist with the specified name (src_path)
     """
-    if do_check and not check_blob_existence(c_client, src_path):
-        raise ValueError(f"Source blob: {src_path} does not exist.")
+    download_stream = read_blob(c_client, src_path, do_check)
     dest_path = Path(dest_path)
     dest_path.parents[0].mkdir(parents=True, exist_ok=True)
     with dest_path.open(mode="wb") as blob_download:
-        download_stream = c_client.download_blob(blob=src_path)
         blob_download.write(download_stream.readall())
         logger.debug("File downloaded.")
         if verbose:

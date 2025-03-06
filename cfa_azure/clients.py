@@ -4,7 +4,6 @@ import logging
 import os
 from time import sleep
 
-import pandas as pd
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.core.exceptions import HttpResponseError
 from azure.identity import (
@@ -12,6 +11,7 @@ from azure.identity import (
     EnvironmentCredential,
     ManagedIdentityCredential,
 )
+from azure.storage.blob import StorageStreamDownloader
 
 from cfa_azure import helpers
 
@@ -45,13 +45,16 @@ class AzureClient:
         self.files = []
         self.task_id_max = 0
         self.jobs = set()
+        self.input_container_name = None
         self.input_mount_dir = None
+        self.output_container_name = None
         self.output_mount_dir = None
         self.mounts = []
         self.mount_container_clients = []
         self.timeout = None
         self.save_logs_to_blob = None
         self.logs_folder = "stdout_stderr"
+        self.account_name = None
         self.pool_name = None
         self.pool_parameters = None
 
@@ -363,7 +366,13 @@ class AzureClient:
             if "output_container_name" in self.config["Container"].keys()
             else None
         )
-        if self.input_container_name and self.output_container_name:
+        # If we already have a Azure Batch pool, then mount the containers into pool
+        if (
+            self.input_container_name
+            and self.output_container_name
+            and self.pool_name
+            and self.account_name
+        ):
             self.update_containers(
                 pool_name=self.pool_name,
                 input_container_name=self.input_container_name,
@@ -1593,49 +1602,45 @@ class AzureClient:
                 filenames += _files
         return filenames
 
-    def _get_blob_storage_options(self):
-        client_secret = helpers.get_sp_secret(
-            self.config, ManagedIdentityCredential()
-        )
-        return {
-            "account_name": self.storage_account_name,
-            "tenant_id": self.config["Authentication"].get("tenant_id"),
-            "client_id": self.config["Authentication"].get(
-                "sp_application_id"
-            ),
-            "client_secret": client_secret,
-        }
-
-    def invoke_blob_data(
-        self, module_name: any, method_name: str, blob_url: str, **kwargs
-    ):
-        kwargs["storage_options"] = self._get_blob_storage_options()
-        return getattr(module_name, method_name)(blob_url, **kwargs)
-
-    def read_blob_data(self, blob_url: str, **kwargs) -> pd.DataFrame:
+    def read_blob(
+        self, blob_url: str, **kwargs
+    ) -> StorageStreamDownloader[str]:
         """
         Args:
-            blob_url (str): ABFS Url of Blob Storage location
+            blob_url (str): Url of Blob Storage location
             kwargs (str): dictionary of options
         """
-        file_format = kwargs.get("file_format", "csv")  # Default is csv
-        kwargs.pop("file_format")
-        method_name = f"read_{file_format}"
-        return self.invoke_blob_data(pd, method_name, blob_url, **kwargs)
+        container = kwargs.get("container", self.input_container_name)
+        if "container" in kwargs:
+            kwargs.pop("container")
+        if not container:
+            raise Exception(
+                "No container provided in **kwargs or [Container] section of configuration file."
+            )
+        container_client = self.blob_service_client.get_container_client(
+            container=container
+        )
+        return helpers.read_blob(container_client, blob_url, do_check=True)
 
-    def write_blob_data(
-        self, data: pd.DataFrame, blob_url: str, **kwargs
+    def write_blob(
+        self, data: bytes, blob_url: str, container: str = None
     ) -> bool:
         """
         Args:
-            data (Pandas.DataFrame): data to be persisted
-            blob_url (str): ABFS Url of Blob Storage location
-            kwargs (str): dictionary of options
+            data: bytes data to be persisted
+            blob_url (str): Url of Blob Storage location
+            container (str): Name of container in Azure Blob Storage
         """
-        file_format = kwargs.get("file_format", "csv")  # Default is csv
-        kwargs.pop("file_format")
-        method_name = f"to_{file_format}"
-        self.invoke_blob_data(data, method_name, blob_url, **kwargs)
+        if not container:
+            container = self.output_container_name
+        if not container:
+            raise Exception(
+                "No container provided in **kwargs or [Container] section of configuration file."
+            )
+        container_client = self.blob_service_client.get_container_client(
+            container=container
+        )
+        container_client.upload_blob(name=blob_url, data=data, overwrite=True)
         return True
 
     def delete_blob_file(self, blob_name: str, container_name: str):

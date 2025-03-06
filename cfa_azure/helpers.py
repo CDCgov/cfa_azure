@@ -34,11 +34,7 @@ from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
 from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
-from azure.storage.blob import (
-    BlobServiceClient,
-    ContainerClient,
-    StorageStreamDownloader,
-)
+from azure.storage.blob import BlobServiceClient, ContainerClient
 from docker.errors import DockerException
 from griddler import griddle
 from yaml import SafeLoader, dump, load
@@ -1501,9 +1497,7 @@ def check_virtual_directory_existence(
         raise e
 
 
-def read_blob(
-    c_client: ContainerClient, src_path: str, do_check: bool = True
-) -> None:
+def read_blob(c_client: ContainerClient, src_path: str, do_check: bool = True):
     """
     Download a file from Azure Blob storage
 

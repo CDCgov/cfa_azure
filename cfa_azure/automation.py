@@ -111,19 +111,25 @@ def run_experiment(exp_config: str, auth_config: str | None = None):
 
     # submit the experiment tasks
     ex = exp_toml["experiment"]
-    var_list = [key for key in ex.keys() if key != "base_cmd"]
-    var_values = []
-    for var in var_list:
-        var_values.append(ex[var])
-
-    v_v = list(itertools.product(*var_values))
-
-    for params in v_v:
-        client.add_task(
-            job_id=job_id,
-            docker_cmd=ex["base_cmd"].format(*params),
-            container=container,
+    if "exp_yaml" in ex.keys():
+        client.add_tasks_from_yaml(
+            job_id=job_id, base_cmd=ex["base_cmd"], file_path=ex["exp_yaml"]
         )
+    else:
+        var_list = [key for key in ex.keys() if key != "base_cmd"]
+        var_values = []
+        for var in var_list:
+            var_values.append(ex[var])
+        v_v = list(itertools.product(*var_values))
+        for params in v_v:
+            j = {}
+            for i, value in enumerate(params):
+                j.update({var_list[i]: value})
+            client.add_task(
+                job_id=job_id,
+                docker_cmd=ex["base_cmd"].format(**j),
+                container=container,
+            )
 
     if "monitor_job" in exp_toml["job"].keys():
         if exp_toml["job"]["monitor_job"] is True:

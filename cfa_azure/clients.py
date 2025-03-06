@@ -2,10 +2,8 @@ import datetime
 import json
 import logging
 import os
-from io import StringIO
 from time import sleep
 
-import pandas as pd
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.core.exceptions import HttpResponseError
 from azure.identity import (

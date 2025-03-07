@@ -8,7 +8,6 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/cdcgov/cfa_azure?style=plastic)
 
 
-
 # cfa_azure Python Package
 ## Created by Ryan Raasch (Peraton) for CFA
 
@@ -537,6 +536,7 @@ df = .... # Read some data into Pandas dataframe
 data = df.to_csv(index=False).encode('utf-8')
 blob_url = "input/AZ_03072025_a.csv"
 write_blob_stream(data, blob_url=blob_url, account_name='cfaazurebatchprd', container_name='input-test')
+
 ```
 - `format_extensions`: formats file extensions into a standard format for use
 ```python

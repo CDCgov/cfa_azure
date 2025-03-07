@@ -30,12 +30,16 @@ from azure.batch.models import (
     OnAllTasksComplete,
     OnTaskFailure,
 )
-from azure.identity import DefaultAzureCredential
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
+from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
-from azure.storage.blob import BlobServiceClient, ContainerClient
+from azure.storage.blob import (
+    BlobServiceClient,
+    ContainerClient,
+    StorageStreamDownloader,
+)
 from docker.errors import DockerException
 from griddler import griddle
 from yaml import SafeLoader, dump, load
@@ -1498,18 +1502,66 @@ def check_virtual_directory_existence(
         raise e
 
 
-def read_blob(
-    src_path:str, 
-    account_name:str=None,
-    container_name:str=None, 
-    container_client:ContainerClient=None, 
-    do_check:bool=True
-):
+def write_blob_stream(
+    data,
+    blob_url: str,
+    account_name: str = None,
+    container_name: str = None,
+    container_client: ContainerClient = None,
+) -> bool:
     """
-    Download a file from Azure Blob storage
+    Write a stream into a file in Azure Blob storage
 
     Args:
-        src_path (str):
+        data (stream):
+            [Required] File contents as stream
+        blob_url (str):
+            [Required] Path within the container to the desired file (including filename)
+        account_name (str):
+            [Optional] Name of Azure storage account
+        container_name (str):
+            [Optional] Name of Blob container within storage account
+        container_client (ContainerClient):
+            [Optional] Instance of ContainerClient provided with the storage account
+
+    Raises:
+        ValueError:
+            When no blobs exist with the specified name (src_path)
+    """
+    if container_client:
+        pass
+    elif container_name and account_name:
+        config = {
+            "Storage": {
+                "storage_account_url": f"https://{account_name}.blob.core.windows.net"
+            }
+        }
+        blob_service_client = get_blob_service_client(
+            config=config, credential=DefaultAzureCredential()
+        )
+        container_client = blob_service_client.get_container_client(
+            container=container_name
+        )
+    else:
+        raise ValueError(
+            "Either container name and account name or container client must be provided."
+        )
+    container_client.upload_blob(name=blob_url, data=data, overwrite=True)
+    return True
+
+
+def read_blob_stream(
+    blob_url: str,
+    account_name: str = None,
+    container_name: str = None,
+    container_client: ContainerClient = None,
+    do_check: bool = True,
+) -> StorageStreamDownloader[str]:
+    """
+    Download a file from Azure Blob storage and return the contents as stream
+
+    Args:
+        blob_url (str):
             [Required] Path within the container to the desired file (including filename)
         account_name (str):
             [Optional] Name of Azure storage account
@@ -1528,20 +1580,24 @@ def read_blob(
         pass
     elif container_name and account_name:
         config = {
-            'Storage': {
-                'storage_account_url': f"https://{account_name}.blob.core.windows.net"
+            "Storage": {
+                "storage_account_url": f"https://{account_name}.blob.core.windows.net"
             }
         }
-        blob_service_client = get_blob_service_client(config=config, credential=DefaultAzureCredential())
+        blob_service_client = get_blob_service_client(
+            config=config, credential=DefaultAzureCredential()
+        )
         container_client = blob_service_client.get_container_client(
             container=container_name
         )
     else:
-        raise ValueError("Either container name and account name or container client must be provided.")
+        raise ValueError(
+            "Either container name and account name or container client must be provided."
+        )
 
-    if do_check and not check_blob_existence(container_client, src_path):
-        raise ValueError(f"Source blob: {src_path} does not exist.")
-    download_stream = container_client.download_blob(blob=src_path)
+    if do_check and not check_blob_existence(container_client, blob_url):
+        raise ValueError(f"Source blob: {blob_url} does not exist.")
+    download_stream = container_client.download_blob(blob=blob_url)
     return download_stream
 
 
@@ -1573,7 +1629,9 @@ def download_file(
         ValueError:
             When no blobs exist with the specified name (src_path)
     """
-    download_stream = read_blob(src_path, container_client=c_client, do_check=do_check)
+    download_stream = read_blob_stream(
+        src_path, container_client=c_client, do_check=do_check
+    )
     dest_path = Path(dest_path)
     dest_path.parents[0].mkdir(parents=True, exist_ok=True)
     with dest_path.open(mode="wb") as blob_download:

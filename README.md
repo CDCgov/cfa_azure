@@ -492,12 +492,46 @@ delete_blob_snapshots("blob_name", "container_name", blob_service_client)
 ```
 delete_blob_folder("folder_path", "container_name", blob_service_client)
 ```
-- `read_blob`: reads file from specified path in Azure Storage and return its contents as bytes without mounting the container to a local filesystem
+- `read_blob_stream`: reads file from specified path in Azure Storage and return its contents as bytes without mounting the container to a local filesystem
 ```
-read_blob("file_path")
-- `write_blob`: write bytes to a file in specified path
+read_blob_stream("blob_url", "account_name", "container_name", "container_client")
 ```
-write_blob("data", "file_path")
+```
+Example: Read Azure blob file into Polars, Pandas or Dask data frames
+
+from cfa_azure.helpers import read_blob_stream
+data_stream = read_blob_stream("input/AZ.csv", account_name='cfaazurebatchprd', container_name='input-test')
+
+# Read into Polars dataframe
+import polars
+df = polars.read_csv(data_stream.readall())
+print(df)
+
+# Read into Pandas dataframe
+import pandas
+df = pandas.read_csv(data_stream)
+print(df)
+
+# Read large file into Pandas dataframe within chunking
+import pandas
+chunk_size=1000      # 1000 rows at a time
+for chunk in pd.read_csv(data_stream, chunksize=chunk_size):
+    print(chunk)
+```
+- `write_blob_stream`: write bytes to a file in specified path
+```
+write_blob_stream("data", "blob_url", "account_name", "container_name", "container_client")
+```
+```
+Example: Write Polars, Pandas or Dask dataframes into Azure blob storage
+
+from cfa_azure.helpers import write_blob_stream
+
+# Write Polars dataframe
+import polars
+df = polars.read_csv(data_stream.readall())
+
+
 ```
 - `format_extensions`: formats file extensions into a standard format for use
 ```

@@ -1620,7 +1620,9 @@ class AzureClient:
         container_client = self.blob_service_client.get_container_client(
             container=container
         )
-        return helpers.read_blob(blob_url=blob_url, container_client=container_client, do_check=True)
+        return helpers.read_blob_stream(
+            blob_url=blob_url, container_client=container_client, do_check=True
+        )
 
     def write_blob(
         self, data: bytes, blob_url: str, container: str = None
@@ -1640,8 +1642,9 @@ class AzureClient:
         container_client = self.blob_service_client.get_container_client(
             container=container
         )
-        container_client.upload_blob(name=blob_url, data=data, overwrite=True)
-        return True
+        return helpers.write_blob_stream(
+            data, src_path=blob_url, container_client=container_client
+        )
 
     def delete_blob_file(self, blob_name: str, container_name: str):
         """

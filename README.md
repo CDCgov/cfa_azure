@@ -531,6 +531,7 @@ from cfa_azure.helpers import write_blob_stream
 import pandas
 df = .... # Read some data into Pandas dataframe
 data = df.to_csv(index=False).encode('utf-8')
+blob_url = "input/AZ_03072025_a.csv"
 write_blob_stream(data, blob_url=blob_url, account_name='cfaazurebatchprd', container_name='input-test')
 ```
 - `format_extensions`: formats file extensions into a standard format for use

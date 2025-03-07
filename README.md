@@ -529,13 +529,9 @@ from cfa_azure.helpers import write_blob_stream
 
 # Write Polars dataframe
 import polars
-from io import BytesIO
 df = .... # Read some data into Polars dataframe
-output_buffer = BytesIO()
-df.write_ipc(out_buffer)
 blob_url = "input/AZ_03072025_a.csv"
-write_blob_stream(output_buffer.getvalue(), blob_url=blob_url, account_name='cfaazurebatchprd', container_name='input-test')
-
+write_blob_stream(df.write_csv().encode('utf-8'), blob_url=blob_url, account_name='cfaazurebatchprd', container_name='input-test')
 
 # Write Pandas dataframe
 import pandas

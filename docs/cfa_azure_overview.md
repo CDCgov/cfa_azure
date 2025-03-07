@@ -12,7 +12,7 @@ The repo is available at [https://github.com/CDCgov/cfa_azure](https://github.co
 The `cfa_azure` module is composed into two main submodules: `clients` and `helpers`. The module `clients` contains the `AzureClient`, which combines the multiple Azure clients needed to interact with Azure and consolidates them into a single client for object-oriented programming. The module `helpers` contains more fine-grained, low-level functions which are used within the `clients` module or can be used independently for more control and flexibility while working with Azure.
 
 Most use cases will make use of the `AzureClient`. It can be initialized using a configuration toml file containing Azure authentication information in the following way:
-```
+```python
 client = AzureClient("./configuration.toml")
 ```
 From there, `client` can be used to upload/download files to/from Blob storage, package and upload Docker containers to Azure Container Registry, create pools in Azure Batch, mount Blob Storage to Batch pools, create jobs and execute tasks in Batch, and monitor Batch jobs.
@@ -27,26 +27,26 @@ Some benefits of `cfa_azure` have already been discussed above, but the followin
 
 ## Examples
 Uploading Docker Container to Azure Container Registry:
-```
+```python
 client.package_and_upload_dockerfile(
     registry_name="test_registry", repo_name="repo1", tag="latest"
 )
 ```
 
 Create a Blob container and provide a relative path to use within Azure Batch:
-```
+```python
 client.create_blob_container("containername", "/path")
 ```
 
 Upload Files in a Folder to Blob Storage:
-```
+```python
 client.upload_files_in_folder(
     ["data", "input"],
     blob_container = "containername")
 ```
 
 Add a Task to Job in Azure Batch:
-```
+```python
 client.add_task(job_id="example_job", docker_cmd="python3 main.py")
 ```
 

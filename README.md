@@ -8,7 +8,6 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/cdcgov/cfa_azure?style=plastic)
 
 
-
 # cfa_azure Python Package
 ## Created by Ryan Raasch (Peraton) for CFA
 
@@ -56,7 +55,7 @@ The `cfa_azure` python module is intended to ease the challenge of working with 
 In order to use the `cfa_azure` library, you need [Python 3.8 or higher](https://www.python.org/downloads/), [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/), and any python package manager.
 
 To install using pip:
-```python
+```bash
 pip install git+https://github.com/CDCgov/cfa_azure.git
 ```
 
@@ -84,7 +83,7 @@ LOG_OUTPUT: sets the output of the logs. Choices are:
 
 **Example**:
 Run the following in the terminal in which `cfa_azure` will be run.
-```python
+```bash
 export LOG_LEVEL="info"
 export LOG_OUTPUT="stdout"
 ```
@@ -344,7 +343,7 @@ client.add_tasks_from_yaml(job_id = "args_example",
   )
 ```
 will produce 6 tasks with the following docker_cmds passed to Batch:
-```python
+```bash
 'python3 main.py  --scenario pessimistic --run 1 --p_infected_initial 66 --R0 4.0 --infectious_period 2.0 --infer --run_checks'
 'python3 main.py  --scenario pessimistic --run 2 --p_infected_initial 66 --R0 4.0 --infectious_period 2.0 --infer --run_checks'
 'python3 main.py  --scenario pessimistic --run 3 --p_infected_initial 66 --R0 4.0 --infectious_period 2.0 --infer --run_checks'
@@ -492,13 +491,52 @@ delete_blob_snapshots("blob_name", "container_name", blob_service_client)
 ```python
 delete_blob_folder("folder_path", "container_name", blob_service_client)
 ```
-- `read_blob`: reads file from specified path in Azure Storage and return its contents as bytes without mounting the container to a local filesystem
+- `read_blob_stream`: reads file from specified path in Azure Storage and return its contents as bytes without mounting the container to a local filesystem
 ```python
-read_blob("file_path")
+read_blob_stream("blob_url", "account_name", "container_name", "container_client")
 ```
-- `write_blob`: write bytes to a file in specified path
+**Example: Read Azure blob file into Polars or Pandas data frames**
 ```python
-write_blob("data", "file_path")
+from cfa_azure.helpers import read_blob_stream
+data_stream = read_blob_stream("input/AZ.csv", account_name='cfaazurebatchprd', container_name='input-test')
+
+# Read into Polars dataframe
+import polars
+df = polars.read_csv(data_stream.readall())
+print(df)
+
+# Read into Pandas dataframe
+import pandas
+df = pandas.read_csv(data_stream)
+print(df)
+
+# Read large file into Pandas dataframe within chunking
+import pandas
+chunk_size=1000      # 1000 rows at a time
+for chunk in pd.read_csv(data_stream, chunksize=chunk_size):
+    print(chunk)
+```
+- `write_blob_stream`: write bytes to a file in specified path
+```python
+write_blob_stream("data", "blob_url", "account_name", "container_name", "container_client")
+```
+**Example: Write Polars or Pandas dataframe into Azure blob storage**
+```python
+from cfa_azure.helpers import write_blob_stream
+
+# Write Polars dataframe
+import polars
+df = .... # Read some data into Polars dataframe
+blob_url = "input/AZ_03072025_a.csv"
+write_blob_stream(df.write_csv().encode('utf-8'), blob_url=blob_url, account_name='cfaazurebatchprd', container_name='input-test')
+
+# Write Pandas dataframe
+import pandas
+df = .... # Read some data into Pandas dataframe
+data = df.to_csv(index=False).encode('utf-8')
+blob_url = "input/AZ_03072025_a.csv"
+write_blob_stream(data, blob_url=blob_url, account_name='cfaazurebatchprd', container_name='input-test')
+
 ```
 - `format_extensions`: formats file extensions into a standard format for use
 ```python

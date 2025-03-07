@@ -495,6 +495,7 @@ delete_blob_folder("folder_path", "container_name", blob_service_client)
 - `read_blob`: reads file from specified path in Azure Storage and return its contents as bytes without mounting the container to a local filesystem
 ```python
 read_blob("file_path")
+```
 - `write_blob`: write bytes to a file in specified path
 ```python
 write_blob("data", "file_path")

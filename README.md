@@ -528,6 +528,16 @@ Example: Write Pandas dataframe into Azure blob storage
 from cfa_azure.helpers import write_blob_stream
 
 # Write Polars dataframe
+import polars
+from io import BytesIO
+df = .... # Read some data into Polars dataframe
+output_buffer = BytesIO()
+df.write_ipc(out_buffer)
+blob_url = "input/AZ_03072025_a.csv"
+write_blob_stream(output_buffer.getvalue(), blob_url=blob_url, account_name='cfaazurebatchprd', container_name='input-test')
+
+
+# Write Pandas dataframe
 import pandas
 df = .... # Read some data into Pandas dataframe
 data = df.to_csv(index=False).encode('utf-8')

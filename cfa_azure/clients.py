@@ -133,11 +133,15 @@ class AzureClient:
                 self.config = helpers.read_config(config_path)
                 logger.debug("config loaded")
 
+                config_missing_keys = helpers.check_config_req(self.config)
                 # Check config requirements
-                if not helpers.check_config_req(self.config):
+                if config_missing_keys:
+                    print(".~" * 35)
                     print(
-                        "Configuration file is missing required keys. Some functionality may not work as expected."
+                        "Configuration file is missing the following keys. Some functionality may not work as expected."
                     )
+                    print("Missing:", config_missing_keys)
+                    print(".~" * 35)
             except FileNotFoundError:
                 logger.error(
                     "Configuration file not found at path: %s", config_path

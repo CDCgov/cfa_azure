@@ -439,7 +439,7 @@ class TestHelpers(unittest.TestCase):
 
     def test_check_config_req(self):
         status = cfa_azure.helpers.check_config_req(FAKE_CONFIG_MINIMAL)
-        self.assertIsNotNone(status)
+        self.assertIsNone(status)
 
     def test_check_config_req_badconfig(self):
         bad_config = {
@@ -449,7 +449,7 @@ class TestHelpers(unittest.TestCase):
             }
         }
         status = cfa_azure.helpers.check_config_req(bad_config)
-        self.assertFalse(status)
+        self.assertIsNotNone(status)
 
     @patch(
         "cfa_azure.helpers.get_pool_full_info",

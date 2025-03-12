@@ -1773,6 +1773,7 @@ class AzureClient:
                 depends_on=task.deps,
                 **kwargs,
             )
+            print(tid)
             for i, dep in enumerate(task_df["deps"]):
                 dlist = []
                 for d in dep:
@@ -1781,3 +1782,4 @@ class AzureClient:
                     else:
                         dlist.append(str(d))
                 task_df.at[i, "deps"] = dlist
+        return task_df

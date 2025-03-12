@@ -1,13 +1,13 @@
 # import modules for use
 import csv
 import datetime
+import pytz
 import json
 import logging
 import os
 import re
 import subprocess as sp
 import time
-from datetime import datetime as dt
 from os import path, walk
 from pathlib import Path
 from zoneinfo import ZoneInfo as zi
@@ -16,6 +16,8 @@ import azure.batch.models as batchmodels
 import docker
 import numpy as np
 import pandas as pd
+import fnmatch as fm
+import operator
 import toml
 import yaml
 from azure.batch import BatchServiceClient
@@ -46,6 +48,14 @@ from yaml import SafeLoader, dump, load
 
 logger = logging.getLogger(__name__)
 
+OPERATIONS = {
+    "==": operator.eq,
+    "!=": operator.ne,
+    "<":  operator.lt,
+    "<=": operator.le,
+    ">":  operator.gt,
+    ">=": operator.ge
+}
 
 def read_config(config_path: str = "./configuration.toml") -> dict:
     """takes in a path to a configuration toml file and returns it as a json object
@@ -948,7 +958,7 @@ def add_task_to_job(
             full_cmd = d_cmd_str
         else:
             logger.debug("using rel path to save logs")
-            t = dt.now(zi("America/New_York"))
+            t = datetime.datetime.now(zi("America/New_York"))
             s_time = t.strftime("%Y%m%d_%H%M%S")
             if not save_logs_rel_path.startswith("/"):
                 save_logs_rel_path = "/" + save_logs_rel_path
@@ -1548,6 +1558,102 @@ def write_blob_stream(
         )
     container_client.upload_blob(name=blob_url, data=data, overwrite=True)
     return True
+
+def infer_date_filter(**kwargs) -> tuple[str|None, str|None]:
+    """
+    Determines what type of filter to apply for modified date
+
+    Args:
+        kwargs
+    """
+    filter_expression = kwargs.get('date_filter')
+    if not filter_expression:
+        return (None, None)
+    filter_expression_parts = filter_expression.split('|')
+    print(filter_expression_parts)
+    operator_function = operand = None
+    if len(filter_expression_parts) == 2:
+        operand = datetime.datetime.strptime(filter_expression_parts[-1], '%m-%d-%Y')
+        operation = filter_expression_parts[0]
+        if operation:
+            operator_function = OPERATIONS.get(operation)
+    return (operator_function, operand)
+
+
+def infer_prefix(blob_url:str) -> str:
+    """
+    Determine prefix both from Blob Url
+
+    Args:
+        blob_url (str):
+            [Required] Path within the container to the desired file (including filename)
+    """
+    blob_url_parts = blob_url.split('/')
+    blob_url_parts_folders = [x for x in blob_url_parts if '*' not in x]
+    if len(blob_url_parts_folders) > 0:
+        blob_prefix = "/".join(blob_url_parts_folders)
+        blob_prefix = blob_prefix if blob_prefix.endswith("/") else f'{blob_prefix}/'
+    else:
+        blob_prefix = ""
+    return blob_prefix
+
+
+def blob_glob(
+    blob_url: str,
+    account_name: str = None,
+    container_name: str = None,
+    container_client: ContainerClient = None,
+    **kwargs
+) -> list[str]:
+    """
+    List all blobs in specified container
+
+    Args:
+        blob_url (str):
+            [Required] Path within the container to the desired file (including filename)
+        account_name (str):
+            [Optional] Name of Azure storage account
+        container_name (str):
+            [Optional] Name of Blob container within storage account
+        container_client (ContainerClient):
+            [Optional] Instance of ContainerClient provided with the storage account
+        do_check (bool):
+            [Optional] Whether or not to do an existence check
+
+    Raises:
+        ValueError:
+            When no blobs exist with the specified name (src_path)
+    """
+    if container_client:
+        pass
+    elif container_name and account_name:
+        config = {
+            "Storage": {
+                "storage_account_url": f"https://{account_name}.blob.core.windows.net"
+            }
+        }
+        blob_service_client = get_blob_service_client(
+            config=config, credential=DefaultAzureCredential()
+        )
+        container_client = blob_service_client.get_container_client(
+            container=container_name
+        )
+    else:
+        raise ValueError(
+            "Either container name and account name or container client must be provided."
+        )
+    file_pattern = blob_url
+    blob_prefix = infer_prefix(blob_url)
+    all_files = container_client.list_blobs(blob_prefix)
+    blob_list = []
+    date_operation, date_operand = infer_date_filter(**kwargs)
+    for blob in all_files:
+        if fm.fnmatch(blob['name'], file_pattern):
+            if date_operation and date_operand and date_operation(blob['last_modified'].replace(tzinfo=pytz.UTC), pytz.UTC.localize(date_operand)):
+                blob_list.append(blob['name'])
+            else:
+                blob_list.append(blob['name'])
+    return blob_list
 
 
 def read_blob_stream(

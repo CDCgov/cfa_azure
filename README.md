@@ -502,7 +502,7 @@ from cfa_azure.helpers import blob_glob
 file_list = blob_glob("src/dynode/mechanistic*.py", account_name='cfaazurebatchprd', container_name='input')
 print(file_list)
 
-# list files modified after 1/1/2025  
+# list files modified after 1/1/2025
 # date_filter format is operator|date where operand can be >, >=, <, <=, == and != with commas
 file_list = blob_glob("input/AZ*.csv", account_name='cfaazurebatchprd', container_name='input-test', date_filter='>|1-1-2025')
 print(file_list)

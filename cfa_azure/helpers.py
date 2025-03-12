@@ -1,9 +1,10 @@
 # import modules for use
 import csv
 import datetime
-import pytz
+import fnmatch as fm
 import json
 import logging
+import operator
 import os
 import re
 import subprocess as sp
@@ -16,8 +17,7 @@ import azure.batch.models as batchmodels
 import docker
 import numpy as np
 import pandas as pd
-import fnmatch as fm
-import operator
+import pytz
 import toml
 import yaml
 from azure.batch import BatchServiceClient
@@ -51,11 +51,12 @@ logger = logging.getLogger(__name__)
 OPERATIONS = {
     "==": operator.eq,
     "!=": operator.ne,
-    "<":  operator.lt,
+    "<": operator.lt,
     "<=": operator.le,
-    ">":  operator.gt,
-    ">=": operator.ge
+    ">": operator.gt,
+    ">=": operator.ge,
 }
+
 
 def read_config(config_path: str = "./configuration.toml") -> dict:
     """takes in a path to a configuration toml file and returns it as a json object
@@ -1559,28 +1560,31 @@ def write_blob_stream(
     container_client.upload_blob(name=blob_url, data=data, overwrite=True)
     return True
 
-def infer_date_filter(**kwargs) -> tuple[str|None, str|None]:
+
+def infer_date_filter(**kwargs) -> tuple[str | None, str | None]:
     """
     Determines what type of filter to apply for modified date
 
     Args:
         kwargs
     """
-    filter_expression = kwargs.get('date_filter')
+    filter_expression = kwargs.get("date_filter")
     if not filter_expression:
         return (None, None)
-    filter_expression_parts = filter_expression.split('|')
+    filter_expression_parts = filter_expression.split("|")
     print(filter_expression_parts)
     operator_function = operand = None
     if len(filter_expression_parts) == 2:
-        operand = datetime.datetime.strptime(filter_expression_parts[-1], '%m-%d-%Y')
+        operand = datetime.datetime.strptime(
+            filter_expression_parts[-1], "%m-%d-%Y"
+        )
         operation = filter_expression_parts[0]
         if operation:
             operator_function = OPERATIONS.get(operation)
     return (operator_function, operand)
 
 
-def infer_prefix(blob_url:str) -> str:
+def infer_prefix(blob_url: str) -> str:
     """
     Determine prefix both from Blob Url
 
@@ -1588,11 +1592,13 @@ def infer_prefix(blob_url:str) -> str:
         blob_url (str):
             [Required] Path within the container to the desired file (including filename)
     """
-    blob_url_parts = blob_url.split('/')
-    blob_url_parts_folders = [x for x in blob_url_parts if '*' not in x]
+    blob_url_parts = blob_url.split("/")
+    blob_url_parts_folders = [x for x in blob_url_parts if "*" not in x]
     if len(blob_url_parts_folders) > 0:
         blob_prefix = "/".join(blob_url_parts_folders)
-        blob_prefix = blob_prefix if blob_prefix.endswith("/") else f'{blob_prefix}/'
+        blob_prefix = (
+            blob_prefix if blob_prefix.endswith("/") else f"{blob_prefix}/"
+        )
     else:
         blob_prefix = ""
     return blob_prefix
@@ -1603,7 +1609,7 @@ def blob_glob(
     account_name: str = None,
     container_name: str = None,
     container_client: ContainerClient = None,
-    **kwargs
+    **kwargs,
 ) -> list[str]:
     """
     List all blobs in specified container
@@ -1648,11 +1654,18 @@ def blob_glob(
     blob_list = []
     date_operation, date_operand = infer_date_filter(**kwargs)
     for blob in all_files:
-        if fm.fnmatch(blob['name'], file_pattern):
-            if date_operation and date_operand and date_operation(blob['last_modified'].replace(tzinfo=pytz.UTC), pytz.UTC.localize(date_operand)):
-                blob_list.append(blob['name'])
+        if fm.fnmatch(blob["name"], file_pattern):
+            if (
+                date_operation
+                and date_operand
+                and date_operation(
+                    blob["last_modified"].replace(tzinfo=pytz.UTC),
+                    pytz.UTC.localize(date_operand),
+                )
+            ):
+                blob_list.append(blob["name"])
             else:
-                blob_list.append(blob['name'])
+                blob_list.append(blob["name"])
     return blob_list
 
 

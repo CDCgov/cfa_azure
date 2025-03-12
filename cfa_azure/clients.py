@@ -2,8 +2,10 @@ import datetime
 import json
 import logging
 import os
+from graphlib import TopologicalSorter
 from time import sleep
 
+import pandas as pd
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.core.exceptions import HttpResponseError
 from azure.identity import (
@@ -14,6 +16,7 @@ from azure.identity import (
 from azure.storage.blob import StorageStreamDownloader
 
 from cfa_azure import helpers
+from cfa_azure.batch import Task
 
 logger = logging.getLogger(__name__)
 
@@ -1752,3 +1755,29 @@ class AzureClient:
                     container_name=container_name,
                     **kwargs,
                 )
+
+    def run_dag(self, *args: Task, job_id: str, **kwargs):
+        ts = TopologicalSorter()
+        tasks = args
+        for task in tasks:
+            ts.add(task, *task.deps)
+        task_order = [*ts.static_order()]
+        task_df = pd.DataFrame(columns=["id", "cmd", "deps"])
+        # initialize df for task execution
+        for i, task in enumerate(task_order):
+            task_df.loc[i] = [task.id, task.cmd, task.deps]
+        for task in task_order:
+            tid = self.add_task(
+                job_id=job_id,
+                docker_cmd=task.cmd,
+                depends_on=task.deps,
+                **kwargs,
+            )
+            for i, dep in enumerate(task_df["deps"]):
+                dlist = []
+                for d in dep:
+                    if str(d) == str(task.id):
+                        dlist.append(tid)
+                    else:
+                        dlist.append(str(d))
+                task_df.at[i, "deps"] = dlist

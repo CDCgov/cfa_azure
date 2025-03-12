@@ -5,7 +5,7 @@ import sys
 
 from cfa_azure import helpers
 
-__all__ = ["helpers", "clients", "automation"]
+__all__ = ["helpers", "clients", "automation", "batch"]
 
 logger = logging.getLogger(__name__)
 run_time = datetime.datetime.now()

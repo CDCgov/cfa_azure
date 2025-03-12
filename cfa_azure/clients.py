@@ -1757,6 +1757,7 @@ class AzureClient:
                 )
 
     def run_dag(self, *args: Task, job_id: str, **kwargs):
+        # get topologicalsorter opject
         ts = TopologicalSorter()
         tasks = args
         for task in tasks:
@@ -1770,7 +1771,7 @@ class AzureClient:
             tid = self.add_task(
                 job_id=job_id,
                 docker_cmd=task.cmd,
-                depends_on=task.deps,
+                depends_on=task_df[task_df["id"] == task.id]["deps"].values[0],
                 **kwargs,
             )
             print(tid)

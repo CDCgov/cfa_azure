@@ -7,7 +7,6 @@ import os
 import re
 import subprocess as sp
 import time
-from datetime import datetime as dt
 from os import path, walk
 from pathlib import Path
 from zoneinfo import ZoneInfo as zi
@@ -32,10 +31,12 @@ from azure.batch.models import (
 )
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
+from azure.core.paging import ItemPaged
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
 from azure.storage.blob import (
+    BlobProperties,
     BlobServiceClient,
     ContainerClient,
     StorageStreamDownloader,
@@ -948,7 +949,7 @@ def add_task_to_job(
             full_cmd = d_cmd_str
         else:
             logger.debug("using rel path to save logs")
-            t = dt.now(zi("America/New_York"))
+            t = datetime.datetime.now(zi("America/New_York"))
             s_time = t.strftime("%Y%m%d_%H%M%S")
             if not save_logs_rel_path.startswith("/"):
                 save_logs_rel_path = "/" + save_logs_rel_path
@@ -1548,6 +1549,80 @@ def write_blob_stream(
         )
     container_client.upload_blob(name=blob_url, data=data, overwrite=True)
     return True
+
+
+def infer_prefix(blob_url: str) -> str:
+    """
+    Determine prefix both from Blob Url
+
+    Args:
+        blob_url (str):
+            [Required] Path within the container to the desired file (including filename)
+    """
+    blob_url_parts = blob_url.split("/")
+    blob_url_parts_folders = [x for x in blob_url_parts if "*" not in x]
+    if len(blob_url_parts_folders) > 0:
+        blob_prefix = "/".join(blob_url_parts_folders)
+        blob_prefix = (
+            blob_prefix if blob_prefix.endswith("/") else f"{blob_prefix}/"
+        )
+    else:
+        blob_prefix = ""
+    return blob_prefix
+
+
+def blob_glob(
+    blob_url: str,
+    account_name: str = None,
+    container_name: str = None,
+    container_client: ContainerClient = None,
+    **kwargs,
+) -> ItemPaged[BlobProperties]:
+    """
+    List all blobs in specified container
+
+    Args:
+        blob_url (str):
+            [Required] Path within the container to the desired file (including filename)
+        account_name (str):
+            [Optional] Name of Azure storage account
+        container_name (str):
+            [Optional] Name of Blob container within storage account
+        container_client (ContainerClient):
+            [Optional] Instance of ContainerClient provided with the storage account
+        do_check (bool):
+            [Optional] Whether or not to do an existence check
+
+    Raises:
+        ValueError:
+            When no blobs exist with the specified name (src_path)
+    """
+    if container_client:
+        pass
+    elif container_name and account_name:
+        config = {
+            "Storage": {
+                "storage_account_url": f"https://{account_name}.blob.core.windows.net"
+            }
+        }
+        blob_service_client = get_blob_service_client(
+            config=config, credential=DefaultAzureCredential()
+        )
+        container_client = blob_service_client.get_container_client(
+            container=container_name
+        )
+    else:
+        raise ValueError(
+            "Either container name and account name or container client must be provided."
+        )
+    blob_prefix = infer_prefix(blob_url)
+    blob_generator = container_client.walk_blobs(blob_prefix, delimiter="/")
+    sort_key = kwargs.get("sort_key")
+    if sort_key:
+        blob_generator = sorted(
+            blob_generator, key=lambda blob: blob[sort_key]
+        )
+    return blob_generator
 
 
 def read_blob_stream(

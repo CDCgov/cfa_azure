@@ -2,14 +2,23 @@ import uuid
 
 
 class Task:
-    def __init__(self, cmd, id=None, dep=None):
-        """
-        __init__ _summary_
+    """
+    Task object used with clients.AzureClient.run_dag()
 
+    Attributes:
+       cmd: docker command for task
+       id: optional name for id
+       dep: dependent Task(s)
+    """
+
+    def __init__(
+        self, cmd: str, id: str | None = None, dep: str | list | None = None
+    ):
+        """
         Args:
-            cmd (_type_): _description_
-            id (_type_, optional): _description_. Defaults to None.
-            dep (_type_, optional): _description_. Defaults to None.
+            cmd (str): command to be used with Azure Batch task
+            id (str, optional): optional id to identity tasks. Defaults to None.
+            dep (str | list[str], optional): Task object(s) this task depends on. Defaults to None.
         """
         self.cmd = cmd
         if id is None:
@@ -27,6 +36,17 @@ class Task:
         return self.id
 
     def before(self, other):
+        """
+        Set that this task needs to occur before another task.
+
+        Example:
+            t1 = Task("some command")
+            t2 = Task("another command")
+            t1.before(t2) sets t1 must occure before t2.
+
+        Args:
+            other (Task): batch.Task object
+        """
         if not isinstance(other, list):
             other = [other]
         for task in other:
@@ -34,6 +54,17 @@ class Task:
                 task.deps.append(self)
 
     def after(self, other):
+        """
+        Set that this task needs to occur after another task.
+
+        Example:
+            t1 = Task("some command")
+            t2 = Task("another command")
+            t1.after(t2) sets t1 must occur after t2.
+
+        Args:
+            other (Task): batch.Task object
+        """
         if not isinstance(other, list):
             other = [other]
         for task in other:
@@ -41,7 +72,29 @@ class Task:
                 self.deps.append(task)
 
     def set_downstream(self, other):
+        """
+        Sets the downstream task from the current task.
+
+        Example:
+            t1 = Task("some command")
+            t2 = Task("another command")
+            t1.set_downstream(t2) sets t2 as the downstream task from t1, like t1 >> t2
+
+        Args:
+            other (Task): batch.Task object
+        """
         self.before(other)
 
     def set_upstream(self, other):
+        """
+        Sets the upstream task from the current task.
+
+        Example:
+            t1 = Task("some command")
+            t2 = Task("another command")
+            t1.set_upstream(t2) sets t2 as the upstream task from t1, like t1 << t2
+
+        Args:
+            other (Task): batch.Task object
+        """
         self.after(other)

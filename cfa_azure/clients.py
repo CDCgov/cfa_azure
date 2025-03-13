@@ -1757,6 +1757,17 @@ class AzureClient:
                 )
 
     def run_dag(self, *args: Task, job_id: str, **kwargs):
+        """
+        Takes in tasks as arguments and runs them in the correct order as a DAG.
+
+        Args:
+            *args: batch.Task objects
+            job_id (str): job name
+            **kwargs: other keywords also accepted by client.add_task()
+
+        Raises:
+            ce: raises CycleError if submitted tasks do not form a DAG
+        """
         # get topologicalsorter opject
         ts = TopologicalSorter()
         tasks = args

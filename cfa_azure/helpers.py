@@ -1,7 +1,6 @@
 # import modules for use
 import csv
 import datetime
-import fnmatch as fm
 import json
 import logging
 import operator
@@ -17,7 +16,6 @@ import azure.batch.models as batchmodels
 import docker
 import numpy as np
 import pandas as pd
-import pytz
 import toml
 import yaml
 from azure.batch import BatchServiceClient
@@ -34,10 +32,12 @@ from azure.batch.models import (
 )
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
+from azure.core.paging import ItemPaged
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
 from azure.storage.blob import (
+    BlobProperties,
     BlobServiceClient,
     ContainerClient,
     StorageStreamDownloader,
@@ -1561,29 +1561,6 @@ def write_blob_stream(
     return True
 
 
-def infer_date_filter(**kwargs) -> tuple[str | None, str | None]:
-    """
-    Determines what type of filter to apply for modified date
-
-    Args:
-        kwargs
-    """
-    filter_expression = kwargs.get("date_filter")
-    if not filter_expression:
-        return (None, None)
-    filter_expression_parts = filter_expression.split("|")
-    print(filter_expression_parts)
-    operator_function = operand = None
-    if len(filter_expression_parts) == 2:
-        operand = datetime.datetime.strptime(
-            filter_expression_parts[-1], "%m-%d-%Y"
-        )
-        operation = filter_expression_parts[0]
-        if operation:
-            operator_function = OPERATIONS.get(operation)
-    return (operator_function, operand)
-
-
 def infer_prefix(blob_url: str) -> str:
     """
     Determine prefix both from Blob Url
@@ -1610,7 +1587,7 @@ def blob_glob(
     container_name: str = None,
     container_client: ContainerClient = None,
     **kwargs,
-) -> list[str]:
+) -> ItemPaged[BlobProperties]:
     """
     List all blobs in specified container
 
@@ -1648,25 +1625,14 @@ def blob_glob(
         raise ValueError(
             "Either container name and account name or container client must be provided."
         )
-    file_pattern = blob_url
     blob_prefix = infer_prefix(blob_url)
-    all_files = container_client.list_blobs(blob_prefix)
-    blob_list = []
-    date_operation, date_operand = infer_date_filter(**kwargs)
-    for blob in all_files:
-        if fm.fnmatch(blob["name"], file_pattern):
-            if (
-                date_operation
-                and date_operand
-                and date_operation(
-                    blob["last_modified"].replace(tzinfo=pytz.UTC),
-                    pytz.UTC.localize(date_operand),
-                )
-            ):
-                blob_list.append(blob["name"])
-            else:
-                blob_list.append(blob["name"])
-    return blob_list
+    blob_generator = container_client.walk_blobs(blob_prefix, delimiter="/")
+    sort_key = kwargs.get("sort_key")
+    if sort_key:
+        blob_generator = sorted(
+            blob_generator, key=lambda blob: blob[sort_key]
+        )
+    return blob_generator
 
 
 def read_blob_stream(

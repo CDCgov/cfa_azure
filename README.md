@@ -491,25 +491,20 @@ delete_blob_snapshots("blob_name", "container_name", blob_service_client)
 ```python
 delete_blob_folder("folder_path", "container_name", blob_service_client)
 ```
-- `blob_glob`: provides a flat (non-hierarchical, non-recursive) list of all files within specified Azure Blob Storage location that match the provided pattern
+- `blob_glob`: provides an iterator over all files within specified Azure Blob Storage location that match the specified prefix. It optionally takes a sort key that will return the return the results sorted in ascending order by one of the blob properties
 ```python
 blob_glob("blob_url", "account_name", "container_name", "container_client")
-blob_glob("blob_url", "account_name", "container_name", "container_client", "date_filter")
+blob_glob("blob_url", "account_name", "container_name", "container_client", "sort_key")
 ```
 **Example: List Azure blob files from a folder**
 ```python
 from cfa_azure.helpers import blob_glob
-file_list = blob_glob("src/dynode/mechanistic*.py", account_name='cfaazurebatchprd', container_name='input')
-print(file_list)
+for blob in blob_glob("src/dynode/mechanistic*.py", account_name='cfaazurebatchprd', container_name='input'):
+    print(blob)
 
-# list files modified after 1/1/2025
-# date_filter format is operator|date where operand can be >, >=, <, <=, == and != without commas
-file_list = blob_glob("input/AZ*.csv", account_name='cfaazurebatchprd', container_name='input-test', date_filter='>|1-1-2025')
-print(file_list)
-
-# list files modified before 1/1/2025
-file_list = blob_glob("input/AZ*.csv", account_name='cfaazurebatchprd', container_name='input-test', date_filter='<|1-1-2025')
-print(file_list)
+# sort all files by last_modified date
+for blob in blob_glob('input/', account_name='cfaazurebatchprd', container_name='input-test', sort_key='name'):
+    print(blob['name'])
 ```
 ```
 - `read_blob_stream`: reads file from specified path in Azure Storage and return its contents as bytes without mounting the container to a local filesystem

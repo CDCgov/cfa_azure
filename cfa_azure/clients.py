@@ -2,7 +2,7 @@ import datetime
 import json
 import logging
 import os
-from graphlib import TopologicalSorter, CycleError
+from graphlib import CycleError, TopologicalSorter
 from time import sleep
 
 import pandas as pd
@@ -1778,7 +1778,6 @@ class AzureClient:
                 depends_on=task_df[task_df["id"] == task.id]["deps"].values[0],
                 **kwargs,
             )
-            print(tid)
             for i, dep in enumerate(task_df["deps"]):
                 dlist = []
                 for d in dep:
@@ -1787,4 +1786,3 @@ class AzureClient:
                     else:
                         dlist.append(str(d))
                 task_df.at[i, "deps"] = dlist
-        return task_df

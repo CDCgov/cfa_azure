@@ -1762,7 +1762,11 @@ class AzureClient:
         tasks = args
         for task in tasks:
             ts.add(task, *task.deps)
-        task_order = [*ts.static_order()]
+        try:
+            task_order = [*ts.static_order()]
+        except graphlib.CycleError as ce:
+            print("Submitted tasks do not form a DAG.")
+            raise ce
         task_df = pd.DataFrame(columns=["id", "cmd", "deps"])
         # initialize df for task execution
         for i, task in enumerate(task_order):

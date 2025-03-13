@@ -3,7 +3,6 @@ import csv
 import datetime
 import json
 import logging
-import operator
 import os
 import re
 import subprocess as sp
@@ -47,15 +46,6 @@ from griddler import griddle
 from yaml import SafeLoader, dump, load
 
 logger = logging.getLogger(__name__)
-
-OPERATIONS = {
-    "==": operator.eq,
-    "!=": operator.ne,
-    "<": operator.lt,
-    "<=": operator.le,
-    ">": operator.gt,
-    ">=": operator.ge,
-}
 
 
 def read_config(config_path: str = "./configuration.toml") -> dict:

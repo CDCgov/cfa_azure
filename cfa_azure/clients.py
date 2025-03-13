@@ -2,7 +2,7 @@ import datetime
 import json
 import logging
 import os
-from graphlib import TopologicalSorter
+from graphlib import TopologicalSorter, CycleError
 from time import sleep
 
 import pandas as pd
@@ -1764,7 +1764,7 @@ class AzureClient:
             ts.add(task, *task.deps)
         try:
             task_order = [*ts.static_order()]
-        except graphlib.CycleError as ce:
+        except CycleError as ce:
             print("Submitted tasks do not form a DAG.")
             raise ce
         task_df = pd.DataFrame(columns=["id", "cmd", "deps"])

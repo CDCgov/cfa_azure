@@ -1,6 +1,6 @@
 # DAGs with `cfa_azure`
 
-A DAG is a graph containing directed edges but no cycles, ensuring no path leads back to the starting node. This is helpful in building complex workflows where order matters between certain tasks that are dependent on other tasks completing first. 
+A DAG is a graph containing directed edges but no cycles, ensuring no path leads back to the starting node. This is helpful in building complex workflows where order matters between certain tasks that are dependent on other tasks completing first.
 
 To create a DAG using `cfa_azure`, the building blocks are Task objects from the `batch` module. Each task includes the docker command that will be run when the task executes in Azure Batch, and optionally an id you want to specify the task by, and any dependencies. Dependencies can be added at Task creation or at a later time, which will be discussed more below.
 

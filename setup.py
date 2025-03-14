@@ -15,7 +15,7 @@ setup(
         "azure-mgmt-resource>=21.2.1",
         "azure-storage-blob>=12.17.0",
         "azure-containerregistry>=1.2.0",
-        "cryptography>=43.0.1",
+        "cryptography>=44.0.1",
         "toml>=0.10.2",
         "pandas",
         "pathlib",

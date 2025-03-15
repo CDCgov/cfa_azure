@@ -1,6 +1,7 @@
 # import modules for use
 import csv
 import datetime
+import fnmatch as fm
 import json
 import logging
 import os
@@ -1615,14 +1616,18 @@ def blob_glob(
         raise ValueError(
             "Either container name and account name or container client must be provided."
         )
+    file_pattern = f"{blob_url}*" if blob_url.endswith("/") else blob_url
     blob_prefix = infer_prefix(blob_url)
     blob_generator = container_client.walk_blobs(blob_prefix, delimiter="/")
+    filtered_generator = filter(
+        lambda blob: fm.fnmatch(blob["name"], file_pattern), blob_generator
+    )
     sort_key = kwargs.get("sort_key")
     if sort_key:
-        blob_generator = sorted(
-            blob_generator, key=lambda blob: blob[sort_key]
+        filtered_generator = sorted(
+            filtered_generator, key=lambda blob: blob[sort_key]
         )
-    return blob_generator
+    return filtered_generator
 
 
 def read_blob_stream(

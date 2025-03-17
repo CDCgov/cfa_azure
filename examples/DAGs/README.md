@@ -11,24 +11,19 @@ t1 = Task("python3 /main.py")
 t2 = Task("python3 /second_task.py")
 ```
 
-Once Task objects are created, dependencies can be added to the tasks via the following four methods on a Task object:
+Once Task objects are created, dependencies can be added to the tasks via the following methods on a Task object:
 - before()
 - after()
-- set_downstream():
-- set_upstream()
 
-`set_downstream()` and `set_upstream()` are based on Airflow's implementation. Check out that documentation for more information.
 
-For example, if a task `t1` needs to be run before task `t2`, either of the following could be run to set this dependency:
+For example, if a task `t1` needs to be run before task `t2`, the following could be run to set this dependency:
 ```python
 t1.before(t2)
-t1.set_downstream(t2)
 ```
 
-Similarly, if a task `t1` needs to be run after task `t2`, either of the following could be run to set this dependency:
+Similarly, if a task `t1` needs to be run after task `t2`, the following could be run to set this dependency:
 ```python
 t1.after(t2)
-t1.set_upstream(t2)
 ```
 
 Tasks can also be set to have multiple dependencies using multiple statements or a single list in one call. For example:
@@ -65,8 +60,18 @@ t5 = Task("dummy cmd 5")
 
 t2.after(t1)
 t3.before(t4)
-t5.after([t3, t4])
+t5.after([t3, t5])
 
 client.add_job("dag_job_example")
 client.run_dag(t1, t2, t3, t4, t5, job_id = "dag_job_example")
+```
+
+## Alternative Methods for Setting Dependencies
+Besides the two ways of setting dependencies mentioned above (`before()` and `after()`), there are two additional methods keeping in line with Airflow DAGs. These two methods are `set_upstream()` and `set_downstream()` and are identical to the behavior of `before()` and `after()` as described, but some users may be more familiar with these methods if they have experience with Airflow. The methods are related as follows:
+- before = set_downstream
+- after = set_upstream
+
+For example, a Task t1 that will be followed by Task t2 can be set by
+```
+t1.set_downstream(t2)
 ```

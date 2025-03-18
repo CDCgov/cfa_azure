@@ -60,7 +60,7 @@ t5 = Task("dummy cmd 5")
 
 t2.after(t1)
 t3.before(t4)
-t5.after([t3, t5])
+t5.after([t3, t4])
 
 client.add_job("dag_job_example")
 client.run_dag(t1, t2, t3, t4, t5, job_id = "dag_job_example")

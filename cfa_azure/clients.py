@@ -1776,7 +1776,7 @@ class AzureClient:
         try:
             task_order = [*ts.static_order()]
         except CycleError as ce:
-            print("Submitted tasks do not form a DAG.")
+            logger.warn("Submitted tasks do not form a DAG.")
             raise ce
         task_df = pd.DataFrame(columns=["id", "cmd", "deps"])
         # initialize df for task execution

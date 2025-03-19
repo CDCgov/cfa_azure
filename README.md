@@ -37,6 +37,7 @@ The method `add_task()` no longer accepts parameters `use_uploaded_files` or `in
     - [Running Jobs and Tasks](#running-jobs-and-tasks)
     - [Running Tasks from Yaml](#running-tasks-from-yaml)
     - [Download Blob Files After Job Completes](#download-blob-files-after-job-completes)
+    - [Run DAGs](#run-dags)
   - [automation](#automation)
   - [helpers](#helpers)
     - [Helpers Functions](#helpers-functions)
@@ -363,6 +364,9 @@ client.download_after_job(
   container_name = "output-test"
 )
 ```
+
+### Run DAGs
+An instance of the AzureClient can run DAGs in a user-specified job. It takes in Task objects from the `batch` module, along with a job_id and other `add_task()` parameters. It determines which order to submit the tasks and sets the appropriate dependencies in Azure Batch. See [the DAGs documentation](/examples/DAGs/README.md) for more information.
 
 ## automation
 Please view [this documentation](docs/automation_README.md) on getting started with the `automation` module.

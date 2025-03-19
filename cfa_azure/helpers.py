@@ -1552,7 +1552,7 @@ def write_blob_stream(
     return True
 
 
-def infer_prefix(blob_url: str) -> str:
+def infer_prefix_split(blob_url: str) -> str:
     """
     Determine prefix both from Blob Url
 
@@ -1560,16 +1560,28 @@ def infer_prefix(blob_url: str) -> str:
         blob_url (str):
             [Required] Path within the container to the desired file (including filename)
     """
-    blob_url_parts = blob_url.split("/")
-    blob_url_parts_folders = [x for x in blob_url_parts if "*" not in x]
-    if len(blob_url_parts_folders) > 0:
-        blob_prefix = "/".join(blob_url_parts_folders)
-        blob_prefix = (
-            blob_prefix if blob_prefix.endswith("/") else f"{blob_prefix}/"
-        )
+    blob_url_parts = blob_url.split("*", maxsplit=1)
+    data_path_candidate, suffix_pattern = (
+        (blob_url_parts[0], blob_url_parts[1:])
+        if len(blob_url_parts) == 2
+        else (blob_url_parts[0], "")
+    )
+    if data_path_candidate and not data_path_candidate.endswith("/"):
+        data_path_candidate_parts = data_path_candidate.split("/", maxsplit=1)
+        if len(data_path_candidate_parts) > 0:
+            data_path = f"{data_path_candidate_parts[0]}/"
+            file_pattern = (
+                "/".join(data_path_candidate_parts[1:])
+                + "*"
+                + "".join(suffix_pattern)
+            )
+        else:
+            data_path = data_path_candidate
+            file_pattern = data_path_candidate
     else:
-        blob_prefix = ""
-    return blob_prefix
+        data_path = data_path_candidate
+        file_pattern = "*" + "".join(suffix_pattern)
+    return data_path, file_pattern
 
 
 def blob_glob(
@@ -1616,18 +1628,20 @@ def blob_glob(
         raise ValueError(
             "Either container name and account name or container client must be provided."
         )
-    file_pattern = f"{blob_url}*" if blob_url.endswith("/") else blob_url
-    blob_prefix = infer_prefix(blob_url)
-    blob_generator = container_client.walk_blobs(blob_prefix, delimiter="/")
-    filtered_generator = filter(
-        lambda blob: fm.fnmatch(blob["name"], file_pattern), blob_generator
+    data_path, file_pattern = infer_prefix_split(blob_url)
+    subset_files = container_client.list_blobs(data_path)
+    filtered_subset = iter(
+        filter(
+            lambda blob: fm.fnmatch(blob["name"], f"*{file_pattern}"),
+            subset_files,
+        )
     )
     sort_key = kwargs.get("sort_key")
     if sort_key:
-        filtered_generator = sorted(
-            filtered_generator, key=lambda blob: blob[sort_key]
+        filtered_subset = sorted(
+            filtered_subset, key=lambda blob: blob[sort_key]
         )
-    return filtered_generator
+    return filtered_subset
 
 
 def read_blob_stream(

@@ -502,8 +502,12 @@ from cfa_azure.helpers import blob_glob
 for blob in blob_glob("src/dynode/mechanistic*.py", account_name='cfaazurebatchprd', container_name='input'):
     print(blob)
 
-# sort all files by last_modified date
-for blob in blob_glob('input/', account_name='cfaazurebatchprd', container_name='input-test', sort_key='name'):
+# sort all files within input/ folder by last_modified date and display name
+for blob in blob_glob('input/', account_name='cfaazurebatchprd', container_name='input-test', sort_key='last_modified'):
+    print(blob['name'])
+
+# sort all markdown files by last_modified date and display name
+for blob in blob_glob('*.md', account_name='cfaazurebatchprd', container_name='input-test', sort_key='last_modified'):
     print(blob['name'])
 ```
 ```

@@ -499,7 +499,6 @@ delete_blob_folder("folder_path", "container_name", blob_service_client)
 ```python
 blob_glob("blob_url", "account_name", "container_name", "container_client")
 ```
-```
 - `blob_search`: provides an iterator over all files within specified Azure Blob Storage location that match the specified prefix and file pattern. It can optionally take a sort key.
 ```python
 blob_search("blob_url", "account_name", "container_name", "container_client")

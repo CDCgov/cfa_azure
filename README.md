@@ -495,10 +495,14 @@ delete_blob_snapshots("blob_name", "container_name", blob_service_client)
 ```python
 delete_blob_folder("folder_path", "container_name", blob_service_client)
 ```
-- `blob_glob`: provides an iterator over all files within specified Azure Blob Storage location that match the specified prefix. It optionally takes a sort key that will return the return the results sorted in ascending order by one of the blob properties
+- `blob_glob`: provides an iterator over all files within specified Azure Blob Storage location that match the specified prefix.
 ```python
 blob_glob("blob_url", "account_name", "container_name", "container_client")
-blob_glob("blob_url", "account_name", "container_name", "container_client", "sort_key")
+```
+- `blob_search`: provides an iterator over all files within specified Azure Blob Storage location that match the specified prefix and file pattern. It can optionally take a sort key.
+```python
+blob_search("blob_url", "account_name", "container_name", "container_client")
+blob_search("blob_url", "account_name", "container_name", "container_client", "sort_key")
 ```
 **Example: List Azure blob files from a folder**
 ```python

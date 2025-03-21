@@ -1621,7 +1621,7 @@ def blob_search(
     )
     filtered_subset = iter(
         filter(
-            lambda blob: fm.fnmatch(blob["name"], f"*{file_pattern}"),
+            lambda blob: fm.fnmatch(blob["name"], f"{file_pattern}"),
             subset_files,
         )
     )
@@ -1664,7 +1664,7 @@ def blob_glob(
         container_client=container_client,
     )
     filtered_subset = filter(
-        lambda blob: fm.fnmatch(blob["name"], f"*{file_pattern}"),
+        lambda blob: fm.fnmatch(blob["name"], f"{file_pattern}"),
         subset_files,
     )
     return filtered_subset

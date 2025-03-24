@@ -64,7 +64,7 @@ def run_experiment(exp_config: str, auth_config: str | None = None):
                     "Could not ping docker. Make sure the docker daemon is running."
                 )
             try:
-                docker.images.get(image_name)
+                d_env.images.get(image_name)
             except Exception:
                 print(f"Image {image_name} from pool not found in Docker.")
             client.cont_name = image_name.replace("/", "_").replace(":", "_")

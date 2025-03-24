@@ -656,7 +656,7 @@ class AzureClient:
             for mount in self.mounts:
                 mount_str = (
                     mount_str
-                    + "--mount type=bind,source="
+                    + " --mount type=bind,source="
                     + os.path.abspath(mount[0])
                     + f",target=/{mount[1]}"
                 )

@@ -7,7 +7,7 @@ DuckDB is a free, open-source, embedded, in-process, columnar database used for 
 # Install DuckDB on VAP
 Follow these steps to install DuckDB:
 
-1. On Linux-based VAPs, you can install directly on bash shell. On Windows-based VAPs, you need to launch WSL session. 
+1. On Linux-based VAPs, you can install directly on bash shell. On Windows-based VAPs, you need to launch WSL session.
 2. Download and install DuckDB on Linux:
    ```bash
    curl https://install.duckdb.org | sh
@@ -23,11 +23,11 @@ Follow these steps to install DuckDB:
 
 # Connect DuckDB with Azure Blob Storage
 
-There are options for connecting DuckDB to Azure Blob Storage: DuckDB Azure extension or Blobfuse. 
+There are options for connecting DuckDB to Azure Blob Storage: DuckDB Azure extension or Blobfuse.
 
 ## DuckDB Azure Extension
 
-Use this option if you want to read blob data quickly. The extension authenticates to Azure Blob Storage using Azure Service Principal and reads a blob from specified container into a DuckDB table. However, all updates, insertions and deletes are local. DuckDB Azure extension does not support writes to Blob Storage. 
+Use this option if you want to read blob data quickly. The extension authenticates to Azure Blob Storage using Azure Service Principal and reads a blob from specified container into a DuckDB table. However, all updates, insertions and deletes are local. DuckDB Azure extension does not support writes to Blob Storage.
 
 Follow these steps to connect through Azure extension:
 
@@ -64,15 +64,15 @@ CREATE SECRET azure_spn (
 ```
 4. Create table (e.g. Arizona_Towns) with data from Blob (e.g. `az://input-test/input/AZ_03072025_a.csv`):
 ```shell
-CREATE TABLE IF NOT EXISTS Arizona_Towns 
-AS SELECT * FROM 'az://CONTAINER_NAME/PATH_TO_BLOB';        
+CREATE TABLE IF NOT EXISTS Arizona_Towns
+AS SELECT * FROM 'az://CONTAINER_NAME/PATH_TO_BLOB';
 
 SELECT * FROM Arizona_Towns;
 ```
 
 ## Blobfuse
 
-The Linux Blobfuse v2 library mounts a Blob container to local Linux folder in the VAP using an Azure Service Principal. With this option, you can read structured data into a DuckDB table and write DuckDB tables into Blob Storage using any delimiter. 
+The Linux Blobfuse v2 library mounts a Blob container to local Linux folder in the VAP using an Azure Service Principal. With this option, you can read structured data into a DuckDB table and write DuckDB tables into Blob Storage using any delimiter.
 
 Follow these steps to connect through Azure extension:
 

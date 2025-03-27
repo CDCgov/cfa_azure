@@ -5,7 +5,7 @@ The `local` module in `cfa_azure` was developed to meet the need of easily switc
 
 The general idea is that users will have python scripts utilizing `cfa_azure` and will have imports like `from cfa_azure.clients import AzureClient`. Switching to local execution is as easy as changing the import statements to include `.local` after `cfa_azure` in any import, so a local run with the `AzureClient` would now have an import of `from cfa_azure.local.clients import AzureClient`.
 
-The same importing applies to `automation` and `helpers` as well. We would now import these as 
+The same importing applies to `automation` and `helpers` as well. We would now import these as
 ```
 from cfa_azure.local import helpers, automation
 ```

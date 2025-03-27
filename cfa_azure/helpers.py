@@ -1,13 +1,13 @@
 # import modules for use
 import csv
 import datetime
+import fnmatch as fm
 import json
 import logging
 import os
 import re
 import subprocess as sp
 import time
-from datetime import datetime as dt
 from os import path, walk
 from pathlib import Path
 from zoneinfo import ZoneInfo as zi
@@ -32,10 +32,12 @@ from azure.batch.models import (
 )
 from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
+from azure.core.paging import ItemPaged
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
 from azure.storage.blob import (
+    BlobProperties,
     BlobServiceClient,
     ContainerClient,
     StorageStreamDownloader,
@@ -948,7 +950,7 @@ def add_task_to_job(
             full_cmd = d_cmd_str
         else:
             logger.debug("using rel path to save logs")
-            t = dt.now(zi("America/New_York"))
+            t = datetime.datetime.now(zi("America/New_York"))
             s_time = t.strftime("%Y%m%d_%H%M%S")
             if not save_logs_rel_path.startswith("/"):
                 save_logs_rel_path = "/" + save_logs_rel_path
@@ -1492,7 +1494,9 @@ def check_virtual_directory_existence(
         bool: whether the virtual directory exists
 
     """
-    blobs = c_client.list_blobs(name_starts_with=vdir_path)
+    blobs = list_blobs_in_container(
+        name_starts_with=vdir_path, container_client=c_client
+    )
     try:
         first_blob = next(blobs)
         logger.debug(f"{first_blob.name} found.")
@@ -1548,6 +1552,122 @@ def write_blob_stream(
         )
     container_client.upload_blob(name=blob_url, data=data, overwrite=True)
     return True
+
+
+def infer_prefix_split(blob_url: str) -> str:
+    """
+    Determine prefix both from Blob Url
+
+    Args:
+        blob_url (str):
+            [Required] Path within the container to the desired file (including filename)
+    """
+    blob_url_parts = blob_url.split("*", maxsplit=1)
+    data_path_candidate, suffix_pattern = (
+        (blob_url_parts[0], blob_url_parts[1:])
+        if len(blob_url_parts) == 2
+        else (blob_url_parts[0], "")
+    )
+    if data_path_candidate and not data_path_candidate.endswith("/"):
+        data_path_candidate_parts = data_path_candidate.split("/", maxsplit=1)
+        if len(data_path_candidate_parts) > 0:
+            data_path = f"{data_path_candidate_parts[0]}/"
+            file_pattern = (
+                "/".join(data_path_candidate_parts[1:])
+                + "*"
+                + "".join(suffix_pattern)
+            )
+        else:
+            data_path = data_path_candidate
+            file_pattern = data_path_candidate
+    else:
+        data_path = data_path_candidate
+        file_pattern = "*" + "".join(suffix_pattern)
+    return data_path, file_pattern
+
+
+def blob_search(
+    blob_url: str,
+    account_name: str = None,
+    container_name: str = None,
+    container_client: ContainerClient = None,
+    **kwargs,
+) -> ItemPaged[BlobProperties]:
+    """
+    List all blobs in specified container along with their metadata
+
+    Args:
+        blob_url (str):
+            [Required] Path within the container to the desired file (including filename)
+        account_name (str):
+            [Optional] Name of Azure storage account
+        container_name (str):
+            [Optional] Name of Blob container within storage account
+        container_client (ContainerClient):
+            [Optional] Instance of ContainerClient provided with the storage account
+        sort_key (str):
+            [Optional]: Blob property to use for sorting the result in ascending order
+
+    Raises:
+        ValueError:
+            When no blobs exist with the specified name (src_path)
+    """
+    data_path, file_pattern = infer_prefix_split(blob_url)
+    subset_files = list_blobs_in_container(
+        name_starts_with=data_path,
+        account_name=account_name,
+        container_name=container_name,
+        container_client=container_client,
+    )
+    filtered_subset = iter(
+        filter(
+            lambda blob: fm.fnmatch(blob["name"], f"{file_pattern}"),
+            subset_files,
+        )
+    )
+    sort_key = kwargs.get("sort_key")
+    if sort_key:
+        filtered_subset = sorted(
+            filtered_subset, key=lambda blob: blob[sort_key]
+        )
+    return filtered_subset
+
+
+def blob_glob(
+    blob_url: str,
+    account_name: str = None,
+    container_name: str = None,
+    container_client: ContainerClient = None,
+) -> ItemPaged[BlobProperties]:
+    """
+    List all blobs in specified container
+
+    Args:
+        blob_url (str):
+            [Required] Path within the container to the desired file (including filename)
+        account_name (str):
+            [Optional] Name of Azure storage account
+        container_name (str):
+            [Optional] Name of Blob container within storage account
+        container_client (ContainerClient):
+            [Optional] Instance of ContainerClient provided with the storage account
+
+    Raises:
+        ValueError:
+            When no blobs exist with the specified name (src_path)
+    """
+    data_path, file_pattern = infer_prefix_split(blob_url)
+    subset_files = walk_blobs_in_container(
+        name_starts_with=data_path,
+        account_name=account_name,
+        container_name=container_name,
+        container_client=container_client,
+    )
+    filtered_subset = filter(
+        lambda blob: fm.fnmatch(blob["name"], f"{file_pattern}"),
+        subset_files,
+    )
+    return filtered_subset
 
 
 def read_blob_stream(
@@ -1700,7 +1820,9 @@ def download_directory(
     blob_list = []
     if not src_path.endswith("/"):
         src_path += "/"
-    for blob in c_client.list_blobs(name_starts_with=src_path):
+    for blob in list_blobs_in_container(
+        name_starts_with=src_path, container_client=c_client
+    ):
         b = blob.name
         if b.split(src_path)[0] == "" and "." in b:
             blob_list.append(b)
@@ -2215,6 +2337,72 @@ def get_timeout(_time: str) -> int:
         return m
 
 
+def instantiate_container_client(
+    container_name: str = None,
+    account_name: str = None,
+    blob_service_client: BlobServiceClient = None,
+    container_client: ContainerClient = None,
+):
+    """
+    Returns a Container Client
+    """
+    logger.debug("Creating container client for getting Blob info.")
+    if container_client:
+        pass
+    elif blob_service_client and container_name:
+        container_client = blob_service_client.get_container_client(
+            container=container_name
+        )
+    elif container_name and account_name:
+        config = {
+            "Storage": {
+                "storage_account_url": f"https://{account_name}.blob.core.windows.net"
+            }
+        }
+        blob_service_client = get_blob_service_client(
+            config=config, credential=DefaultAzureCredential()
+        )
+        container_client = blob_service_client.get_container_client(
+            container=container_name
+        )
+    else:
+        raise ValueError(
+            "Either container name, account name, container client or blob service client must be provided."
+        )
+    logger.debug("Container client created. Listing Blob info.")
+    return container_client
+
+
+def walk_blobs_in_container(
+    container_name: str = None,
+    account_name: str = None,
+    name_starts_with: str = None,
+    blob_service_client: BlobServiceClient = None,
+    container_client: ContainerClient = None,
+):
+    return instantiate_container_client(
+        container_name=container_name,
+        account_name=account_name,
+        blob_service_client=blob_service_client,
+        container_client=container_client,
+    ).walk_blobs(name_starts_with)
+
+
+def list_blobs_in_container(
+    container_name: str = None,
+    account_name: str = None,
+    name_starts_with: str = None,
+    blob_service_client: BlobServiceClient = None,
+    container_client: ContainerClient = None,
+):
+    return instantiate_container_client(
+        container_name=container_name,
+        account_name=account_name,
+        blob_service_client=blob_service_client,
+        container_client=container_client,
+    ).list_blobs(name_starts_with)
+
+
 def list_blobs_flat(
     container_name: str, blob_service_client: BlobServiceClient, verbose=True
 ):
@@ -2227,12 +2415,9 @@ def list_blobs_flat(
     Returns:
         list: list of blobs in Blob container
     """
-    logger.debug("Creating container client for getting Blob info.")
-    container_client = blob_service_client.get_container_client(
-        container=container_name
+    blob_list = list_blobs_in_container(
+        container_name=container_name, blob_service_client=blob_service_client
     )
-    logger.debug("Container client created. Listing Blob info.")
-    blob_list = container_client.list_blobs()
     blob_names = [blob.name for blob in blob_list]
     logger.debug("Blob names gathered.")
     if verbose:

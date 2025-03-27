@@ -519,6 +519,30 @@ delete_blob_snapshots("blob_name", "container_name", blob_service_client)
 ```python
 delete_blob_folder("folder_path", "container_name", blob_service_client)
 ```
+- `blob_glob`: provides an iterator over all files within specified Azure Blob Storage location that match the specified prefix.
+```python
+blob_glob("blob_url", "account_name", "container_name", "container_client")
+```
+- `blob_search`: provides an iterator over all files within specified Azure Blob Storage location that match the specified prefix and file pattern. It can optionally take a sort key.
+```python
+blob_search("blob_url", "account_name", "container_name", "container_client")
+blob_search("blob_url", "account_name", "container_name", "container_client", "sort_key")
+```
+**Example: List Azure blob files from a folder**
+```python
+from cfa_azure.helpers import blob_glob
+for blob in blob_glob("src/dynode/mechanistic*.py", account_name='cfaazurebatchprd', container_name='input'):
+    print(blob)
+
+# sort all files within input/ folder by last_modified date and display name
+for blob in blob_glob('input/', account_name='cfaazurebatchprd', container_name='input-test', sort_key='last_modified'):
+    print(blob['name'])
+
+# sort all markdown files by last_modified date and display name
+for blob in blob_glob('*.md', account_name='cfaazurebatchprd', container_name='input-test', sort_key='last_modified'):
+    print(blob['name'])
+```
+```
 - `read_blob_stream`: reads file from specified path in Azure Storage and return its contents as bytes without mounting the container to a local filesystem
 ```python
 read_blob_stream("blob_url", "account_name", "container_name", "container_client")

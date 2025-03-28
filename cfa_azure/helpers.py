@@ -1,4 +1,5 @@
 # import modules for use
+import argparse
 import csv
 import datetime
 import fnmatch as fm
@@ -565,6 +566,68 @@ def list_containers(blob_service_client: object):
         logger.debug(f"Found container: {container.name}")
     logger.debug("Completed listing containers.")
     return container_list
+
+
+def initialize_blob_arguments():
+    """
+    Initialize command line arguments for copy_blob and write_blob
+    """
+    parser = argparse.ArgumentParser(
+        description="Argument parser for copy_blob"
+    )
+    parser.add_argument(
+        "--account", required=True, type=str, help="Azure Blob Storage Account"
+    )
+    parser.add_argument(
+        "--container", required=True, type=str, help="Blob container"
+    )
+    parser.add_argument(
+        "--blobpath",
+        required=True,
+        type=str,
+        help="Path where data will be uploaded inside container",
+    )
+    parser.add_argument(
+        "--localpath",
+        required=True,
+        type=str,
+        help="Local folder that will be uploaded",
+    )
+    args = parser.parse_args()
+    return args
+
+
+def copy_blob():
+    """
+    Download a blob from Azure Storage to local file system
+
+    Usage: copy_blob --account '{storage_account}' --container '{storage_container}' --blobpath '{path/in/container}' --localpath '{local/path/for/data}'
+    """
+    args = initialize_blob_arguments()
+    container_client = get_container_client(args.account, args.container)
+    download_file(
+        c_client=container_client,
+        src_path=args.blobpath,
+        dest_path=args.localpath,
+        do_check=True,
+        verbose=True,
+    )
+
+
+def write_blob():
+    """
+    Upload a blob from local file system to Azure Storage
+
+    Usage: write_blob --account '{storage_account}' --container '{storage_container}' --blobpath '{path/in/container}' --localpath '{local/path/for/data}'
+    """
+    args = initialize_blob_arguments()
+    container_client = get_container_client(args.account, args.container)
+    upload_blob_file(
+        filepath=args.localpath,
+        location=args.blobpath,
+        container_client=container_client,
+        verbose=True,
+    )
 
 
 def upload_blob_file(
@@ -1670,6 +1733,24 @@ def blob_glob(
     return filtered_subset
 
 
+def get_container_client(account_name: str, container_name: str):
+    """
+    Instantiate container client using account name and container name
+    """
+    config = {
+        "Storage": {
+            "storage_account_url": f"https://{account_name}.blob.core.windows.net"
+        }
+    }
+    blob_service_client = get_blob_service_client(
+        config=config, credential=DefaultAzureCredential()
+    )
+    container_client = blob_service_client.get_container_client(
+        container=container_name
+    )
+    return container_client
+
+
 def read_blob_stream(
     blob_url: str,
     account_name: str = None,
@@ -1699,17 +1780,7 @@ def read_blob_stream(
     if container_client:
         pass
     elif container_name and account_name:
-        config = {
-            "Storage": {
-                "storage_account_url": f"https://{account_name}.blob.core.windows.net"
-            }
-        }
-        blob_service_client = get_blob_service_client(
-            config=config, credential=DefaultAzureCredential()
-        )
-        container_client = blob_service_client.get_container_client(
-            container=container_name
-        )
+        container_client = get_container_client(account_name, container_name)
     else:
         raise ValueError(
             "Either container name and account name or container client must be provided."

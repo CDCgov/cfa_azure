@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cfa_azure"
-version = "1.4.3"
+version = "1.4.4"
 description = "module for use with Azure and Azure Batch"
 authors = ["Ryan Raasch <xng3@cdc.gov>"]
 readme = "README.md"
@@ -31,3 +31,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["*_tests.py"]
+
+[tool.poetry.scripts]
+copy_blob = "cfa_azure.helpers:copy_blob"
+write_blob = "cfa_azure.helpers:write_blob"

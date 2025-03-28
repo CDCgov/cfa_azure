@@ -568,11 +568,9 @@ def list_containers(blob_service_client: object):
     return container_list
 
 
-def copy_blob():
+def initialize_blob_arguments():
     """
-    Download a blob from Azure Storage to local file system
-
-    Usage: copy_blob --account '{storage_account}' --container '{storage_container}' --blobpath '{path/in/container}' --localpath '{local/path/for/data}'
+    Initialize command line arguments for copy_blob and write_blob
     """
     parser = argparse.ArgumentParser(
         description="Argument parser for copy_blob"
@@ -596,6 +594,16 @@ def copy_blob():
         help="Local folder that will be uploaded",
     )
     args = parser.parse_args()
+    return args
+
+
+def copy_blob():
+    """
+    Download a blob from Azure Storage to local file system
+
+    Usage: copy_blob --account '{storage_account}' --container '{storage_container}' --blobpath '{path/in/container}' --localpath '{local/path/for/data}'
+    """
+    args = initialize_blob_arguments()
     container_client = get_container_client(args.account, args.container)
     download_file(
         c_client=container_client,
@@ -612,28 +620,7 @@ def write_blob():
 
     Usage: write_blob --account '{storage_account}' --container '{storage_container}' --blobpath '{path/in/container}' --localpath '{local/path/for/data}'
     """
-    parser = argparse.ArgumentParser(
-        description="Argument parser for copy_blob"
-    )
-    parser.add_argument(
-        "--account", required=True, type=str, help="Azure Blob Storage Account"
-    )
-    parser.add_argument(
-        "--container", required=True, type=str, help="Blob container"
-    )
-    parser.add_argument(
-        "--blobpath",
-        required=True,
-        type=str,
-        help="Path where data will be uploaded inside container",
-    )
-    parser.add_argument(
-        "--localpath",
-        required=True,
-        type=str,
-        help="Local folder that will be uploaded",
-    )
-    args = parser.parse_args()
+    args = initialize_blob_arguments()
     container_client = get_container_client(args.account, args.container)
     upload_blob_file(
         filepath=args.localpath,

@@ -25,18 +25,18 @@ pipx ensurepath
 pipx install git+https://github.com/CDCgov/cfa_azure.git
 ```
 
-# copy_blob
+# download_blob
 Use this command line utility to download a file from specified Azure Blob container to a local file in VAP.
 
 Example: Download `myfile.pdf` file from `input/files` subfolder in `input-test` container of Azure blob storage account `cfaazurebatchprd` to `/Downloads/myfile.pdf` file in VAP:
 ```shell
-copy_blob --account cfaazurebatchprd --container input-test --localpath /Downloads/myfile.pdf --blobpath input/files/myfile.pdf
+download_blob --account cfaazurebatchprd --container input-test --localpath /Downloads/myfile.pdf --blobpath input/files/myfile.pdf
 ```
 
-# write_blob
+# upload_blob
 Use this utility to upload a local file from VAP to specified Azure Blob container.
 
 Example: Upload `myfile.pdf` file from `/Downloads` folder in VAP to `/input/files/myfile_v2.pdf` path inside `input-test` container of Azure blob storage account `cfaazurebatchprd`
 ```shell
- write_blob --account cfaazurebatchprd --container input-test --localpath /Downloads/myfile.pdf --blobpath input/files/myfile_v2.pdf
+ upload_blob --account cfaazurebatchprd --container input-test --localpath /Downloads/myfile.pdf --blobpath input/files/myfile_v2.pdf
 ```

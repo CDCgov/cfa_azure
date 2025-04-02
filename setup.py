@@ -22,6 +22,6 @@ setup(
         "docker",
         "polars",
         "pyyaml",
-        "griddler @ git+https://github.com/CDCgov/pygriddler.git@v0.2#egg=griddler",
+        "griddler @ git+https://github.com/CDCgov/pygriddler.git@v0.2",
     ],
 )

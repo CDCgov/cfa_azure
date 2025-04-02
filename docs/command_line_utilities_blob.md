@@ -6,8 +6,8 @@ Users can interact with Azure Blob Storage using command-line utilities without 
 
 Currently the following utilities are available:
 
-1. copy_blob
-2. write_blob
+1. download_blob
+2. upload_blob
 
 # Prerequisites and installation
 Python 3.9+ is a prerequisite for both utilities and must be installed in the VAP.

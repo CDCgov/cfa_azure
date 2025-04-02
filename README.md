@@ -395,8 +395,41 @@ Please view [this documentation](docs/automation_README.md) on getting started w
 Please view [this documentation](docs/local_README.md) for more information regarding the `local` module.
 
 
+## batch_helpers
+The `batch_helpers` module provides a collection of functions that helps manage Azure Batch resources and perform key tasks. Below is an expanded overview of each function.
+
+### Batch Helpers Functions
+- `get_autoscale_formula`: finds and reads `autoscale_formula.txt` from working directory or subdirectory
+```python
+get_autoscale_formula(filepath="/path/to/formula.txt")
+```
+- `get_batch_mgmt_client`: creates a Batch Management Client for interacting with Azure Batch, such as pools and jobs
+```python
+batch_mgmt_client = get_batch_mgmt_client(config, DefaultAzureCredential())
+```
+- `get_batch_pool_json`: creates a dict based on config for configuring an Azure Batch pool
+```python
+pool_config = get_batch_pool_json("input-container", "output-container", config)
+```
+- `create_batch_pool`: creates a Azure Batch Pool based on info using the provided configuration details
+```python
+create_batch_pool(batch_mgmt_client, pool_config)
+```
+- `get_user_identity`: retrieves the user identity based on the provided config information
+```python
+get_user_identity(config)
+```
+- `get_network_config`: gets the network configuration based on the config information
+```python
+get_network_config(config: str)
+```
+- `get_deployment_config`: retrieves deployment configuration for Azure Batch pool, including container registry settings and optional HPC image
+```python
+get_deployment_config("container_image_name", "container_registry_url", "container_registry_server", config, DefaultAzureCredential())
+```
+
 ## helpers
-The `helpers` module provides a collection of functions that helps manage Azure resources and perform key tasks, such as interacting with Blob storage, Azure Batch, configuration management, and data transformations. Below is an expanded overview of each function.
+The `helpers` module provides a collection of functions that helps manage Azure resources and perform key tasks, such as interacting with Blob storage, configuration management, and data transformations. Below is an expanded overview of each function.
 
 ### Helpers Functions
 - `read_config`: reads in a configuration toml file and returns it as a Python dictionary
@@ -406,10 +439,6 @@ read_config("/path/to/config.toml")
 - `create_container`: creates an Azure Blob container if it doesn't already exist
 ```python
 create_container("my-container", blob_service_client)
-```
-- `get_autoscale_formula`: finds and reads `autoscale_formula.txt` from working directory or subdirectory
-```python
-get_autoscale_formula(filepath="/path/to/formula.txt")
 ```
 - `get_sp_secret`: retrieves the user's service principal secret from the key vault based on the provided config file
 ```python
@@ -423,21 +452,9 @@ get_sp_credential(config)
 ```python
 blob_service_client = get_blob_service_client(config, DefaultAzureCredential())
 ```
-- `get_batch_mgmt_client`: creates a Batch Management Client for interacting with Azure Batch, such as pools and jobs
-```python
-batch_mgmt_client = get_batch_mgmt_client(config, DefaultAzureCredential())
-```
 - `create_blob_containers`: uses create_container() to create input and output containers in Azure Blob
 ```python
 create_blob_containers(blob_service_client, "input-container", "output-container")
-```
-- `get_batch_pool_json`: creates a dict based on config for configuring an Azure Batch pool
-```python
-pool_config = get_batch_pool_json("input-container", "output-container", config)
-```
-- `create_batch_pool`: creates a Azure Batch Pool based on info using the provided configuration details
-```python
-create_batch_pool(batch_mgmt_client, pool_config)
 ```
 - `list_containers`: lists the containers in Azure Blob Storage Account
 ```python
@@ -478,18 +495,6 @@ yaml_to_df("input.yaml")
 - `edit_yaml_r0`: takes in a YAML file and produces replicate YAML files with the `r0` changed based on the specified range (i.e. start, stop, and step)
 ```python
 edit_yaml_r0("input.yaml", start=1, stop=5, step=1)
-```
-- `get_user_identity`: retrieves the user identity based on the provided config information
-```python
-get_user_identity(config)
-```
-- `get_network_config`: gets the network configuration based on the config information
-```python
-get_network_config(config: str)
-```
-- `get_deployment_config`: retrieves deployment configuration for Azure Batch pool, including container registry settings and optional HPC image
-```python
-get_deployment_config("container_image_name", "container_registry_url", "container_registry_server", config, DefaultAzureCredential())
 ```
 - `check_blob_existence`: checks whether a blob exists in the specified container
 ```python

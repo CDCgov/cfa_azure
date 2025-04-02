@@ -15,7 +15,7 @@ from azure.identity import (
 )
 from azure.storage.blob import StorageStreamDownloader
 
-from cfa_azure import helpers
+from cfa_azure import batch_helpers, helpers
 from cfa_azure.batch import Task
 
 logger = logging.getLogger(__name__)
@@ -180,7 +180,7 @@ class AzureClient:
         )
         logger.debug("generated Blob Service Client.")
         # create batch mgmt client
-        self.batch_mgmt_client = helpers.get_batch_mgmt_client(
+        self.batch_mgmt_client = batch_helpers.get_batch_mgmt_client(
             config=self.config, credential=self.secret_cred
         )
         logger.debug("generated Batch Management Client.")
@@ -918,7 +918,7 @@ class AzureClient:
             autoScalingParameters = {}
             if autoscale_formula_path:
                 self.autoscale_formula_path = autoscale_formula_path
-                formula = helpers.get_autoscale_formula(
+                formula = batch_helpers.get_autoscale_formula(
                     filepath=autoscale_formula_path
                 )
                 if formula:

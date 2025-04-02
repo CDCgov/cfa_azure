@@ -44,7 +44,7 @@ from azure.storage.blob import (
     StorageStreamDownloader,
 )
 from docker.errors import DockerException
-from griddler import griddle
+from griddler import Griddle
 from yaml import SafeLoader, dump, load
 
 logger = logging.getLogger(__name__)
@@ -2819,7 +2819,9 @@ def get_args_from_yaml(file_path: str) -> list[str]:
     Returns:
         list[str]: list of command line arguments
     """
-    parameter_sets = griddle.read(file_path)
+    with open(file_path, "r") as f:
+        griddle = Griddle(f)
+    parameter_sets = griddle.parse()
     output = []
     for i in parameter_sets:
         full_cmd = ""

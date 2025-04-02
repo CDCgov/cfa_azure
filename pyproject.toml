@@ -22,7 +22,7 @@ pathlib = "*"
 docker = "*"
 pyyaml = "*"
 polars = "*"
-griddler = {git = "https://github.com/CDCgov/pygriddler.git@v0.2"}
+griddler = {git = "https://github.com/CDCgov/pygriddler.git"}
 
 [build-system]
 requires = ["poetry-core"]

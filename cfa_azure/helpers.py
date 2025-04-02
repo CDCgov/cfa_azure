@@ -2819,8 +2819,9 @@ def get_args_from_yaml(file_path: str) -> list[str]:
     Returns:
         list[str]: list of command line arguments
     """
-    with open(file_path, "r") as f:
-        griddle = Griddle(f)
+    with open(file_path) as f:
+        raw_griddle = yaml.safe_load(f)
+    griddle = Griddle(raw_griddle)
     parameter_sets = griddle.parse()
     output = []
     for i in parameter_sets:

@@ -2,17 +2,17 @@
 ## Created by Fawad Rafi (Peraton) for CFA
 
 # Outline
-Users can interact with Azure Blob Storage using command-line utilities without writing any Python code. These utilites can be invoked from Linux shell script and impersonate the credentials of specified Azure Service Principal. 
+Users can interact with Azure Blob Storage using command-line utilities without writing any Python code. These utilites can be invoked from Linux shell script and impersonate the credentials of specified Azure Service Principal.
 
 Currently the following utilities are available:
 
-1. copy_blob 
+1. copy_blob
 2. write_blob
 
 # Prerequisites and installation
 Python 3.9+ is a prerequisite for both utilities and must be installed in the VAP.
 
-1. First launch a WSL instance and install the PIPX package manager (if it is not already installed) 
+1. First launch a WSL instance and install the PIPX package manager (if it is not already installed)
 
 ```shell
 sudo apt update
@@ -28,7 +28,7 @@ pipx install git+https://github.com/CDCgov/cfa_azure.git
 # copy_blob
 Use this command line utility to download a file from specified Azure Blob container to a local file in VAP.
 
-Example: Download `myfile.pdf` file from `input/files` subfolder in `input-test` container of Azure blob storage account `cfaazurebatchprd` to `/Downloads/myfile.pdf` file in VAP: 
+Example: Download `myfile.pdf` file from `input/files` subfolder in `input-test` container of Azure blob storage account `cfaazurebatchprd` to `/Downloads/myfile.pdf` file in VAP:
 ```shell
 copy_blob --account cfaazurebatchprd --container input-test --localpath /Downloads/myfile.pdf --blobpath input/files/myfile.pdf
 ```

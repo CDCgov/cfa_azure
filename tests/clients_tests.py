@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 from azure.core.exceptions import HttpResponseError
 
+import cfa_azure.batch_helpers
 import cfa_azure.clients
 import cfa_azure.helpers
 from tests.fake_client import *
@@ -31,7 +32,7 @@ class TestClients(unittest.TestCase):
         MagicMock(return_value=True),
     )
     @patch(
-        "cfa_azure.helpers.get_batch_mgmt_client",
+        "cfa_azure.batch_helpers.get_batch_mgmt_client",
         MagicMock(return_value=FakeClient()),
     )
     @patch(

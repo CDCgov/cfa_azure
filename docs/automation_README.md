@@ -74,14 +74,12 @@ base_cmd = "python3 main.py"
 exp_yaml = "path/to/file.yaml"
 ```
 
-If we have a yaml file like the one [here](/examples/automation/params.yaml), the following tasks will be created for the job.
+If we have a yaml file like the one [here](/examples/automation/params.yaml), the following tasks will be created for the job. Note that the version must be v0.3 to meet pygriddler requirements, and more information on yaml files for pygriddler can be found [here](https://github.com/CDCgov/pygriddler/blob/v0.3.0/README.md).
 ```python
-python3 main.py  --scenario pessimistic --run 1 --p_infected_initial 66 --R0 4.0 --infectious_period 2.0 --infer --run_checks
-python3 main.py  --scenario pessimistic --run 2 --p_infected_initial 66 --R0 4.0 --infectious_period 2.0 --infer --run_checks
-python3 main.py  --scenario pessimistic --run 3 --p_infected_initial 66 --R0 4.0 --infectious_period 2.0 --infer --run_checks
-python3 main.py  --scenario optimistic --run 1 --p_infected_initial 0.001 --R0 2.0 --infectious_period 0.5
-python3 main.py  --scenario optimistic --run 2 --p_infected_initial 0.001 --R0 2.0 --infectious_period 0.5
-python3 main.py  --scenario optimistic --run 3 --p_infected_initial 0.001 --R0 2.0 --infectious_period 0.5
+python3 main.py --method newton --start_point 0.25
+python3 main.py --method newton --start_point 0.5
+python3 main.py --method newton --start_point 0.75
+python3 main.py --method brent --bounds [0.0, 1.0] --check
 ```
 
 

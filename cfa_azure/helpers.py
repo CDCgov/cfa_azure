@@ -597,7 +597,7 @@ def initialize_blob_arguments():
     return args
 
 
-def copy_blob():
+def download_blob():
     """
     Download a blob from Azure Storage to local file system
 
@@ -614,7 +614,7 @@ def copy_blob():
     )
 
 
-def write_blob():
+def upload_blob():
     """
     Upload a blob from local file system to Azure Storage
 

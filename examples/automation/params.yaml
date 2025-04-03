@@ -7,3 +7,6 @@ parameters:
   bounds:
     if: {equals: {method: brent}}
     fix: [0.0, 1.0]
+  check(flag):
+    if: {equals: {method: brent}}
+    fix: x

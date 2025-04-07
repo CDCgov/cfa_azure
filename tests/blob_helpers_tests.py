@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import cfa_azure.batch_helpers
 import cfa_azure.blob_helpers
@@ -19,6 +19,24 @@ class TestBloblHelpers(unittest.TestCase):
     #        mock_client, FAKE_INPUT_CONTAINER, FAKE_OUTPUT_CONTAINER
     #    )
     #    mock_create_container.assert_has_calls(expected_calls)
+
+    @patch(
+        "cfa_azure.blob_helpers.initialize_blob_arguments",
+        MagicMock(return_value=FAKE_ARGUMENTS),
+    )
+    @patch(
+        "cfa_azure.blob_helpers.get_container_client",
+        MagicMock(return_value=FakeClient.FakeContainerClient()),
+    )
+    @patch("cfa_azure.blob_helpers.upload_blob_file")
+    def test_upload_blob(self, mock_upload_blob_file):
+        cfa_azure.blob_helpers.upload_blob()
+        mock_upload_blob_file.assert_called_once()
+
+    @patch("os.walk", MagicMock(return_value=FAKE_FOLDER_CONTENTS_WALK))
+    def test_walk_folder(self):
+        list_files = cfa_azure.blob_helpers.walk_folder(FAKE_FOLDER)
+        self.assertEqual(list_files, FAKE_FOLDER_CONTENTS_WALK)
 
     def test_get_blob_config(self):
         blob_config = cfa_azure.blob_helpers.get_blob_config(

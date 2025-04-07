@@ -16,6 +16,7 @@ FAKE_CONTAINER_REGISTRY = "Test Container Registry"
 FAKE_REPO_NAME = "fake repo"
 FAKE_CREDENTIAL = "Test Credential"
 FAKE_FOLDER = "/test_folder"
+FAKE_FOLDER_CONTENTS_WALK = []
 FAKE_FOLDER_CONTENTS = [
     f"{FAKE_FOLDER}/test_file.csv",
     f"{FAKE_FOLDER}/test_file.txt",
@@ -392,3 +393,13 @@ def dict2obj(dict1):
     # using json.loads method and passing json.dumps
     # method and custom object hook as arguments
     return json.loads(json.dumps(dict1), object_hook=obj)
+
+
+FAKE_ARGUMENTS = dict2obj(
+    {
+        "account": FAKE_ACCOUNT,
+        "blobpath": FAKE_BLOB_CONTENT,
+        "container": FAKE_CONTAINER_IMAGE,
+        "localpath": FAKE_FOLDER,
+    }
+)

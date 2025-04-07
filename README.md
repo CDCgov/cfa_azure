@@ -399,6 +399,18 @@ Please view [this documentation](docs/local_README.md) for more information rega
 The `batch_helpers` module provides a collection of functions that helps manage Azure Batch resources and perform key tasks. Below is an expanded overview of each function.
 
 ### Batch Helpers Functions
+- `check_pool_exists`: checks if a specified pool exists in Azure Batch
+```python
+check_pool_exists("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
+```
+- `create_batch_pool`: creates a Azure Batch Pool based on info using the provided configuration details
+```python
+create_batch_pool(batch_mgmt_client, pool_config)
+```
+- `delete_pool`: deletes the specified pool from Azure Batch
+```python
+delete_pool("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
+```
 - `get_autoscale_formula`: finds and reads `autoscale_formula.txt` from working directory or subdirectory
 ```python
 get_autoscale_formula(filepath="/path/to/formula.txt")
@@ -411,50 +423,58 @@ batch_mgmt_client = get_batch_mgmt_client(config, DefaultAzureCredential())
 ```python
 pool_config = get_batch_pool_json("input-container", "output-container", config)
 ```
-- `create_batch_pool`: creates a Azure Batch Pool based on info using the provided configuration details
+- `get_deployment_config`: retrieves deployment configuration for Azure Batch pool, including container registry settings and optional HPC image
 ```python
-create_batch_pool(batch_mgmt_client, pool_config)
-```
-- `get_user_identity`: retrieves the user identity based on the provided config information
-```python
-get_user_identity(config)
+get_deployment_config("container_image_name", "container_registry_url", "container_registry_server", config, DefaultAzureCredential())
 ```
 - `get_network_config`: gets the network configuration based on the config information
 ```python
 get_network_config(config: str)
 ```
-- `get_deployment_config`: retrieves deployment configuration for Azure Batch pool, including container registry settings and optional HPC image
+- `get_pool_full_info`: retrieves the full information of a specified Azure Batch pool
 ```python
-get_deployment_config("container_image_name", "container_registry_url", "container_registry_server", config, DefaultAzureCredential())
+get_pool_full_info("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
+```
+- `get_pool_info`: gets the basic information for a specified Azure Batch pool
+```python
+get_pool_info("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
+```
+- `get_pool_mounts`: lists all mounted Blob containers for a given Azure Batch pool
+```python
+get_pool_mounts("pool_name", "resource_group_name", "account_name", batch_mgmt_client)
+```
+- `get_rel_mnt_path`: retrieves the relative mount path for a specified Blob container in an Azure Batch pool
+```python
+get_rel_mnt_path("blob_name", "pool_name", "resource_group_name", "account_name", batch_mgmt_client)
+```
+- `get_user_identity`: retrieves the user identity based on the provided config information
+```python
+get_user_identity(config)
 ```
 
-## helpers
-The `helpers` module provides a collection of functions that helps manage Azure resources and perform key tasks, such as interacting with Blob storage, configuration management, and data transformations. Below is an expanded overview of each function.
+## blob_helpers
+The `blob_helpers` module provides a collection of functions that helps manage Azure Blob Storage resources and perform key tasks. Below is an expanded overview of each function.
 
-### Helpers Functions
-- `read_config`: reads in a configuration toml file and returns it as a Python dictionary
+### Blob Helpers Functions
+- `create_blob_containers`: uses create_container() to create input and output containers in Azure Blob
 ```python
-read_config("/path/to/config.toml")
+create_blob_containers(blob_service_client, "input-container", "output-container")
 ```
-- `create_container`: creates an Azure Blob container if it doesn't already exist
+- `check_blob_existence`: checks whether a blob exists in the specified container
 ```python
-create_container("my-container", blob_service_client)
+check_blob_existence(c_client, "blob_name")
 ```
-- `get_sp_secret`: retrieves the user's service principal secret from the key vault based on the provided config file
+- `download_file`: downloads a file from Azure Blob storage to a specified location
 ```python
-get_sp_secret(config, DefaultAzureCredential())
-```
-- `get_sp_credential`: retrieves the service principal credential
-```python
-get_sp_credential(config)
+download_file(c_client, "src_path", "dest_path")
 ```
 - `get_blob_service_client`: creates a Blob Service Client for interacting with Azure Blob
 ```python
 blob_service_client = get_blob_service_client(config, DefaultAzureCredential())
 ```
-- `create_blob_containers`: uses create_container() to create input and output containers in Azure Blob
+- `list_blobs_flat`: lists all blobs in a specified container
 ```python
-create_blob_containers(blob_service_client, "input-container", "output-container")
+list_blobs_flat("container_name", blob_service_client)
 ```
 - `list_containers`: lists the containers in Azure Blob Storage Account
 ```python
@@ -464,57 +484,9 @@ list_containers(blob_service_client)
 ```python
 upload_files_in_folder("/path/to/folder", "container-name", blob_service_client)
 ```
-- `get_batch_service_client`: creates a Batch Service Client object for interacting with Batch jobs
+- `format_extensions`: formats file extensions into a standard format for use
 ```python
-batch_client = get_batch_service_client(config, DefaultAzureCredential())
-```
-- `add_job`: creates a new job to the specified Azure Batch pool. By default, a job remains active after completion of enclosed tasks. You can optionally specify the *mark_complete_after_tasks_run* argument to *True* if you want job to auto-complete after completion of enclosed tasks.
-```python
-add_job("job-id", "pool-id", True, batch_client)
-```
-- `add_task_to_job`: adds a task to the specified job based on user-input Docker command
-```python
-add_task_to_job("job-id", "task-id", "docker-command", batch_client)
-```
-- `monitor_tasks`: monitors the tasks running in a job
-```python
-monitor_tasks("example-job-id", batch_client)
-```
-- `list_files_in_container`: lists out all files stored in the specified Azure container
-```python
-list_files_in_container(container_client)
-```
-- `df_to_yaml`: converts a pandas dataframe to yaml file, which is helpful for configuration and metadata storage
-```python
-df_to_yaml(dataframe, "output.yaml")
-```
-- `yaml_to_df`: converts a yaml file to pandas dataframe
-```python
-yaml_to_df("input.yaml")
-```
-- `edit_yaml_r0`: takes in a YAML file and produces replicate YAML files with the `r0` changed based on the specified range (i.e. start, stop, and step)
-```python
-edit_yaml_r0("input.yaml", start=1, stop=5, step=1)
-```
-- `check_blob_existence`: checks whether a blob exists in the specified container
-```python
-check_blob_existence(c_client, "blob_name")
-```
-- `check_virtual_directory_existence`: checks whether any blobs exist with the specified virtual directory path
-```python
-check_virtual_directory_existence(c_client, "vdir_path")
-```
-- `download_file`: downloads a file from Azure Blob storage to a specified location
-```python
-download_file(c_client, "src_path", "dest_path")
-```
-- `list_blobs_flat`: lists all blobs in a specified container
-```python
-list_blobs_flat("container_name", blob_service_client)
-```
-- `get_log_level`: retrieves the logging level from environment variables or defaults to debug
-```python
-get_log_level()
+format_extensions([".txt", "jpg"])
 ```
 - `delete_blob_snapshots`: deletes a blob and all its snapshots in a container
 ```python
@@ -593,11 +565,72 @@ df = .... # Read some data into Pandas dataframe
 data = df.to_csv(index=False).encode('utf-8')
 blob_url = "input/AZ_03072025_a.csv"
 write_blob_stream(data, blob_url=blob_url, account_name='cfaazurebatchprd', container_name='input-test')
-
 ```
-- `format_extensions`: formats file extensions into a standard format for use
+- `upload_blob_file`: uploads a specified file to Azure Blob storage
 ```python
-format_extensions([".txt", "jpg"])
+upload_blob_file("file_path", location="folder/subfolder", container_client=container_client, verbose=True)
+```
+
+
+## helpers
+The `helpers` module provides a collection of functions that helps manage Azure resources and perform key tasks, such as interacting with configuration management, and data transformations. Below is an expanded overview of each function.
+
+### Helpers Functions
+- `read_config`: reads in a configuration toml file and returns it as a Python dictionary
+```python
+read_config("/path/to/config.toml")
+```
+- `create_container`: creates an Azure Blob container if it doesn't already exist
+```python
+create_container("my-container", blob_service_client)
+```
+- `get_sp_secret`: retrieves the user's service principal secret from the key vault based on the provided config file
+```python
+get_sp_secret(config, DefaultAzureCredential())
+```
+- `get_sp_credential`: retrieves the service principal credential
+```python
+get_sp_credential(config)
+```
+- `get_batch_service_client`: creates a Batch Service Client object for interacting with Batch jobs
+```python
+batch_client = get_batch_service_client(config, DefaultAzureCredential())
+```
+- `add_job`: creates a new job to the specified Azure Batch pool. By default, a job remains active after completion of enclosed tasks. You can optionally specify the *mark_complete_after_tasks_run* argument to *True* if you want job to auto-complete after completion of enclosed tasks.
+```python
+add_job("job-id", "pool-id", True, batch_client)
+```
+- `add_task_to_job`: adds a task to the specified job based on user-input Docker command
+```python
+add_task_to_job("job-id", "task-id", "docker-command", batch_client)
+```
+- `monitor_tasks`: monitors the tasks running in a job
+```python
+monitor_tasks("example-job-id", batch_client)
+```
+- `list_files_in_container`: lists out all files stored in the specified Azure container
+```python
+list_files_in_container(container_client)
+```
+- `df_to_yaml`: converts a pandas dataframe to yaml file, which is helpful for configuration and metadata storage
+```python
+df_to_yaml(dataframe, "output.yaml")
+```
+- `yaml_to_df`: converts a yaml file to pandas dataframe
+```python
+yaml_to_df("input.yaml")
+```
+- `edit_yaml_r0`: takes in a YAML file and produces replicate YAML files with the `r0` changed based on the specified range (i.e. start, stop, and step)
+```python
+edit_yaml_r0("input.yaml", start=1, stop=5, step=1)
+```
+- `check_virtual_directory_existence`: checks whether any blobs exist with the specified virtual directory path
+```python
+check_virtual_directory_existence(c_client, "vdir_path")
+```
+- `get_log_level`: retrieves the logging level from environment variables or defaults to debug
+```python
+get_log_level()
 ```
 - `check_autoscale_parameters`: checks which arguments are incompatible with the provided scaling mode
 ```python
@@ -606,10 +639,6 @@ check_autoscale_parameters("autoscale", dedicated_nodes=5)
 - `get_rel_mnt_path`: retrieves the relative mount path for a specified Blob container in an Azure Batch pool
 ```python
 get_rel_mnt_path("blob_name", "pool_name", "resource_group_name", "account_name", batch_mgmt_client)
-```
-- `get_pool_mounts`: lists all mounted Blob containers for a given Azure Batch pool
-```python
-get_pool_mounts("pool_name", "resource_group_name", "account_name", batch_mgmt_client)
 ```
 - `check_env_req`: checks if all necessary environment variables exist for the Azure client
 ```python
@@ -662,26 +691,6 @@ package_and_upload_dockerfile("registry_name", "repo_name", "tag", use_device_co
 - `upload_docker_image`: uploads a Docker image to a specified Azure Container Registry repo with an optional tag
 ```python
 upload_docker_image("image_name", "registry_name", "repo_name", tag="latest", use_device_code=False)
-```
-- `check_pool_exists`: checks if a specified pool exists in Azure Batch
-```python
-check_pool_exists("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
-```
-- `get_pool_info`: gets the basic information for a specified Azure Batch pool
-```python
-get_pool_info("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
-```
-- `get_pool_full_info`: retrieves the full information of a specified Azure Batch pool
-```python
-get_pool_full_info("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
-```
-- `delete_pool`: deletes the specified pool from Azure Batch
-```python
-delete_pool("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
-```
-- `upload_blob_file`: uploads a specified file to Azure Blob storage
-```python
-upload_blob_file("file_path", location="folder/subfolder", container_client=container_client, verbose=True)
 ```
 - download_directory: downloads a directory using prefix matching from Azure Blob storage
 ```python

@@ -1,51 +1,13 @@
 # import modules for use
-import argparse
-import csv
 import datetime
-import fnmatch as fm
 import json
 import logging
-import os
 import re
-import subprocess as sp
-import time
-from os import path, walk
-from pathlib import Path
-from zoneinfo import ZoneInfo as zi
 
-import azure.batch.models as batchmodels
-import docker
-import numpy as np
-import pandas as pd
-import toml
-import yaml
-from azure.batch import BatchServiceClient
-from azure.batch.models import (
-    DependencyAction,
-    ExitCodeMapping,
-    ExitConditions,
-    ExitOptions,
-    JobAction,
-    JobConstraints,
-    MetadataItem,
-    OnAllTasksComplete,
-    OnTaskFailure,
-)
-from azure.containerregistry import ContainerRegistryClient
 from azure.core.exceptions import HttpResponseError
-from azure.core.paging import ItemPaged
-from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient
 from azure.mgmt.batch import BatchManagementClient
-from azure.storage.blob import (
-    BlobProperties,
-    BlobServiceClient,
-    ContainerClient,
-    StorageStreamDownloader,
-)
-from docker.errors import DockerException
-from griddler import griddle
-from yaml import SafeLoader, dump, load
+
+from cfa_azure.helpers import get_sp_secret
 
 logger = logging.getLogger(__name__)
 
@@ -622,3 +584,235 @@ def get_deployment_config(
         }
     }
     return deployment_config
+
+
+def get_rel_mnt_path(
+    blob_name: str,
+    pool_name: str,
+    resource_group_name: str,
+    account_name: str,
+    batch_mgmt_client: object,
+):
+    """
+    Args:
+        blob_name (str): name of blob container
+        pool_name (str): name of pool
+        resource_group_name (str): name of resource group in Azure
+        account_name (str): name of account in Azure
+        batch_mgmt_object (object): instance of BatchManagementClient
+
+    Returns:
+        str: relative mount path for the blob and pool specified
+    """
+    try:
+        pool_info = get_pool_full_info(
+            resource_group_name=resource_group_name,
+            account_name=account_name,
+            pool_name=pool_name,
+            batch_mgmt_client=batch_mgmt_client,
+        )
+    except Exception:
+        logger.error("could not retrieve pool information.")
+        return "ERROR!"
+    mc = pool_info.as_dict()["mount_configuration"]
+    for m in mc:
+        if (
+            m["azure_blob_file_system_configuration"]["container_name"]
+            == blob_name
+        ):
+            rel_mnt_path = m["azure_blob_file_system_configuration"][
+                "relative_mount_path"
+            ]
+            return rel_mnt_path
+    logger.error(f"could not find blob {blob_name} mounted to pool.")
+    print(f"could not find blob {blob_name} mounted to pool.")
+    return "ERROR!"
+
+
+def get_pool_full_info(
+    resource_group_name: str,
+    account_name: str,
+    pool_name: str,
+    batch_mgmt_client: object,
+) -> dict:
+    """Get the full information of a specified pool.
+
+    Args:
+        resource_group_name (str): name of resource group
+        account_name (str): name of account
+        pool_name (str): name of pool
+        batch_mgmt_client (object): instance of BatchManagementClient
+
+    Returns:
+        dict: dictionary with full pool information
+    """
+    logger.debug("Pulling pool info.")
+    result = batch_mgmt_client.pool.get(
+        resource_group_name, account_name, pool_name
+    )
+    return result
+
+
+def get_pool_mounts(
+    pool_name: str,
+    resource_group_name: str,
+    account_name: str,
+    batch_mgmt_client: object,
+):
+    """
+    Args:
+        pool_name (str): name of pool
+        resource_group_name (str): name of resource group in Azure
+        account_name (str): name of account in Azure
+        batch_mgmt_client (object): instance of BatchManagementClient
+
+    Returns:
+        list: list of mounts in specified pool
+    """
+    try:
+        pool_info = get_pool_full_info(
+            resource_group_name=resource_group_name,
+            account_name=account_name,
+            pool_name=pool_name,
+            batch_mgmt_client=batch_mgmt_client,
+        )
+    except Exception:
+        logger.error("could not retrieve pool information.")
+        print(f"could not retrieve pool info for {pool_name}.")
+        return None
+    mounts = []
+    mc = pool_info.as_dict()["mount_configuration"]
+    for m in mc:
+        mounts.append(
+            (
+                m["azure_blob_file_system_configuration"]["container_name"],
+                m["azure_blob_file_system_configuration"][
+                    "relative_mount_path"
+                ],
+            )
+        )
+    return mounts
+
+
+def update_pool(
+    pool_name: str,
+    pool_parameters: dict,
+    batch_mgmt_client: object,
+    account_name: str,
+    resource_group_name: str,
+) -> dict:
+    """
+    Args:
+        pool_name (str): name of pool to update
+        pool_parameters (dict): pool parameters dictionary
+        batch_mgmt_client (object): instance of BatchManagementClient object
+        account_name (str): name of Azure Account
+        resource_group_name (str): name of Resource Group in Azure
+
+    Returns:
+        dict: json of pool_id and updation_time
+    """
+    print("Updating the pool...")
+
+    start_time = datetime.datetime.now()
+    print(f"Updating the pool '{pool_name}'...")
+    batch_mgmt_client.pool.update(
+        resource_group_name=resource_group_name,
+        account_name=account_name,
+        pool_name=pool_name,
+        parameters=pool_parameters,
+    )
+
+    end_time = datetime.datetime.now()
+    updation_time = round((end_time - start_time).total_seconds(), 2)
+    print(f"Pool update process completed in {updation_time} seconds.")
+
+    return {
+        "pool_id": pool_name,
+        "updation_time": updation_time,
+    }
+
+
+def delete_pool(
+    resource_group_name: str,
+    account_name: str,
+    pool_name: str,
+    batch_mgmt_client: object,
+) -> None:
+    """deletes the specified pool from Azure Batch.
+
+    Args:
+        resource_group_name (str): resource group name
+        account_name (str): account name
+        pool_name (str): name of pool to delete
+        batch_mgmt_client (object): instance of BatchManagementClient
+    """
+    logger.debug(f"Attempting to delete {pool_name}...")
+    poller = batch_mgmt_client.pool.begin_delete(
+        resource_group_name=resource_group_name,
+        account_name=account_name,
+        pool_name=pool_name,
+    )
+    logger.info(f"Pool {pool_name} deleted.")
+    return poller
+
+
+def get_pool_info(
+    resource_group_name: str,
+    account_name: str,
+    pool_name: str,
+    batch_mgmt_client: object,
+) -> dict:
+    """Get the basic information for a specified pool.
+
+    Args:
+        resource_group_name (str): name of resource group
+        account_name (str): name of account
+        pool_name (str): name of pool
+        batch_mgmt_client (object): instance of BatchManagementClient
+
+    Returns:
+        dict: json with name, last_modified, creation_time, vm_size, and task_slots_per_node info
+    """
+    logger.debug("Pulling pool info.")
+    result = batch_mgmt_client.pool.get(
+        resource_group_name, account_name, pool_name
+    )
+    logger.debug("Condensing pool info the readable json output.")
+    j = {
+        "name": result.name,
+        "last_modified": result.last_modified.strftime("%m/%d/%y %H:%M"),
+        "creation_time": result.creation_time.strftime("%m/%d/%y %H:%M"),
+        "vm_size": result.vm_size,
+        "task_slots_per_node": result.task_slots_per_node,
+    }
+    return json.dumps(j)
+
+
+def check_pool_exists(
+    resource_group_name: str,
+    account_name: str,
+    pool_name: str,
+    batch_mgmt_client: object,
+):
+    """Check if a pool exists in Azure Batch
+
+    Args:
+        resource_group_name (str): Azure resource group name
+        account_name (str): Azure account name
+        pool_name (str): name of pool
+        batch_mgmt_client (object): instance of BatchManagementClient
+
+    Returns:
+        bool: whether the pool exists
+    """
+    logger.debug(f"Checking if pool {pool_name} exists.")
+    try:
+        batch_mgmt_client.pool.get(
+            resource_group_name, account_name, pool_name
+        )
+        logger.debug("Pool exists.")
+        return True
+    except Exception:
+        logger.debug("Pool does not exist.")
+        return False

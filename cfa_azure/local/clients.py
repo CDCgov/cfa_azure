@@ -419,7 +419,7 @@ class AzureClient:
         if self.mounts:
             for mount in self.mounts:
                 blob_config.append(
-                    helpers.get_blob_config(
+                    blob_helpers.get_blob_config(
                         mount[0], mount[1], cache_blobfuse, self.config
                     )
                 )

@@ -3,7 +3,7 @@ import itertools
 import pandas as pd
 import toml
 
-from cfa_azure import helpers
+from cfa_azure import batch_helpers, helpers
 from cfa_azure.clients import AzureClient
 
 
@@ -43,7 +43,7 @@ def run_experiment(exp_config: str, auth_config: str | None = None):
 
     # check pool included in exp_toml and exists in azure
     if "pool_name" in exp_toml["setup"].keys():
-        if not helpers.check_pool_exists(
+        if not batch_helpers.check_pool_exists(
             resource_group_name=client.resource_group_name,
             account_name=client.account_name,
             pool_name=exp_toml["setup"]["pool_name"],
@@ -171,7 +171,7 @@ def run_tasks(task_config: str, auth_config: str | None = None):
 
     # check pool included in task_toml and exists in azure
     if "pool_name" in task_toml["setup"].keys():
-        if not helpers.check_pool_exists(
+        if not batch_helpers.check_pool_exists(
             resource_group_name=client.resource_group_name,
             account_name=client.account_name,
             pool_name=task_toml["setup"]["pool_name"],

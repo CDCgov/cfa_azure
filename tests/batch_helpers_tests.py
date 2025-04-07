@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import cfa_azure.batch_helpers
 import cfa_azure.helpers
@@ -85,7 +85,7 @@ class TestBatchHelpers(unittest.TestCase):
 
     @patch("cfa_azure.batch_helpers.logger")
     @patch(
-        "cfa_azure.helpers.generate_autoscale_formula",
+        "cfa_azure.batch_helpers.generate_autoscale_formula",
         MagicMock(return_value=FAKE_AUTOSCALE_FORMULA),
     )
     def test_get_autoscale_formula(self, mock_logger):
@@ -111,11 +111,11 @@ class TestBatchHelpers(unittest.TestCase):
         MagicMock(return_value=FAKE_AUTOSCALE_FORMULA),
     )
     @patch(
-        "cfa_azure.helpers.get_deployment_config",
+        "cfa_azure.batch_helpers.get_deployment_config",
         MagicMock(return_value={"virtualMachineConfiguration": {}}),
     )
     def test_get_pool_parameters(self):
-        response = cfa_azure.helpers.get_pool_parameters(
+        response = cfa_azure.batch_helpers.get_pool_parameters(
             mode="autoscale",
             container_image_name=FAKE_CONTAINER_IMAGE,
             container_registry_url=FAKE_CONTAINER_REGISTRY,
@@ -133,7 +133,7 @@ class TestBatchHelpers(unittest.TestCase):
         self.assertIsNotNone(response)
 
     @patch(
-        "cfa_azure.helpers.get_deployment_config",
+        "cfa_azure.batch_helpers.get_deployment_config",
         MagicMock(return_value={"virtualMachineConfiguration": {}}),
     )
     def test_get_pool_parameters_use_default(self):
@@ -171,3 +171,30 @@ class TestBatchHelpers(unittest.TestCase):
             max_autoscale_nodes=3,
         )
         self.assertEqual(response, {})
+
+    def test_check_pool_exists(self):
+        batch_mgmt_client = FakeClient()
+        status = cfa_azure.batch_helpers.check_pool_exists(
+            FAKE_RESOURCE_GROUP,
+            FAKE_ACCOUNT,
+            FAKE_BATCH_POOL,
+            batch_mgmt_client,
+        )
+        self.assertTrue(status)
+
+    @patch("cfa_azure.batch_helpers.logger")
+    @patch("os.getenv", MagicMock(return_value="debug"))
+    @patch(
+        "tests.fake_client.FakeClient.FakePool.get",
+        MagicMock(side_effect=Exception),
+    )
+    def test_check_pool_exists_error(self, mock_logger):
+        batch_mgmt_client = FakeClient()
+        status = cfa_azure.batch_helpers.check_pool_exists(
+            FAKE_RESOURCE_GROUP,
+            FAKE_ACCOUNT,
+            FAKE_BATCH_POOL,
+            batch_mgmt_client,
+        )
+        self.assertFalse(status)
+        mock_logger.debug.assert_called_with("Pool does not exist.")

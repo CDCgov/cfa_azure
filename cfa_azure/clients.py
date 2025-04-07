@@ -15,7 +15,7 @@ from azure.identity import (
 )
 from azure.storage.blob import StorageStreamDownloader
 
-from cfa_azure import batch_helpers, helpers
+from cfa_azure import batch_helpers, blob_helpers, helpers
 from cfa_azure.batch import Task
 
 logger = logging.getLogger(__name__)
@@ -175,7 +175,7 @@ class AzureClient:
         logger.debug(f"generated credentials from {credential_method}.")
         self._initialize_registry()
         # create blob service account
-        self.blob_service_client = helpers.get_blob_service_client(
+        self.blob_service_client = blob_helpers.get_blob_service_client(
             self.config, self.cred
         )
         logger.debug("generated Blob Service Client.")
@@ -462,13 +462,13 @@ class AzureClient:
         if self.mounts:
             for mount in self.mounts:
                 blob_config.append(
-                    helpers.get_blob_config(
+                    blob_helpers.get_blob_config(
                         mount[0], mount[1], cache_blobfuse, self.config
                     )
                 )
                 logger.debug(f"mount {mount} added to blob configuration.")
 
-        self.mount_config = helpers.get_mount_config(blob_config)
+        self.mount_config = blob_helpers.get_mount_config(blob_config)
         logger.debug("mount config saved to client.")
         if mode == "fixed" or mode == "autoscale":
             self.scaling = mode
@@ -477,7 +477,7 @@ class AzureClient:
             self.dedicated_nodes = dedicated_nodes
             self.low_priority_nodes = low_priority_nodes
             # create batch_json with fixed
-            self.pool_parameters = helpers.get_pool_parameters(
+            self.pool_parameters = batch_helpers.get_pool_parameters(
                 mode=mode,
                 container_image_name=self.container_image_name,
                 container_registry_url=self.registry_url,
@@ -660,7 +660,7 @@ class AzureClient:
         if not pool_name:
             pool_name = self.pool_name
         # Check if pool already exists
-        if helpers.check_pool_exists(
+        if batch_helpers.check_pool_exists(
             self.resource_group_name,
             self.account_name,
             pool_name,
@@ -698,7 +698,7 @@ class AzureClient:
 
             # Delete existing pool
             logger.info(f"Deleting pool {pool_name}")
-            poller = helpers.delete_pool(
+            poller = batch_helpers.delete_pool(
                 resource_group_name=self.resource_group_name,
                 account_name=self.account_name,
                 pool_name=pool_name,
@@ -749,7 +749,7 @@ class AzureClient:
                 }
             },
         ]
-        self.pool_parameters = helpers.get_pool_parameters(
+        self.pool_parameters = batch_helpers.get_pool_parameters(
             mode=self.scaling,
             container_image_name=container_image_name,
             container_registry_url=self.registry_url,
@@ -779,7 +779,7 @@ class AzureClient:
         if not pool_name:
             pool_name = self.pool_name
         # Check if pool already exists
-        if helpers.check_pool_exists(
+        if batch_helpers.check_pool_exists(
             self.resource_group_name,
             self.account_name,
             pool_name,
@@ -817,7 +817,7 @@ class AzureClient:
 
             # Delete existing pool
             logger.info(f"Deleting pool {pool_name}")
-            poller = helpers.delete_pool(
+            poller = batch_helpers.delete_pool(
                 resource_group_name=self.resource_group_name,
                 account_name=self.account_name,
                 pool_name=pool_name,
@@ -862,7 +862,7 @@ class AzureClient:
                 }
             )
 
-        self.pool_parameters = helpers.get_pool_parameters(
+        self.pool_parameters = batch_helpers.get_pool_parameters(
             mode=self.scaling,
             container_image_name=container_image_name,
             container_registry_url=self.registry_url,
@@ -955,7 +955,7 @@ class AzureClient:
 
         if scale_settings:
             pool_parameters = {"properties": {"scaleSettings": scale_settings}}
-            return helpers.update_pool(
+            return batch_helpers.update_pool(
                 pool_name=p_name,
                 pool_parameters=pool_parameters,
                 batch_mgmt_client=self.batch_mgmt_client,
@@ -1046,7 +1046,7 @@ class AzureClient:
             ) from None
 
         for file_name in files:
-            helpers.upload_blob_file(
+            blob_helpers.upload_blob_file(
                 filepath=file_name,
                 location=location_in_blob,
                 container_client=container_client,
@@ -1198,7 +1198,7 @@ class AzureClient:
         else:
             if self.full_container_name is None:
                 logger.debug("Gettting full pool info")
-                pool_info = helpers.get_pool_full_info(
+                pool_info = batch_helpers.get_pool_full_info(
                     self.resource_group_name,
                     self.account_name,
                     self.pool_name,
@@ -1219,7 +1219,7 @@ class AzureClient:
                 logger.debug(f"Container name set to {container_name}.")
 
         if self.save_logs_to_blob:
-            rel_mnt_path = helpers.get_rel_mnt_path(
+            rel_mnt_path = batch_helpers.get_rel_mnt_path(
                 blob_name=self.save_logs_to_blob,
                 pool_name=self.pool_name,
                 resource_group_name=self.resource_group_name,
@@ -1234,7 +1234,7 @@ class AzureClient:
             rel_mnt_path = None
 
         # get all mounts from pool info
-        self.mounts = helpers.get_pool_mounts(
+        self.mounts = batch_helpers.get_pool_mounts(
             self.pool_name,
             self.resource_group_name,
             self.account_name,
@@ -1442,7 +1442,7 @@ class AzureClient:
         )
 
         logger.debug("Attempting to download file.")
-        helpers.download_file(c_client, src_path, dest_path, do_check)
+        blob_helpers.download_file(c_client, src_path, dest_path, do_check)
 
     def download_directory(
         self,
@@ -1488,14 +1488,14 @@ class AzureClient:
             pool_name (str): name of pool
         """
         # check if pool exists
-        if helpers.check_pool_exists(
+        if batch_helpers.check_pool_exists(
             self.resource_group_name,
             self.account_name,
             pool_name,
             self.batch_mgmt_client,
         ):
             self.pool_name = pool_name
-            _info = helpers.get_pool_info(
+            _info = batch_helpers.get_pool_info(
                 self.resource_group_name,
                 self.account_name,
                 pool_name,
@@ -1514,7 +1514,7 @@ class AzureClient:
         Returns:
             dict: dictionary of pool information
         """
-        pool_info = helpers.get_pool_info(
+        pool_info = batch_helpers.get_pool_info(
             self.resource_group_name,
             self.account_name,
             self.pool_name,
@@ -1531,7 +1531,7 @@ class AzureClient:
         """
         if not pool_name:
             pool_name = self.pool_name
-        pool_info = helpers.get_pool_full_info(
+        pool_info = batch_helpers.get_pool_full_info(
             self.resource_group_name,
             self.account_name,
             pool_name,
@@ -1573,7 +1573,7 @@ class AzureClient:
         Args:
             pool_name (str): name of Batch Pool to delete
         """
-        helpers.delete_pool(
+        batch_helpers.delete_pool(
             resource_group_name=self.resource_group_name,
             account_name=self.account_name,
             pool_name=pool_name,
@@ -1592,7 +1592,7 @@ class AzureClient:
             return None
         if blob_container:
             logger.debug(f"Listing blobs in {blob_container}")
-            filenames = helpers.list_blobs_flat(
+            filenames = blob_helpers.list_blobs_flat(
                 container_name=blob_container,
                 blob_service_client=self.blob_service_client,
                 verbose=False,
@@ -1601,7 +1601,7 @@ class AzureClient:
             logger.debug("Looping through mounts.")
             filenames = []
             for mount in self.mounts:
-                _files = helpers.list_blobs_flat(
+                _files = blob_helpers.list_blobs_flat(
                     container_name=mount[0],
                     blob_service_client=self.blob_service_client,
                     verbose=False,
@@ -1627,7 +1627,7 @@ class AzureClient:
         container_client = self.blob_service_client.get_container_client(
             container=container
         )
-        return helpers.read_blob_stream(
+        return blob_helpers.read_blob_stream(
             blob_url=blob_url, container_client=container_client, do_check=True
         )
 

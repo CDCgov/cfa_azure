@@ -18,6 +18,7 @@ from azure.storage.blob import (
 
 logger = logging.getLogger(__name__)
 
+
 def check_blob_existence(c_client: ContainerClient, blob_name: str) -> bool:
     """Checks whether a blob exists in the specified container
 

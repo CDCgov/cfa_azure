@@ -11,7 +11,7 @@ import docker
 import pandas as pd
 import toml
 from docker.errors import DockerException
-from griddler import griddle
+from griddler import Griddle
 
 from cfa_azure.local import batch
 

@@ -1,7 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, call, mock_open, patch
-
-from callee import Contains
+from unittest.mock import MagicMock, call, patch
 
 import cfa_azure.batch_helpers
 import cfa_azure.blob_helpers
@@ -52,13 +50,15 @@ class TestBloblHelpers(unittest.TestCase):
             blob_config["azureBlobFileSystemConfiguration"]["blobfuseOptions"],
             "-o direct_io",
         )
-    
+
     @patch("cfa_azure.helpers.logger")
     @patch(
         "cfa_azure.blob_helpers.check_virtual_directory_existence",
         MagicMock(return_value=True),
     )
-    @patch("cfa_azure.blob_helpers.download_file", MagicMock(return_value=True))
+    @patch(
+        "cfa_azure.blob_helpers.download_file", MagicMock(return_value=True)
+    )
     def test_download_directory(self, mock_logger):
         blob_service_client = FakeClient()
         cfa_azure.blob_helpers.download_directory(
@@ -76,7 +76,9 @@ class TestBloblHelpers(unittest.TestCase):
         "cfa_azure.blob_helpers.check_virtual_directory_existence",
         MagicMock(return_value=True),
     )
-    @patch("cfa_azure.blob_helpers.download_file", MagicMock(return_value=True))
+    @patch(
+        "cfa_azure.blob_helpers.download_file", MagicMock(return_value=True)
+    )
     def test_download_directory_extensions(self, mock_logger):
         blob_service_client = FakeClient()
         cfa_azure.blob_helpers.download_directory(
@@ -90,7 +92,9 @@ class TestBloblHelpers(unittest.TestCase):
         mock_logger.debug.assert_called_with("Download complete.")
 
     @patch("cfa_azure.helpers.logger")
-    @patch("cfa_azure.blob_helpers.download_file", MagicMock(return_value=True))
+    @patch(
+        "cfa_azure.blob_helpers.download_file", MagicMock(return_value=True)
+    )
     def test_download_directory_extensions_inclusions(self, mock_logger):
         blob_service_client = FakeClient()
         with self.assertRaises(Exception) as exc:
@@ -110,7 +114,7 @@ class TestBloblHelpers(unittest.TestCase):
             "Use included_extensions or exclude_extensions, not both.",
             str(exc.exception),
         )
-    
+
     @patch(
         "cfa_azure.blob_helpers.format_extensions",
         MagicMock(side_effect=(lambda x: [x[0]])),
@@ -126,7 +130,9 @@ class TestBloblHelpers(unittest.TestCase):
         "cfa_azure.blob_helpers.walk_folder",
         MagicMock(return_value=FAKE_FOLDER_CONTENTS),
     )
-    @patch("cfa_azure.blob_helpers.upload_blob_file", MagicMock(return_value=True))
+    @patch(
+        "cfa_azure.blob_helpers.upload_blob_file", MagicMock(return_value=True)
+    )
     def test_upload_files_in_folder(self):
         blob_service_client = FakeClient()
         with self.assertRaises(Exception) as exc:
@@ -161,7 +167,9 @@ class TestBloblHelpers(unittest.TestCase):
         MagicMock(return_value=FAKE_FOLDER_CONTENTS),
     )
     @patch("builtins.input", MagicMock(return_value="y"))
-    @patch("cfa_azure.blob_helpers.upload_blob_file", MagicMock(return_value=True))
+    @patch(
+        "cfa_azure.blob_helpers.upload_blob_file", MagicMock(return_value=True)
+    )
     def test_upload_files_in_folder_exclusions(self):
         blob_service_client = FakeClient()
         uploaded_files = cfa_azure.blob_helpers.upload_files_in_folder(
@@ -191,7 +199,9 @@ class TestBloblHelpers(unittest.TestCase):
         MagicMock(return_value=FAKE_FOLDER_CONTENTS),
     )
     @patch("builtins.input", MagicMock(return_value="y"))
-    @patch("cfa_azure.blob_helpers.upload_blob_file", MagicMock(return_value=True))
+    @patch(
+        "cfa_azure.blob_helpers.upload_blob_file", MagicMock(return_value=True)
+    )
     def test_upload_files_in_folder_exclusions_forced(self):
         blob_service_client = FakeClient()
         uploaded_files = cfa_azure.blob_helpers.upload_files_in_folder(
@@ -220,7 +230,9 @@ class TestBloblHelpers(unittest.TestCase):
         "cfa_azure.blob_helpers.walk_folder",
         MagicMock(return_value=FAKE_FOLDER_CONTENTS),
     )
-    @patch("cfa_azure.blob_helpers.upload_blob_file", MagicMock(return_value=True))
+    @patch(
+        "cfa_azure.blob_helpers.upload_blob_file", MagicMock(return_value=True)
+    )
     def test_upload_files_in_folder_nonexisting(self):
         blob_service_client = FakeClient()
         with self.assertRaises(Exception) as exc:
@@ -238,7 +250,6 @@ class TestBloblHelpers(unittest.TestCase):
             str(exc.exception),
         )
 
-
     @patch(
         "cfa_azure.blob_helpers.format_extensions",
         MagicMock(side_effect=(lambda x: [x[0]])),
@@ -255,7 +266,9 @@ class TestBloblHelpers(unittest.TestCase):
         "cfa_azure.blob_helpers.walk_folder",
         MagicMock(return_value=FAKE_FOLDER_CONTENTS),
     )
-    @patch("cfa_azure.blob_helpers.upload_blob_file", MagicMock(return_value=True))
+    @patch(
+        "cfa_azure.blob_helpers.upload_blob_file", MagicMock(return_value=True)
+    )
     def test_upload_files_in_folder_no_inclusions_exclusions(self):
         blob_service_client = FakeClient()
         file_list = cfa_azure.blob_helpers.upload_files_in_folder(

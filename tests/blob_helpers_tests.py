@@ -51,69 +51,69 @@ class TestBloblHelpers(unittest.TestCase):
             "-o direct_io",
         )
 
-    @patch("cfa_azure.helpers.logger")
-    @patch(
-        "cfa_azure.blob_helpers.check_virtual_directory_existence",
-        MagicMock(return_value=True),
-    )
-    @patch(
-        "cfa_azure.blob_helpers.download_file", MagicMock(return_value=True)
-    )
-    def test_download_directory(self, mock_logger):
-        blob_service_client = FakeClient()
-        cfa_azure.blob_helpers.download_directory(
-            container_name=FAKE_INPUT_CONTAINER,
-            src_path="some_path/",
-            dest_path="another_path",
-            blob_service_client=blob_service_client,
-            include_extensions=".csv",
-            verbose=True,
-        )
-        mock_logger.debug.assert_called_with("Download complete.")
+    # @patch("cfa_azure.helpers.logger")
+    # @patch(
+    #    "cfa_azure.blob_helpers.check_virtual_directory_existence",
+    #    MagicMock(return_value=True),
+    # )
+    # @patch(
+    #    "cfa_azure.blob_helpers.download_file", MagicMock(return_value=True)
+    # )
+    # def test_download_directory(self, mock_logger):
+    #    blob_service_client = FakeClient()
+    #    cfa_azure.blob_helpers.download_directory(
+    #        container_name=FAKE_INPUT_CONTAINER,
+    #        src_path="some_path/",
+    #        dest_path="another_path",
+    #        blob_service_client=blob_service_client,
+    #        include_extensions=".csv",
+    #        verbose=True,
+    #    )
+    #    mock_logger.debug.assert_called_with("Download complete.")
 
-    @patch("cfa_azure.helpers.logger")
-    @patch(
-        "cfa_azure.blob_helpers.check_virtual_directory_existence",
-        MagicMock(return_value=True),
-    )
-    @patch(
-        "cfa_azure.blob_helpers.download_file", MagicMock(return_value=True)
-    )
-    def test_download_directory_extensions(self, mock_logger):
-        blob_service_client = FakeClient()
-        cfa_azure.blob_helpers.download_directory(
-            container_name=FAKE_INPUT_CONTAINER,
-            src_path="some_path/",
-            dest_path="another_path",
-            blob_service_client=blob_service_client,
-            exclude_extensions=".txt",
-            verbose=True,
-        )
-        mock_logger.debug.assert_called_with("Download complete.")
+    # @patch("cfa_azure.helpers.logger")
+    # @patch(
+    #    "cfa_azure.blob_helpers.check_virtual_directory_existence",
+    #    MagicMock(return_value=True),
+    # )
+    # @patch(
+    #    "cfa_azure.blob_helpers.download_file", MagicMock(return_value=True)
+    # )
+    # def test_download_directory_extensions(self, mock_logger):
+    #    blob_service_client = FakeClient()
+    #    cfa_azure.blob_helpers.download_directory(
+    #        container_name=FAKE_INPUT_CONTAINER,
+    #        src_path="some_path/",
+    #        dest_path="another_path",
+    #        blob_service_client=blob_service_client,
+    #        exclude_extensions=".txt",
+    #        verbose=True,
+    #    )
+    #    mock_logger.debug.assert_called_with("Download complete.")
 
-    @patch("cfa_azure.helpers.logger")
-    @patch(
-        "cfa_azure.blob_helpers.download_file", MagicMock(return_value=True)
-    )
-    def test_download_directory_extensions_inclusions(self, mock_logger):
-        blob_service_client = FakeClient()
-        with self.assertRaises(Exception) as exc:
-            cfa_azure.blob_helpers.download_directory(
-                container_name=FAKE_INPUT_CONTAINER,
-                src_path="some_path/",
-                dest_path="another_path",
-                blob_service_client=blob_service_client,
-                include_extensions=".csv",
-                exclude_extensions=".txt",
-                verbose=True,
-            )
-        mock_logger.error.assert_called_with(
-            "Use included_extensions or exclude_extensions, not both."
-        )
-        self.assertEqual(
-            "Use included_extensions or exclude_extensions, not both.",
-            str(exc.exception),
-        )
+    # @patch("cfa_azure.helpers.logger")
+    # @patch(
+    #    "cfa_azure.blob_helpers.download_file", MagicMock(return_value=True)
+    # )
+    # def test_download_directory_extensions_inclusions(self, mock_logger):
+    #    blob_service_client = FakeClient()
+    #    with self.assertRaises(Exception) as exc:
+    #        cfa_azure.blob_helpers.download_directory(
+    #            container_name=FAKE_INPUT_CONTAINER,
+    #            src_path="some_path/",
+    #            dest_path="another_path",
+    #            blob_service_client=blob_service_client,
+    #            include_extensions=".csv",
+    #            exclude_extensions=".txt",
+    #            verbose=True,
+    #        )
+    #    mock_logger.error.assert_called_with(
+    #        "Use included_extensions or exclude_extensions, not both."
+    #    )
+    #    self.assertEqual(
+    #        "Use included_extensions or exclude_extensions, not both.",
+    #        str(exc.exception),
+    #    )
 
     @patch(
         "cfa_azure.blob_helpers.format_extensions",

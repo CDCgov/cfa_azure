@@ -219,19 +219,26 @@ class FakeClient:
             ]
 
     class FakeContainerClient:
+        @property
+        def container_name(self):
+            return FAKE_INPUT_CONTAINER
+
         def exists(self):
             return False
 
-        def get_blob_client(self, blob):
+        def get_blob_client(self, **kwargs):
             return FakeClient.FakeContainerClient()
 
         def create_container(self):
             return True
 
-        def download_blob(self, blob: str):
+        def download_blob(self, **kwargs):
             return "fake_stream"
+        
+        def upload_blob(self, **kwargs):
+            return True
 
-        def list_blobs(self, name_starts_with=None):
+        def list_blobs(self, name_starts_with:str):
             return [FakeClient.FakeBlob(f) for f in FAKE_BLOBS]
 
     class FakeSecretClient:

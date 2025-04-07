@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, mock_open, patch
 
 import cfa_azure.batch_helpers
 import cfa_azure.blob_helpers
@@ -32,6 +32,18 @@ class TestBloblHelpers(unittest.TestCase):
     def test_upload_blob(self, mock_upload_blob_file):
         cfa_azure.blob_helpers.upload_blob()
         mock_upload_blob_file.assert_called_once()
+
+    @patch("builtins.open", new_callable=mock_open)
+    def test_upload_blob_file(self, mock_open):
+        container_client = FakeClient.FakeContainerClient()
+        cfa_azure.blob_helpers.upload_blob_file(filepath=FAKE_FOLDER, location=FAKE_BLOB_CONTENT, container_client=container_client)
+        self.assertTrue(True)
+
+    @patch("builtins.open", new_callable=mock_open)
+    def test_upload_blob_file_verbose(self, mock_open):
+        container_client = FakeClient.FakeContainerClient()
+        cfa_azure.blob_helpers.upload_blob_file(filepath=f'/{FAKE_FOLDER}', location=FAKE_BLOB_CONTENT, container_client=container_client, verbose=True)
+        self.assertTrue(True)
 
     @patch("os.walk", MagicMock(return_value=FAKE_FOLDER_CONTENTS_WALK))
     def test_walk_folder(self):

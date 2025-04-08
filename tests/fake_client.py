@@ -234,11 +234,11 @@ class FakeClient:
 
         def download_blob(self, **kwargs):
             return "fake_stream"
-        
+
         def upload_blob(self, **kwargs):
             return True
 
-        def list_blobs(self, name_starts_with:str):
+        def list_blobs(self, name_starts_with: str):
             return [FakeClient.FakeBlob(f) for f in FAKE_BLOBS]
 
     class FakeSecretClient:

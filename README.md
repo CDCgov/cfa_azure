@@ -401,7 +401,7 @@ Please view [this documentation](docs/automation_README.md) on getting started w
 Please view [this documentation](docs/local_README.md) for more information regarding the `local` module.
 
 ## Helper functions
-The CFA Azure library provides a collection of functions that help manage Azure Batch, Blob Storage, Identity Management and Configuration. These functions have been grouped into 3 different modules: `batch_helpers`, `blob_helpers` and `helpers`. In the following sections, each module and its functions are described. 
+The CFA Azure library provides a collection of functions that help manage Azure Batch, Blob Storage, Identity Management and Configuration. These functions have been grouped into 3 different modules: `batch_helpers`, `blob_helpers` and `helpers`. In the following sections, each module and its functions are described.
 
 ### batch_helpers
 The `batch_helpers` module provides a collection of functions that helps manage Azure Batch resources and perform key tasks. Below is an expanded overview of each function.

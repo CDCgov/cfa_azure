@@ -1,15 +1,10 @@
 # import modules for use
 import csv
 import datetime
-import fnmatch as fm
-import json
 import logging
 import os
-import re
 import subprocess as sp
 import time
-from os import path, walk
-from pathlib import Path
 from zoneinfo import ZoneInfo as zi
 
 import azure.batch.models as batchmodels
@@ -31,15 +26,7 @@ from azure.batch.models import (
     OnTaskFailure,
 )
 from azure.containerregistry import ContainerRegistryClient
-from azure.core.paging import ItemPaged
-from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
-from azure.storage.blob import (
-    BlobProperties,
-    BlobServiceClient,
-    ContainerClient,
-    StorageStreamDownloader,
-)
 from docker.errors import DockerException
 from griddler import Griddle
 from yaml import SafeLoader, dump, load

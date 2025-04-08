@@ -3,7 +3,7 @@
 import logging
 import unittest
 from io import StringIO
-from unittest.mock import MagicMock, call, mock_open, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 from callee import Contains
 from docker.errors import DockerException

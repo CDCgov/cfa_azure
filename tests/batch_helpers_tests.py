@@ -3,7 +3,20 @@ from unittest.mock import MagicMock, patch
 
 import cfa_azure.batch_helpers
 import cfa_azure.helpers
-from tests.fake_client import *
+from tests.fake_client import (
+    FAKE_ACCOUNT,
+    FAKE_AUTOSCALE_FORMULA,
+    FAKE_BATCH_POOL,
+    FAKE_CONFIG,
+    FAKE_CONFIG_MINIMAL,
+    FAKE_CONTAINER_IMAGE,
+    FAKE_CONTAINER_REGISTRY,
+    FAKE_CREDENTIAL,
+    FAKE_INPUT_CONTAINER,
+    FAKE_OUTPUT_CONTAINER,
+    FAKE_RESOURCE_GROUP,
+    FakeClient,
+)
 
 
 class TestBatchHelpers(unittest.TestCase):

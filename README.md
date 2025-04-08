@@ -76,6 +76,8 @@ The `local` submodule is meant to mimic the `cfa_azure` package but in a local e
     | clients
         | AzureClient
     | automation
+    | batch_helpers
+    | blob_helpers
     | helpers
     | local
         | clients
@@ -394,11 +396,13 @@ Please view [this documentation](docs/automation_README.md) on getting started w
 ## local
 Please view [this documentation](docs/local_README.md) for more information regarding the `local` module.
 
+## Helper functions
+The CFA Azure library provides a collection of functions that help manage Azure Batch, Blob Storage, Identity Management and Configuration. These functions have been grouped into 3 different modules: `batch_helpers`, `blob_helpers` and `helpers`. In the following sections, each module and its functions are described. 
 
-## batch_helpers
+### batch_helpers
 The `batch_helpers` module provides a collection of functions that helps manage Azure Batch resources and perform key tasks. Below is an expanded overview of each function.
 
-### Batch Helpers Functions
+#### Batch Helpers Functions
 - `check_pool_exists`: checks if a specified pool exists in Azure Batch
 ```python
 check_pool_exists("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
@@ -456,10 +460,10 @@ get_rel_mnt_path("blob_name", "pool_name", "resource_group_name", "account_name"
 get_user_identity(config)
 ```
 
-## blob_helpers
+### blob_helpers
 The `blob_helpers` module provides a collection of functions that helps manage Azure Blob Storage resources and perform key tasks. Below is an expanded overview of each function.
 
-### Blob Helpers Functions
+#### Blob Helpers Functions
 - `blob_glob`: provides an iterator over all files within specified Azure Blob Storage location that match the specified prefix.
 ```python
 blob_glob("blob_url", "account_name", "container_name", "container_client")
@@ -583,11 +587,10 @@ upload_blob_file("file_path", location="folder/subfolder", container_client=cont
 upload_files_in_folder("/path/to/folder", "container-name", blob_service_client)
 ```
 
-
-## helpers
+### helpers
 The `helpers` module provides a collection of functions that helps manage Azure resources and perform key tasks, such as interacting with configuration management, and data transformations. Below is an expanded overview of each function.
 
-### Helpers Functions
+#### Helpers Functions
 - `read_config`: reads in a configuration toml file and returns it as a Python dictionary
 ```python
 read_config("/path/to/config.toml")

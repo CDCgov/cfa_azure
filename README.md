@@ -411,6 +411,10 @@ create_batch_pool(batch_mgmt_client, pool_config)
 ```python
 delete_pool("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
 ```
+- `generate_autoscale_formula`: generates a generic autoscale formula for use based on a specified maximum number of nodes
+```python
+generate_autoscale_formula(max_nodes=8)
+```
 - `get_autoscale_formula`: finds and reads `autoscale_formula.txt` from working directory or subdirectory
 ```python
 get_autoscale_formula(filepath="/path/to/formula.txt")
@@ -456,46 +460,6 @@ get_user_identity(config)
 The `blob_helpers` module provides a collection of functions that helps manage Azure Blob Storage resources and perform key tasks. Below is an expanded overview of each function.
 
 ### Blob Helpers Functions
-- `create_blob_containers`: uses create_container() to create input and output containers in Azure Blob
-```python
-create_blob_containers(blob_service_client, "input-container", "output-container")
-```
-- `check_blob_existence`: checks whether a blob exists in the specified container
-```python
-check_blob_existence(c_client, "blob_name")
-```
-- `download_file`: downloads a file from Azure Blob storage to a specified location
-```python
-download_file(c_client, "src_path", "dest_path")
-```
-- `get_blob_service_client`: creates a Blob Service Client for interacting with Azure Blob
-```python
-blob_service_client = get_blob_service_client(config, DefaultAzureCredential())
-```
-- `list_blobs_flat`: lists all blobs in a specified container
-```python
-list_blobs_flat("container_name", blob_service_client)
-```
-- `list_containers`: lists the containers in Azure Blob Storage Account
-```python
-list_containers(blob_service_client)
-```
-- `upload_files_in_folder`: uploads all files in specified folder to the specified container
-```python
-upload_files_in_folder("/path/to/folder", "container-name", blob_service_client)
-```
-- `format_extensions`: formats file extensions into a standard format for use
-```python
-format_extensions([".txt", "jpg"])
-```
-- `delete_blob_snapshots`: deletes a blob and all its snapshots in a container
-```python
-delete_blob_snapshots("blob_name", "container_name", blob_service_client)
-```
-- `delete_blob_folder`: deletes all blobs in a specified folder in a container
-```python
-delete_blob_folder("folder_path", "container_name", blob_service_client)
-```
 - `blob_glob`: provides an iterator over all files within specified Azure Blob Storage location that match the specified prefix.
 ```python
 blob_glob("blob_url", "account_name", "container_name", "container_client")
@@ -507,7 +471,7 @@ blob_search("blob_url", "account_name", "container_name", "container_client", "s
 ```
 **Example: List Azure blob files from a folder**
 ```python
-from cfa_azure.helpers import blob_glob
+from cfa_azure.blob_helpers import blob_glob
 for blob in blob_glob("src/dynode/mechanistic*.py", account_name='cfaazurebatchprd', container_name='input'):
     print(blob)
 
@@ -526,7 +490,7 @@ read_blob_stream("blob_url", "account_name", "container_name", "container_client
 ```
 **Example: Read Azure blob file into Polars or Pandas data frames**
 ```python
-from cfa_azure.helpers import read_blob_stream
+from cfa_azure.blob_helpers import read_blob_stream
 data_stream = read_blob_stream("input/AZ.csv", account_name='cfaazurebatchprd', container_name='input-test')
 
 # Read into Polars dataframe
@@ -551,7 +515,7 @@ write_blob_stream("data", "blob_url", "account_name", "container_name", "contain
 ```
 **Example: Write Polars or Pandas dataframe into Azure blob storage**
 ```python
-from cfa_azure.helpers import write_blob_stream
+from cfa_azure.blob_helpers import write_blob_stream
 
 # Write Polars dataframe
 import polars
@@ -566,9 +530,57 @@ data = df.to_csv(index=False).encode('utf-8')
 blob_url = "input/AZ_03072025_a.csv"
 write_blob_stream(data, blob_url=blob_url, account_name='cfaazurebatchprd', container_name='input-test')
 ```
+- `check_blob_existence`: checks whether a blob exists in the specified container
+```python
+check_blob_existence(c_client, "blob_name")
+```
+- `check_virtual_directory_existence`: checks whether any blobs exist with the specified virtual directory path
+```python
+check_virtual_directory_existence(c_client, "vdir_path")
+```
+- `create_blob_containers`: uses create_container() to create input and output containers in Azure Blob
+```python
+create_blob_containers(blob_service_client, "input-container", "output-container")
+```
+- `delete_blob_snapshots`: deletes a blob and all its snapshots in a container
+```python
+delete_blob_snapshots("blob_name", "container_name", blob_service_client)
+```
+- `delete_blob_folder`: deletes all blobs in a specified folder in a container
+```python
+delete_blob_folder("folder_path", "container_name", blob_service_client)
+```
+- `download_file`: downloads a file from Azure Blob storage to a specified location
+```python
+download_file(c_client, "src_path", "dest_path")
+```
+- download_directory: downloads a directory using prefix matching from Azure Blob storage
+```python
+download_directory("container_name", "src_path", "dest_path", blob_service_client, include_extensions=".txt", verbose=True)
+```
+- `format_extensions`: formats file extensions into a standard format for use
+```python
+format_extensions([".txt", "jpg"])
+```
+- `get_blob_service_client`: creates a Blob Service Client for interacting with Azure Blob
+```python
+blob_service_client = get_blob_service_client(config, DefaultAzureCredential())
+```
+- `list_blobs_flat`: lists all blobs in a specified container
+```python
+list_blobs_flat("container_name", blob_service_client)
+```
+- `list_containers`: lists the containers in Azure Blob Storage Account
+```python
+list_containers(blob_service_client)
+```
 - `upload_blob_file`: uploads a specified file to Azure Blob storage
 ```python
 upload_blob_file("file_path", location="folder/subfolder", container_client=container_client, verbose=True)
+```
+- `upload_files_in_folder`: uploads all files in specified folder to the specified container
+```python
+upload_files_in_folder("/path/to/folder", "container-name", blob_service_client)
 ```
 
 
@@ -624,10 +636,6 @@ yaml_to_df("input.yaml")
 ```python
 edit_yaml_r0("input.yaml", start=1, stop=5, step=1)
 ```
-- `check_virtual_directory_existence`: checks whether any blobs exist with the specified virtual directory path
-```python
-check_virtual_directory_existence(c_client, "vdir_path")
-```
 - `get_log_level`: retrieves the logging level from environment variables or defaults to debug
 ```python
 get_log_level()
@@ -655,10 +663,6 @@ get_container_registry_client("endpoint", DefaultAzureCredential(), "audience")
 - `check_azure_container_exists`: checks if a container with the specified name, repository, and tag exists in Azure Container Registry
 ```python
 check_azure_container_exists("registry_name", "repo_name", "tag_name", DefaultAzureCredential())
-```
-- `generate_autoscale_formula`: generates a generic autoscale formula for use based on a specified maximum number of nodes
-```python
-generate_autoscale_formula(max_nodes=8)
 ```
 - `format_rel_path`: formats a given relative path by removing the leading slash if present
 ```python
@@ -691,10 +695,6 @@ package_and_upload_dockerfile("registry_name", "repo_name", "tag", use_device_co
 - `upload_docker_image`: uploads a Docker image to a specified Azure Container Registry repo with an optional tag
 ```python
 upload_docker_image("image_name", "registry_name", "repo_name", tag="latest", use_device_code=False)
-```
-- download_directory: downloads a directory using prefix matching from Azure Blob storage
-```python
-download_directory("container_name", "src_path", "dest_path", blob_service_client, include_extensions=".txt", verbose=True)
 ```
 
 ## Common Use Case Scenarios

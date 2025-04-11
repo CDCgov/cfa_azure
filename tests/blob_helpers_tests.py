@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, mock_open, patch
 import cfa_azure.batch_helpers
 import cfa_azure.blob_helpers
 import cfa_azure.helpers
+
 from .fake_client import (
     FAKE_ARGUMENTS,
     FAKE_BLOB_CONTENT,

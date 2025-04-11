@@ -10,6 +10,7 @@ from docker.errors import DockerException
 
 import cfa_azure.blob_helpers
 import cfa_azure.helpers
+
 from .fake_client import *
 
 

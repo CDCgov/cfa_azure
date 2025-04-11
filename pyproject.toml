@@ -5,7 +5,7 @@ description = "module for use with Azure and Azure Batch"
 authors = ["Ryan Raasch <xng3@cdc.gov>"]
 readme = "README.md"
 packages = [
-    { include = "cfa_azure" }, 
+    { include = "cfa_azure" },
     { exclude = "tests" }
 ]
 

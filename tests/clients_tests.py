@@ -9,7 +9,7 @@ import cfa_azure.batch_helpers
 import cfa_azure.blob_helpers
 import cfa_azure.clients
 import cfa_azure.helpers
-from tests.fake_client import *
+from .fake_client import *
 
 
 class TestClients(unittest.TestCase):

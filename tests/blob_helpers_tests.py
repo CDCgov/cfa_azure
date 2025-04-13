@@ -251,19 +251,6 @@ class TestBlobMockUploadHelpers(TestBloblHelpers):
             str(exc.exception),
         )
 
-
-class TestBlobMockUploadHelpers(TestBloblHelpers):
-    def setUp(self):
-        super().setUp()
-        self.upload_file_patcher = patch(
-            "cfa_azure.blob_helpers.upload_blob_file",
-            MagicMock(return_value=True),
-        )
-
-    def tearDown(self):
-        self.upload_file_patcher.stop()
-        super().tearDown()
-
     @patch("builtins.input", MagicMock(return_value="y"))
     def test_upload_files_in_folder_exclusions(self):
         blob_service_client = FakeClient()

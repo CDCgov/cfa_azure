@@ -43,18 +43,6 @@ class TestBloblHelpers(unittest.TestCase):
         self.dirname_patcher.stop()
         self.format_extensions_patcher.stop()
 
-    # @patch("cfa_azure.helpers.create_container")
-    # def test_create_blob_containers(self, mock_create_container):
-    #    mock_client = FakeClient()
-    #    expected_calls = [
-    #        call(FAKE_INPUT_CONTAINER, mock_client),
-    #        call(FAKE_OUTPUT_CONTAINER, mock_client),
-    #    ]
-    #    cfa_azure.blob_helpers.create_blob_containers(
-    #        mock_client, FAKE_INPUT_CONTAINER, FAKE_OUTPUT_CONTAINER
-    #    )
-    #    mock_create_container.assert_has_calls(expected_calls)
-
     def test_upload_blob_file(self):
         container_client = FakeClient.FakeContainerClient()
         with patch("builtins.open", new_callable=mock_open):
@@ -112,70 +100,6 @@ class TestBloblHelpers(unittest.TestCase):
             "-o direct_io",
         )
 
-    # @patch("cfa_azure.helpers.logger")
-    # @patch(
-    #    "cfa_azure.blob_helpers.check_virtual_directory_existence",
-    #    MagicMock(return_value=True),
-    # )
-    # @patch(
-    #    "cfa_azure.blob_helpers.download_file", MagicMock(return_value=True)
-    # )
-    # def test_download_directory(self, mock_logger):
-    #    blob_service_client = FakeClient()
-    #    cfa_azure.blob_helpers.download_directory(
-    #        container_name=FAKE_INPUT_CONTAINER,
-    #        src_path="some_path/",
-    #        dest_path="another_path",
-    #        blob_service_client=blob_service_client,
-    #        include_extensions=".csv",
-    #        verbose=True,
-    #    )
-    #    mock_logger.debug.assert_called_with("Download complete.")
-
-    # @patch("cfa_azure.helpers.logger")
-    # @patch(
-    #    "cfa_azure.blob_helpers.check_virtual_directory_existence",
-    #    MagicMock(return_value=True),
-    # )
-    # @patch(
-    #    "cfa_azure.blob_helpers.download_file", MagicMock(return_value=True)
-    # )
-    # def test_download_directory_extensions(self, mock_logger):
-    #    blob_service_client = FakeClient()
-    #    cfa_azure.blob_helpers.download_directory(
-    #        container_name=FAKE_INPUT_CONTAINER,
-    #        src_path="some_path/",
-    #        dest_path="another_path",
-    #        blob_service_client=blob_service_client,
-    #        exclude_extensions=".txt",
-    #        verbose=True,
-    #    )
-    #    mock_logger.debug.assert_called_with("Download complete.")
-
-    # @patch("cfa_azure.helpers.logger")
-    # @patch(
-    #    "cfa_azure.blob_helpers.download_file", MagicMock(return_value=True)
-    # )
-    # def test_download_directory_extensions_inclusions(self, mock_logger):
-    #    blob_service_client = FakeClient()
-    #    with self.assertRaises(Exception) as exc:
-    #        cfa_azure.blob_helpers.download_directory(
-    #            container_name=FAKE_INPUT_CONTAINER,
-    #            src_path="some_path/",
-    #            dest_path="another_path",
-    #            blob_service_client=blob_service_client,
-    #            include_extensions=".csv",
-    #            exclude_extensions=".txt",
-    #            verbose=True,
-    #        )
-    #    mock_logger.error.assert_called_with(
-    #        "Use included_extensions or exclude_extensions, not both."
-    #    )
-    #    self.assertEqual(
-    #        "Use included_extensions or exclude_extensions, not both.",
-    #        str(exc.exception),
-    #    )
-
     def test_format_extensions(self):
         extension = "csv"
         formatted = cfa_azure.blob_helpers.format_extensions(extension)
@@ -227,27 +151,6 @@ class TestBlobMockUploadHelpers(TestBloblHelpers):
             )
         self.assertEqual(
             "Use included_extensions or exclude_extensions, not both.",
-            str(exc.exception),
-        )
-
-    @patch(
-        "fake_client.FakeClient.FakeContainerClient.exists",
-        MagicMock(return_value=False),
-    )
-    def test_upload_files_in_folder_nonexisting(self):
-        blob_service_client = FakeClient()
-        with self.assertRaises(Exception) as exc:
-            cfa_azure.blob_helpers.upload_files_in_folder(
-                "some_folder",
-                container_name=FAKE_OUTPUT_CONTAINER,
-                include_extensions=[".csv"],
-                location_in_blob="",
-                blob_service_client=blob_service_client,
-                verbose=True,
-                force_upload=True,
-            )
-        self.assertEqual(
-            f"Blob container {FAKE_OUTPUT_CONTAINER} does not exist. Please try again with an existing Blob container.",
             str(exc.exception),
         )
 

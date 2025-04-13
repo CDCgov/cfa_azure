@@ -224,7 +224,7 @@ class FakeClient:
             return FAKE_INPUT_CONTAINER
 
         def exists(self):
-            return False
+            return True
 
         def get_blob_client(self, **kwargs):
             return FakeClient.FakeContainerClient()

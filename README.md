@@ -30,6 +30,10 @@
     - [Run DAGs](#run-dags)
   - [automation](#automation)
   - [local](#local)
+  - [batch_helpers](#batch_helpers)
+    - [Batch Helpers Functions](#batch-helpers-functions)
+  - [blob_helpers](#blob_helpers)
+    - [Blob Helpers Functions](#blob-helpers-functions)
   - [helpers](#helpers)
     - [Helpers Functions](#helpers-functions)
   - [Common Use Case Scenarios](#common-use-case-scenarios)
@@ -64,9 +68,9 @@ pip install git+https://github.com/CDCgov/cfa_azure.git
 ```
 
 # Components
-The `cfa_azure` module is composed of four submodules: `clients`, `automation`,  `helpers`, and `local`. The module `clients` contains what we call the AzureClient, which combines the multiple Azure Clients needed to interact with Azure and consolidates to a single client. The module `helpers` contains more fine-grained functions which are used within the `clients` module or independently for more control when working with Azure. The `automation` module introduces a simplified way to upload files and submit jobs/tasks to Batch via another configuration toml file. For help getting started with the `automation` module, please see [this overview](docs/automation_README.md).
+The `cfa_azure` module is composed of four submodules: `clients`, `automation`, `batch_helpers`, `blob_helpers`, `helpers`, and `local`. The module `clients` contains what we call the AzureClient, which combines the multiple Azure Clients needed to interact with Azure and consolidates to a single client. The `batch_helpers`, `blob_helpers` and `helpers` contains more fine-grained functions which are used within the `clients` module or independently for more control when working with Azure. The `automation` module introduces a simplified way to upload files and submit jobs/tasks to Batch via another configuration toml file. For help getting started with the `automation` module, please see [this overview](docs/automation_README.md).
 
-The `local` submodule is meant to mimic the `cfa_azure` package but in a local environment, and contains submodules also called `client`, `automation`, and `helpers`. This framework allows for users to easily switch between running code in Azure and locally. For example, someone with a working script importing the `AzureClient` by running `from cfa_azure.clients import AzureClient` could switch to running it locally by importing it through the `local` submodule like `from cfa_azure.local.clients import AzureClient`. The same holds for `local.automation` and `local.helpers`.
+The `local` submodule is meant to mimic the `cfa_azure` package but in a local environment, and contains submodules also called `client`, `automation` and `helpers`. This framework allows for users to easily switch between running code in Azure and locally. For example, someone with a working script importing the `AzureClient` by running `from cfa_azure.clients import AzureClient` could switch to running it locally by importing it through the `local` submodule like `from cfa_azure.local.clients import AzureClient`. The same holds for `local.automation` and `local.helpers`.
 
 **Note:** At this moment, not all functionality in `cfa_azure` is available in the `local` submodule, but there is enough for a standard workflow to be ran locally.
 
@@ -76,6 +80,8 @@ The `local` submodule is meant to mimic the `cfa_azure` package but in a local e
     | clients
         | AzureClient
     | automation
+    | batch_helpers
+    | blob_helpers
     | helpers
     | local
         | clients
@@ -394,11 +400,201 @@ Please view [this documentation](docs/automation_README.md) on getting started w
 ## local
 Please view [this documentation](docs/local_README.md) for more information regarding the `local` module.
 
+## Helper functions
+The CFA Azure library provides a collection of functions that help manage Azure Batch, Blob Storage, Identity Management and Configuration. These functions have been grouped into 3 different modules: `batch_helpers`, `blob_helpers` and `helpers`. In the following sections, each module and its functions are described.
 
-## helpers
-The `helpers` module provides a collection of functions that helps manage Azure resources and perform key tasks, such as interacting with Blob storage, Azure Batch, configuration management, and data transformations. Below is an expanded overview of each function.
+### batch_helpers
+The `batch_helpers` module provides a collection of functions that helps manage Azure Batch resources and perform key tasks. Below is an expanded overview of each function.
 
-### Helpers Functions
+#### Batch Helpers Functions
+- `check_pool_exists`: checks if a specified pool exists in Azure Batch
+```python
+check_pool_exists("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
+```
+- `create_batch_pool`: creates a Azure Batch Pool based on info using the provided configuration details
+```python
+create_batch_pool(batch_mgmt_client, pool_config)
+```
+- `delete_pool`: deletes the specified pool from Azure Batch
+```python
+delete_pool("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
+```
+- `generate_autoscale_formula`: generates a generic autoscale formula for use based on a specified maximum number of nodes
+```python
+generate_autoscale_formula(max_nodes=8)
+```
+- `get_autoscale_formula`: finds and reads `autoscale_formula.txt` from working directory or subdirectory
+```python
+get_autoscale_formula(filepath="/path/to/formula.txt")
+```
+- `get_batch_mgmt_client`: creates a Batch Management Client for interacting with Azure Batch, such as pools and jobs
+```python
+batch_mgmt_client = get_batch_mgmt_client(config, DefaultAzureCredential())
+```
+- `get_batch_pool_json`: creates a dict based on config for configuring an Azure Batch pool
+```python
+pool_config = get_batch_pool_json("input-container", "output-container", config)
+```
+- `get_deployment_config`: retrieves deployment configuration for Azure Batch pool, including container registry settings and optional HPC image
+```python
+get_deployment_config("container_image_name", "container_registry_url", "container_registry_server", config, DefaultAzureCredential())
+```
+- `get_network_config`: gets the network configuration based on the config information
+```python
+get_network_config(config: str)
+```
+- `get_pool_full_info`: retrieves the full information of a specified Azure Batch pool
+```python
+get_pool_full_info("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
+```
+- `get_pool_info`: gets the basic information for a specified Azure Batch pool
+```python
+get_pool_info("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
+```
+- `get_pool_mounts`: lists all mounted Blob containers for a given Azure Batch pool
+```python
+get_pool_mounts("pool_name", "resource_group_name", "account_name", batch_mgmt_client)
+```
+- `get_rel_mnt_path`: retrieves the relative mount path for a specified Blob container in an Azure Batch pool
+```python
+get_rel_mnt_path("blob_name", "pool_name", "resource_group_name", "account_name", batch_mgmt_client)
+```
+- `get_user_identity`: retrieves the user identity based on the provided config information
+```python
+get_user_identity(config)
+```
+
+### blob_helpers
+The `blob_helpers` module provides a collection of functions that helps manage Azure Blob Storage resources and perform key tasks. Below is an expanded overview of each function.
+
+#### Blob Helpers Functions
+- `blob_glob`: provides an iterator over all files within specified Azure Blob Storage location that match the specified prefix.
+```python
+blob_glob("blob_url", "account_name", "container_name", "container_client")
+```
+- `blob_search`: provides an iterator over all files within specified Azure Blob Storage location that match the specified prefix and file pattern. It can optionally take a sort key.
+```python
+blob_search("blob_url", "account_name", "container_name", "container_client")
+blob_search("blob_url", "account_name", "container_name", "container_client", "sort_key")
+```
+**Example: List Azure blob files from a folder**
+```python
+from cfa_azure.blob_helpers import blob_glob
+for blob in blob_glob("src/dynode/mechanistic*.py", account_name='cfaazurebatchprd', container_name='input'):
+    print(blob)
+
+# sort all files within input/ folder by last_modified date and display name
+for blob in blob_glob('input/', account_name='cfaazurebatchprd', container_name='input-test', sort_key='last_modified'):
+    print(blob['name'])
+
+# sort all markdown files by last_modified date and display name
+for blob in blob_glob('*.md', account_name='cfaazurebatchprd', container_name='input-test', sort_key='last_modified'):
+    print(blob['name'])
+```
+```
+- `read_blob_stream`: reads file from specified path in Azure Storage and return its contents as bytes without mounting the container to a local filesystem
+```python
+read_blob_stream("blob_url", "account_name", "container_name", "container_client")
+```
+**Example: Read Azure blob file into Polars or Pandas data frames**
+```python
+from cfa_azure.blob_helpers import read_blob_stream
+data_stream = read_blob_stream("input/AZ.csv", account_name='cfaazurebatchprd', container_name='input-test')
+
+# Read into Polars dataframe
+import polars
+df = polars.read_csv(data_stream.readall())
+print(df)
+
+# Read into Pandas dataframe
+import pandas
+df = pandas.read_csv(data_stream)
+print(df)
+
+# Read large file into Pandas dataframe within chunking
+import pandas
+chunk_size=1000      # 1000 rows at a time
+for chunk in pd.read_csv(data_stream, chunksize=chunk_size):
+    print(chunk)
+```
+- `write_blob_stream`: write bytes to a file in specified path
+```python
+write_blob_stream("data", "blob_url", "account_name", "container_name", "container_client")
+```
+**Example: Write Polars or Pandas dataframe into Azure blob storage**
+```python
+from cfa_azure.blob_helpers import write_blob_stream
+
+# Write Polars dataframe
+import polars
+df = .... # Read some data into Polars dataframe
+blob_url = "input/AZ_03072025_a.csv"
+write_blob_stream(df.write_csv().encode('utf-8'), blob_url=blob_url, account_name='cfaazurebatchprd', container_name='input-test')
+
+# Write Pandas dataframe
+import pandas
+df = .... # Read some data into Pandas dataframe
+data = df.to_csv(index=False).encode('utf-8')
+blob_url = "input/AZ_03072025_a.csv"
+write_blob_stream(data, blob_url=blob_url, account_name='cfaazurebatchprd', container_name='input-test')
+```
+- `check_blob_existence`: checks whether a blob exists in the specified container
+```python
+check_blob_existence(c_client, "blob_name")
+```
+- `check_virtual_directory_existence`: checks whether any blobs exist with the specified virtual directory path
+```python
+check_virtual_directory_existence(c_client, "vdir_path")
+```
+- `create_blob_containers`: uses create_container() to create input and output containers in Azure Blob
+```python
+create_blob_containers(blob_service_client, "input-container", "output-container")
+```
+- `delete_blob_snapshots`: deletes a blob and all its snapshots in a container
+```python
+delete_blob_snapshots("blob_name", "container_name", blob_service_client)
+```
+- `delete_blob_folder`: deletes all blobs in a specified folder in a container
+```python
+delete_blob_folder("folder_path", "container_name", blob_service_client)
+```
+- `download_file`: downloads a file from Azure Blob storage to a specified location
+```python
+download_file(c_client, "src_path", "dest_path")
+```
+- download_directory: downloads a directory using prefix matching from Azure Blob storage
+```python
+download_directory("container_name", "src_path", "dest_path", blob_service_client, include_extensions=".txt", verbose=True)
+```
+- `format_extensions`: formats file extensions into a standard format for use
+```python
+format_extensions([".txt", "jpg"])
+```
+- `get_blob_service_client`: creates a Blob Service Client for interacting with Azure Blob
+```python
+blob_service_client = get_blob_service_client(config, DefaultAzureCredential())
+```
+- `list_blobs_flat`: lists all blobs in a specified container
+```python
+list_blobs_flat("container_name", blob_service_client)
+```
+- `list_containers`: lists the containers in Azure Blob Storage Account
+```python
+list_containers(blob_service_client)
+```
+- `upload_blob_file`: uploads a specified file to Azure Blob storage
+```python
+upload_blob_file("file_path", location="folder/subfolder", container_client=container_client, verbose=True)
+```
+- `upload_files_in_folder`: uploads all files in specified folder to the specified container
+```python
+upload_files_in_folder("/path/to/folder", "container-name", blob_service_client)
+```
+
+### helpers
+The `helpers` module provides a collection of functions that helps manage Azure resources and perform key tasks, such as interacting with configuration management, and data transformations. Below is an expanded overview of each function.
+
+#### Helpers Functions
 - `read_config`: reads in a configuration toml file and returns it as a Python dictionary
 ```python
 read_config("/path/to/config.toml")
@@ -407,10 +603,6 @@ read_config("/path/to/config.toml")
 ```python
 create_container("my-container", blob_service_client)
 ```
-- `get_autoscale_formula`: finds and reads `autoscale_formula.txt` from working directory or subdirectory
-```python
-get_autoscale_formula(filepath="/path/to/formula.txt")
-```
 - `get_sp_secret`: retrieves the user's service principal secret from the key vault based on the provided config file
 ```python
 get_sp_secret(config, DefaultAzureCredential())
@@ -418,34 +610,6 @@ get_sp_secret(config, DefaultAzureCredential())
 - `get_sp_credential`: retrieves the service principal credential
 ```python
 get_sp_credential(config)
-```
-- `get_blob_service_client`: creates a Blob Service Client for interacting with Azure Blob
-```python
-blob_service_client = get_blob_service_client(config, DefaultAzureCredential())
-```
-- `get_batch_mgmt_client`: creates a Batch Management Client for interacting with Azure Batch, such as pools and jobs
-```python
-batch_mgmt_client = get_batch_mgmt_client(config, DefaultAzureCredential())
-```
-- `create_blob_containers`: uses create_container() to create input and output containers in Azure Blob
-```python
-create_blob_containers(blob_service_client, "input-container", "output-container")
-```
-- `get_batch_pool_json`: creates a dict based on config for configuring an Azure Batch pool
-```python
-pool_config = get_batch_pool_json("input-container", "output-container", config)
-```
-- `create_batch_pool`: creates a Azure Batch Pool based on info using the provided configuration details
-```python
-create_batch_pool(batch_mgmt_client, pool_config)
-```
-- `list_containers`: lists the containers in Azure Blob Storage Account
-```python
-list_containers(blob_service_client)
-```
-- `upload_files_in_folder`: uploads all files in specified folder to the specified container
-```python
-upload_files_in_folder("/path/to/folder", "container-name", blob_service_client)
 ```
 - `get_batch_service_client`: creates a Batch Service Client object for interacting with Batch jobs
 ```python
@@ -479,120 +643,9 @@ yaml_to_df("input.yaml")
 ```python
 edit_yaml_r0("input.yaml", start=1, stop=5, step=1)
 ```
-- `get_user_identity`: retrieves the user identity based on the provided config information
-```python
-get_user_identity(config)
-```
-- `get_network_config`: gets the network configuration based on the config information
-```python
-get_network_config(config: str)
-```
-- `get_deployment_config`: retrieves deployment configuration for Azure Batch pool, including container registry settings and optional HPC image
-```python
-get_deployment_config("container_image_name", "container_registry_url", "container_registry_server", config, DefaultAzureCredential())
-```
-- `check_blob_existence`: checks whether a blob exists in the specified container
-```python
-check_blob_existence(c_client, "blob_name")
-```
-- `check_virtual_directory_existence`: checks whether any blobs exist with the specified virtual directory path
-```python
-check_virtual_directory_existence(c_client, "vdir_path")
-```
-- `download_file`: downloads a file from Azure Blob storage to a specified location
-```python
-download_file(c_client, "src_path", "dest_path")
-```
-- `list_blobs_flat`: lists all blobs in a specified container
-```python
-list_blobs_flat("container_name", blob_service_client)
-```
 - `get_log_level`: retrieves the logging level from environment variables or defaults to debug
 ```python
 get_log_level()
-```
-- `delete_blob_snapshots`: deletes a blob and all its snapshots in a container
-```python
-delete_blob_snapshots("blob_name", "container_name", blob_service_client)
-```
-- `delete_blob_folder`: deletes all blobs in a specified folder in a container
-```python
-delete_blob_folder("folder_path", "container_name", blob_service_client)
-```
-- `blob_glob`: provides an iterator over all files within specified Azure Blob Storage location that match the specified prefix.
-```python
-blob_glob("blob_url", "account_name", "container_name", "container_client")
-```
-- `blob_search`: provides an iterator over all files within specified Azure Blob Storage location that match the specified prefix and file pattern. It can optionally take a sort key.
-```python
-blob_search("blob_url", "account_name", "container_name", "container_client")
-blob_search("blob_url", "account_name", "container_name", "container_client", "sort_key")
-```
-**Example: List Azure blob files from a folder**
-```python
-from cfa_azure.helpers import blob_glob
-for blob in blob_glob("src/dynode/mechanistic*.py", account_name='cfaazurebatchprd', container_name='input'):
-    print(blob)
-
-# sort all files within input/ folder by last_modified date and display name
-for blob in blob_glob('input/', account_name='cfaazurebatchprd', container_name='input-test', sort_key='last_modified'):
-    print(blob['name'])
-
-# sort all markdown files by last_modified date and display name
-for blob in blob_glob('*.md', account_name='cfaazurebatchprd', container_name='input-test', sort_key='last_modified'):
-    print(blob['name'])
-```
-```
-- `read_blob_stream`: reads file from specified path in Azure Storage and return its contents as bytes without mounting the container to a local filesystem
-```python
-read_blob_stream("blob_url", "account_name", "container_name", "container_client")
-```
-**Example: Read Azure blob file into Polars or Pandas data frames**
-```python
-from cfa_azure.helpers import read_blob_stream
-data_stream = read_blob_stream("input/AZ.csv", account_name='cfaazurebatchprd', container_name='input-test')
-
-# Read into Polars dataframe
-import polars
-df = polars.read_csv(data_stream.readall())
-print(df)
-
-# Read into Pandas dataframe
-import pandas
-df = pandas.read_csv(data_stream)
-print(df)
-
-# Read large file into Pandas dataframe within chunking
-import pandas
-chunk_size=1000      # 1000 rows at a time
-for chunk in pd.read_csv(data_stream, chunksize=chunk_size):
-    print(chunk)
-```
-- `write_blob_stream`: write bytes to a file in specified path
-```python
-write_blob_stream("data", "blob_url", "account_name", "container_name", "container_client")
-```
-**Example: Write Polars or Pandas dataframe into Azure blob storage**
-```python
-from cfa_azure.helpers import write_blob_stream
-
-# Write Polars dataframe
-import polars
-df = .... # Read some data into Polars dataframe
-blob_url = "input/AZ_03072025_a.csv"
-write_blob_stream(df.write_csv().encode('utf-8'), blob_url=blob_url, account_name='cfaazurebatchprd', container_name='input-test')
-
-# Write Pandas dataframe
-import pandas
-df = .... # Read some data into Pandas dataframe
-data = df.to_csv(index=False).encode('utf-8')
-blob_url = "input/AZ_03072025_a.csv"
-write_blob_stream(data, blob_url=blob_url, account_name='cfaazurebatchprd', container_name='input-test')
-
-```
-- `format_extensions`: formats file extensions into a standard format for use
-```python
-format_extensions([".txt", "jpg"])
 ```
 - `check_autoscale_parameters`: checks which arguments are incompatible with the provided scaling mode
 ```python
@@ -601,10 +654,6 @@ check_autoscale_parameters("autoscale", dedicated_nodes=5)
 - `get_rel_mnt_path`: retrieves the relative mount path for a specified Blob container in an Azure Batch pool
 ```python
 get_rel_mnt_path("blob_name", "pool_name", "resource_group_name", "account_name", batch_mgmt_client)
-```
-- `get_pool_mounts`: lists all mounted Blob containers for a given Azure Batch pool
-```python
-get_pool_mounts("pool_name", "resource_group_name", "account_name", batch_mgmt_client)
 ```
 - `check_env_req`: checks if all necessary environment variables exist for the Azure client
 ```python
@@ -621,10 +670,6 @@ get_container_registry_client("endpoint", DefaultAzureCredential(), "audience")
 - `check_azure_container_exists`: checks if a container with the specified name, repository, and tag exists in Azure Container Registry
 ```python
 check_azure_container_exists("registry_name", "repo_name", "tag_name", DefaultAzureCredential())
-```
-- `generate_autoscale_formula`: generates a generic autoscale formula for use based on a specified maximum number of nodes
-```python
-generate_autoscale_formula(max_nodes=8)
 ```
 - `format_rel_path`: formats a given relative path by removing the leading slash if present
 ```python
@@ -657,30 +702,6 @@ package_and_upload_dockerfile("registry_name", "repo_name", "tag", use_device_co
 - `upload_docker_image`: uploads a Docker image to a specified Azure Container Registry repo with an optional tag
 ```python
 upload_docker_image("image_name", "registry_name", "repo_name", tag="latest", use_device_code=False)
-```
-- `check_pool_exists`: checks if a specified pool exists in Azure Batch
-```python
-check_pool_exists("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
-```
-- `get_pool_info`: gets the basic information for a specified Azure Batch pool
-```python
-get_pool_info("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
-```
-- `get_pool_full_info`: retrieves the full information of a specified Azure Batch pool
-```python
-get_pool_full_info("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
-```
-- `delete_pool`: deletes the specified pool from Azure Batch
-```python
-delete_pool("resource_group_name", "account_name", "pool_name", batch_mgmt_client)
-```
-- `upload_blob_file`: uploads a specified file to Azure Blob storage
-```python
-upload_blob_file("file_path", location="folder/subfolder", container_client=container_client, verbose=True)
-```
-- download_directory: downloads a directory using prefix matching from Azure Blob storage
-```python
-download_directory("container_name", "src_path", "dest_path", blob_service_client, include_extensions=".txt", verbose=True)
 ```
 
 ## Common Use Case Scenarios

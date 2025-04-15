@@ -3,13 +3,15 @@
 import logging
 import unittest
 from io import StringIO
-from unittest.mock import MagicMock, call, mock_open, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 from callee import Contains
 from docker.errors import DockerException
 
+import cfa_azure.blob_helpers
 import cfa_azure.helpers
-from tests.fake_client import *
+
+from .fake_client import *
 
 
 class TestHelpers(unittest.TestCase):
@@ -78,132 +80,6 @@ class TestHelpers(unittest.TestCase):
         )
 
     @patch("cfa_azure.helpers.logger")
-    @patch(
-        "cfa_azure.helpers.generate_autoscale_formula",
-        MagicMock(return_value=FAKE_AUTOSCALE_FORMULA),
-    )
-    def test_get_autoscale_formula(self, mock_logger):
-        formula = cfa_azure.helpers.get_autoscale_formula()
-        mock_logger.debug.assert_called_with(
-            "Default autoscale formula used. Please provide a path to autoscale formula to sepcify your own formula."
-        )
-        self.assertEqual(formula, FAKE_AUTOSCALE_FORMULA)
-
-    @patch("cfa_azure.helpers.logger")
-    def test_get_autoscale_formula_from_text(self, mock_logger):
-        text_input = "some formula"
-        formula = cfa_azure.helpers.get_autoscale_formula(
-            text_input=text_input
-        )
-        mock_logger.debug.assert_called_with(
-            "Autoscale formula provided via text input."
-        )
-        self.assertEqual(formula, text_input)
-
-    @patch("cfa_azure.helpers.create_container")
-    def test_create_blob_containers(self, mock_create_container):
-        mock_client = FakeClient()
-        expected_calls = [
-            call(FAKE_INPUT_CONTAINER, mock_client),
-            call(FAKE_OUTPUT_CONTAINER, mock_client),
-        ]
-        cfa_azure.helpers.create_blob_containers(
-            mock_client, FAKE_INPUT_CONTAINER, FAKE_OUTPUT_CONTAINER
-        )
-        mock_create_container.assert_has_calls(expected_calls)
-
-    @patch(
-        "cfa_azure.helpers.get_autoscale_formula",
-        MagicMock(return_value=FAKE_AUTOSCALE_FORMULA),
-    )
-    def test_get_batch_pool_json(self):
-        batch_json = cfa_azure.helpers.get_batch_pool_json(
-            FAKE_INPUT_CONTAINER,
-            FAKE_OUTPUT_CONTAINER,
-            FAKE_CONFIG,
-            FAKE_AUTOSCALE_FORMULA,
-        )
-        self.assertEqual(
-            batch_json["user_identity"]["userAssignedIdentities"],
-            {
-                FAKE_CONFIG["Authentication"]["user_assigned_identity"]: {
-                    "clientId": FAKE_CONFIG["Authentication"][
-                        "batch_application_id"
-                    ],
-                    "principalId": FAKE_CONFIG["Authentication"][
-                        "batch_object_id"
-                    ],
-                }
-            },
-        )
-
-    def test_get_batch_pool_json_no_autoscale(self):
-        batch_json = cfa_azure.helpers.get_batch_pool_json(
-            FAKE_INPUT_CONTAINER, FAKE_OUTPUT_CONTAINER, FAKE_CONFIG
-        )
-        self.assertFalse(
-            "autoScale" in batch_json["pool_parameters"]["properties"]
-        )
-
-    @patch(
-        "cfa_azure.helpers.get_autoscale_formula",
-        MagicMock(return_value=FAKE_AUTOSCALE_FORMULA),
-    )
-    def test_get_batch_pool_json_custominterval(self):
-        batch_json = cfa_azure.helpers.get_batch_pool_json(
-            input_container_name=FAKE_INPUT_CONTAINER,
-            output_container_name=FAKE_OUTPUT_CONTAINER,
-            config=FAKE_CONFIG,
-            autoscale_formula_path=FAKE_AUTOSCALE_FORMULA,
-            autoscale_evaluation_interval="PT35M",
-            fixedscale_resize_timeout="PT45M",
-        )
-        self.assertEqual(
-            batch_json["pool_parameters"]["properties"]["scaleSettings"][
-                "autoScale"
-            ]["evaluationInterval"],
-            "PT35M",
-        )
-        self.assertEqual(
-            batch_json["pool_parameters"]["properties"][
-                "resizeOperationStatus"
-            ]["resizeTimeout"],
-            "PT45M",
-        )
-
-    def test_format_extensions(self):
-        extension = "csv"
-        formatted = cfa_azure.helpers.format_extensions(extension)
-        self.assertEqual(formatted, [".csv"])
-
-    def test_check_pool_exists(self):
-        batch_mgmt_client = FakeClient()
-        status = cfa_azure.helpers.check_pool_exists(
-            FAKE_RESOURCE_GROUP,
-            FAKE_ACCOUNT,
-            FAKE_BATCH_POOL,
-            batch_mgmt_client,
-        )
-        self.assertTrue(status)
-
-    @patch("cfa_azure.helpers.logger")
-    @patch("os.getenv", MagicMock(return_value="debug"))
-    @patch(
-        "tests.fake_client.FakeClient.FakePool.get",
-        MagicMock(side_effect=Exception),
-    )
-    def test_check_pool_exists_error(self, mock_logger):
-        batch_mgmt_client = FakeClient()
-        status = cfa_azure.helpers.check_pool_exists(
-            FAKE_RESOURCE_GROUP,
-            FAKE_ACCOUNT,
-            FAKE_BATCH_POOL,
-            batch_mgmt_client,
-        )
-        self.assertFalse(status)
-        mock_logger.debug.assert_called_with("Pool does not exist.")
-
-    @patch("cfa_azure.helpers.logger")
     @patch("os.getenv", MagicMock(return_value="debug"))
     def test_get_log_level_debug(self, mock_logger):
         log_level = cfa_azure.helpers.get_log_level()
@@ -252,183 +128,6 @@ class TestHelpers(unittest.TestCase):
             Contains("Did not recognize log level string")
         )
 
-    @patch(
-        "cfa_azure.helpers.format_extensions",
-        MagicMock(side_effect=(lambda x: [x[0]])),
-    )
-    @patch(
-        "tests.fake_client.FakeClient.FakeContainerClient.exists",
-        MagicMock(return_value=True),
-    )
-    @patch("os.path.isdir", MagicMock(return_value=True))
-    @patch("os.path.realpath", MagicMock(return_value=FAKE_FOLDER))
-    @patch("os.path.dirname", MagicMock(return_value=FAKE_FOLDER))
-    @patch(
-        "cfa_azure.helpers.walk_folder",
-        MagicMock(return_value=FAKE_FOLDER_CONTENTS),
-    )
-    @patch("cfa_azure.helpers.upload_blob_file", MagicMock(return_value=True))
-    def test_upload_files_in_folder(self):
-        blob_service_client = FakeClient()
-        with self.assertRaises(Exception) as exc:
-            cfa_azure.helpers.upload_files_in_folder(
-                FAKE_FOLDER,
-                FAKE_INPUT_CONTAINER,
-                include_extensions=".csv",
-                exclude_extensions=".txt",
-                location_in_blob="",
-                blob_service_client=blob_service_client,
-                verbose=True,
-                force_upload=True,
-            )
-        self.assertEqual(
-            "Use included_extensions or exclude_extensions, not both.",
-            str(exc.exception),
-        )
-
-    @patch(
-        "cfa_azure.helpers.format_extensions",
-        MagicMock(side_effect=(lambda x: [x[0]])),
-    )
-    @patch(
-        "tests.fake_client.FakeClient.FakeContainerClient.exists",
-        MagicMock(return_value=True),
-    )
-    @patch("os.path.isdir", MagicMock(return_value=True))
-    @patch("os.path.realpath", MagicMock(return_value=FAKE_FOLDER))
-    @patch("os.path.dirname", MagicMock(return_value=FAKE_FOLDER))
-    @patch(
-        "cfa_azure.helpers.walk_folder",
-        MagicMock(return_value=FAKE_FOLDER_CONTENTS),
-    )
-    @patch("builtins.input", MagicMock(return_value="y"))
-    @patch("cfa_azure.helpers.upload_blob_file", MagicMock(return_value=True))
-    def test_upload_files_in_folder_exclusions(self):
-        blob_service_client = FakeClient()
-        uploaded_files = cfa_azure.helpers.upload_files_in_folder(
-            FAKE_FOLDER,
-            FAKE_INPUT_CONTAINER,
-            exclude_extensions=".txt",
-            location_in_blob="",
-            blob_service_client=blob_service_client,
-            verbose=True,
-            force_upload=True,
-        )
-        self.assertEqual(uploaded_files, FAKE_FOLDER_CONTENTS)
-
-    @patch(
-        "cfa_azure.helpers.format_extensions",
-        MagicMock(side_effect=(lambda x: [x[0]])),
-    )
-    @patch(
-        "tests.fake_client.FakeClient.FakeContainerClient.exists",
-        MagicMock(return_value=True),
-    )
-    @patch("os.path.isdir", MagicMock(return_value=True))
-    @patch("os.path.realpath", MagicMock(return_value=FAKE_FOLDER))
-    @patch("os.path.dirname", MagicMock(return_value=FAKE_FOLDER))
-    @patch(
-        "cfa_azure.helpers.walk_folder",
-        MagicMock(return_value=FAKE_FOLDER_CONTENTS),
-    )
-    @patch("builtins.input", MagicMock(return_value="y"))
-    @patch("cfa_azure.helpers.upload_blob_file", MagicMock(return_value=True))
-    def test_upload_files_in_folder_exclusions_forced(self):
-        blob_service_client = FakeClient()
-        uploaded_files = cfa_azure.helpers.upload_files_in_folder(
-            FAKE_FOLDER,
-            FAKE_INPUT_CONTAINER,
-            exclude_extensions=".txt",
-            location_in_blob="",
-            blob_service_client=blob_service_client,
-            verbose=True,
-            force_upload=False,
-        )
-        self.assertEqual(uploaded_files, FAKE_FOLDER_CONTENTS)
-
-    @patch(
-        "cfa_azure.helpers.format_extensions",
-        MagicMock(side_effect=(lambda x: [x[0]])),
-    )
-    @patch(
-        "tests.fake_client.FakeClient.FakeContainerClient.exists",
-        MagicMock(return_value=False),
-    )
-    @patch("os.path.isdir", MagicMock(return_value=True))
-    @patch("os.path.realpath", MagicMock(return_value=FAKE_FOLDER))
-    @patch("os.path.dirname", MagicMock(return_value=FAKE_FOLDER))
-    @patch(
-        "cfa_azure.helpers.walk_folder",
-        MagicMock(return_value=FAKE_FOLDER_CONTENTS),
-    )
-    @patch("cfa_azure.helpers.upload_blob_file", MagicMock(return_value=True))
-    def test_upload_files_in_folder_nonexisting(self):
-        blob_service_client = FakeClient()
-        with self.assertRaises(Exception) as exc:
-            cfa_azure.helpers.upload_files_in_folder(
-                "some_folder",
-                container_name=FAKE_OUTPUT_CONTAINER,
-                include_extensions=[".csv"],
-                location_in_blob="",
-                blob_service_client=blob_service_client,
-                verbose=True,
-                force_upload=True,
-            )
-        self.assertEqual(
-            f"Blob container {FAKE_OUTPUT_CONTAINER} does not exist. Please try again with an existing Blob container.",
-            str(exc.exception),
-        )
-
-    # @patch("cfa_azure.helpers.format_extensions", MagicMock(side_effect=(lambda x: [x[0]])))
-    # @patch("tests.fake_client.FakeClient.FakeContainerClient.exists", MagicMock(return_value=True))
-    # @patch("os.path.dirname", MagicMock(return_value=FAKE_FOLDER))
-    # @patch("os.path.isdir", MagicMock(return_value=True))
-    # @patch("os.path.realpath", MagicMock(return_value=FAKE_FOLDER))
-    # @patch("os.walk", MagicMock(return_value=FAKE_FOLDER_CONTENTS_51))
-    # @patch("cfa_azure.helpers.walk_folder", MagicMock(return_value=FAKE_FOLDER_CONTENTS_51))
-    # @patch("cfa_azure.helpers.upload_blob_file", MagicMock(return_value=True))
-    # def test_upload_files_in_folder_exceed50(self):
-    #    blob_service_client = FakeClient()
-    #    file_list = cfa_azure.helpers.upload_files_in_folder(
-    #        "some_folder",
-    #        container_name=FAKE_OUTPUT_CONTAINER,
-    #        exclude_extensions=['.txt'],
-    #        location_in_blob="",
-    #        blob_service_client=blob_service_client,
-    #        verbose=True,
-    #        force_upload=True
-    #    )
-    #    self.assertEqual(file_list, FAKE_FOLDER_CONTENTS_51)
-
-    @patch(
-        "cfa_azure.helpers.format_extensions",
-        MagicMock(side_effect=(lambda x: [x[0]])),
-    )
-    @patch(
-        "tests.fake_client.FakeClient.FakeContainerClient.exists",
-        MagicMock(return_value=True),
-    )
-    @patch("os.path.dirname", MagicMock(return_value=FAKE_FOLDER))
-    @patch("os.path.isdir", MagicMock(return_value=False))
-    @patch("os.path.realpath", MagicMock(return_value=FAKE_FOLDER))
-    @patch("os.walk", MagicMock(return_value=FAKE_FOLDER_CONTENTS))
-    @patch(
-        "cfa_azure.helpers.walk_folder",
-        MagicMock(return_value=FAKE_FOLDER_CONTENTS),
-    )
-    @patch("cfa_azure.helpers.upload_blob_file", MagicMock(return_value=True))
-    def test_upload_files_in_folder_no_inclusions_exclusions(self):
-        blob_service_client = FakeClient()
-        file_list = cfa_azure.helpers.upload_files_in_folder(
-            "some_folder",
-            container_name=FAKE_OUTPUT_CONTAINER,
-            location_in_blob="",
-            blob_service_client=blob_service_client,
-            verbose=True,
-            force_upload=True,
-        )
-        self.assertIsNone(file_list)
-
     def test_get_completed_tasks(self):
         batch_client = FakeClient()
         task_summary = cfa_azure.helpers.get_completed_tasks(
@@ -452,7 +151,7 @@ class TestHelpers(unittest.TestCase):
         self.assertIsNotNone(status)
 
     @patch(
-        "cfa_azure.helpers.get_pool_full_info",
+        "cfa_azure.batch_helpers.get_pool_full_info",
         MagicMock(return_value=FAKE_POOL_INFO),
     )
     @patch("cfa_azure.helpers.get_timeout", MagicMock(return_value=10))
@@ -493,90 +192,17 @@ class TestHelpers(unittest.TestCase):
         self.assertIsNotNone(task_list)
 
     @patch("cfa_azure.helpers.logger")
-    def test_create_batch_pool(self, mock_logger):
-        batch_mgmt_client = FakeClient()
-        batch_json = {
-            "pool_id": FAKE_BATCH_POOL,
-            "resource_group_name": FAKE_RESOURCE_GROUP,
-            "account_name": FAKE_ACCOUNT,
-            "pool_parameters": "some parameters",
-        }
-        pool_id = cfa_azure.helpers.create_batch_pool(
-            batch_mgmt_client, batch_json
-        )
-        mock_logger.info.assert_called_with(
-            f"Pool {pool_id!r} created successfully."
-        )
-        self.assertEqual(pool_id, FAKE_BATCH_POOL)
-
-    @patch("cfa_azure.helpers.logger")
-    @patch(
-        "cfa_azure.helpers.check_virtual_directory_existence",
-        MagicMock(return_value=True),
-    )
-    @patch("cfa_azure.helpers.download_file", MagicMock(return_value=True))
-    def test_download_directory(self, mock_logger):
-        blob_service_client = FakeClient()
-        cfa_azure.helpers.download_directory(
-            container_name=FAKE_INPUT_CONTAINER,
-            src_path="some_path/",
-            dest_path="another_path",
-            blob_service_client=blob_service_client,
-            include_extensions=".csv",
-            verbose=True,
-        )
-        mock_logger.debug.assert_called_with("Download complete.")
-
-    @patch("cfa_azure.helpers.logger")
     @patch("builtins.open", new_callable=mock_open)
     @patch("sys.stdout", new_callable=StringIO)
-    @patch("cfa_azure.helpers.download_file", MagicMock(return_value=True))
+    @patch(
+        "cfa_azure.blob_helpers.download_file", MagicMock(return_value=True)
+    )
     def test_download_job_stats(self, mock_logger, mock_file, mock_stdout):
         batch_service_client = FakeClient()
         cfa_azure.helpers.download_job_stats(
             job_id="my_job_id", batch_service_client=batch_service_client
         )
         mock_file.assert_called_with("my_job_id-stats.csv", "a")
-
-    @patch("cfa_azure.helpers.logger")
-    @patch(
-        "cfa_azure.helpers.check_virtual_directory_existence",
-        MagicMock(return_value=True),
-    )
-    @patch("cfa_azure.helpers.download_file", MagicMock(return_value=True))
-    def test_download_directory_extensions(self, mock_logger):
-        blob_service_client = FakeClient()
-        cfa_azure.helpers.download_directory(
-            container_name=FAKE_INPUT_CONTAINER,
-            src_path="some_path/",
-            dest_path="another_path",
-            blob_service_client=blob_service_client,
-            exclude_extensions=".txt",
-            verbose=True,
-        )
-        mock_logger.debug.assert_called_with("Download complete.")
-
-    @patch("cfa_azure.helpers.logger")
-    @patch("cfa_azure.helpers.download_file", MagicMock(return_value=True))
-    def test_download_directory_extensions_inclusions(self, mock_logger):
-        blob_service_client = FakeClient()
-        with self.assertRaises(Exception) as exc:
-            cfa_azure.helpers.download_directory(
-                container_name=FAKE_INPUT_CONTAINER,
-                src_path="some_path/",
-                dest_path="another_path",
-                blob_service_client=blob_service_client,
-                include_extensions=".csv",
-                exclude_extensions=".txt",
-                verbose=True,
-            )
-        mock_logger.error.assert_called_with(
-            "Use included_extensions or exclude_extensions, not both."
-        )
-        self.assertEqual(
-            "Use included_extensions or exclude_extensions, not both.",
-            str(exc.exception),
-        )
 
     @patch("docker.from_env", MagicMock(return_value=FakeClient()))
     @patch("os.path.exists", MagicMock(return_value=True))
@@ -661,72 +287,6 @@ class TestHelpers(unittest.TestCase):
             )
             self.assertIsNone(response)
 
-    @patch(
-        "cfa_azure.helpers.get_autoscale_formula",
-        MagicMock(return_value=FAKE_AUTOSCALE_FORMULA),
-    )
-    @patch(
-        "cfa_azure.helpers.get_deployment_config",
-        MagicMock(return_value={"virtualMachineConfiguration": {}}),
-    )
-    def test_get_pool_parameters(self):
-        response = cfa_azure.helpers.get_pool_parameters(
-            mode="autoscale",
-            container_image_name=FAKE_CONTAINER_IMAGE,
-            container_registry_url=FAKE_CONTAINER_REGISTRY,
-            container_registry_server=FAKE_CONTAINER_REGISTRY,
-            config=FAKE_CONFIG_MINIMAL,
-            mount_config=[],
-            credential=FAKE_CREDENTIAL,
-            autoscale_formula_path="some_autoscale_formula",
-            timeout=60,
-            dedicated_nodes=1,
-            low_priority_nodes=0,
-            use_default_autoscale_formula=False,
-            max_autoscale_nodes=3,
-        )
-        self.assertIsNotNone(response)
-
-    @patch(
-        "cfa_azure.helpers.get_deployment_config",
-        MagicMock(return_value={"virtualMachineConfiguration": {}}),
-    )
-    def test_get_pool_parameters_use_default(self):
-        response = cfa_azure.helpers.get_pool_parameters(
-            mode="autoscale",
-            container_image_name=FAKE_CONTAINER_IMAGE,
-            container_registry_url=FAKE_CONTAINER_REGISTRY,
-            container_registry_server=FAKE_CONTAINER_REGISTRY,
-            config=FAKE_CONFIG_MINIMAL,
-            mount_config=[],
-            credential=FAKE_CREDENTIAL,
-            autoscale_formula_path="some_autoscale_formula",
-            timeout=60,
-            dedicated_nodes=1,
-            low_priority_nodes=0,
-            use_default_autoscale_formula=True,
-            max_autoscale_nodes=3,
-        )
-        self.assertIsNotNone(response)
-
-    def test_get_pool_parameters_bad_mode(self):
-        response = cfa_azure.helpers.get_pool_parameters(
-            mode="bad_mode",
-            container_image_name=FAKE_CONTAINER_IMAGE,
-            container_registry_url=FAKE_CONTAINER_REGISTRY,
-            container_registry_server=FAKE_CONTAINER_REGISTRY,
-            config=FAKE_CONFIG_MINIMAL,
-            mount_config=[],
-            credential=FAKE_CREDENTIAL,
-            autoscale_formula_path="some_autoscale_formula",
-            timeout=60,
-            dedicated_nodes=1,
-            low_priority_nodes=0,
-            use_default_autoscale_formula=False,
-            max_autoscale_nodes=3,
-        )
-        self.assertEqual(response, {})
-
     @patch("cfa_azure.helpers.logger")
     def test_add_job(self, mock_logger):
         batch_client = FakeClient()
@@ -771,7 +331,7 @@ class TestHelpers(unittest.TestCase):
 
     def test_list_blobs_flat(self):
         blob_service_client = FakeClient()
-        blob_names = cfa_azure.helpers.list_blobs_flat(
+        blob_names = cfa_azure.blob_helpers.list_blobs_flat(
             container_name=FAKE_INPUT_CONTAINER,
             blob_service_client=blob_service_client,
             verbose=True,
@@ -798,37 +358,6 @@ class TestHelpers(unittest.TestCase):
             cfa_azure.helpers.get_sp_secret(
                 config=FAKE_CONFIG, credential=FAKE_CREDENTIAL
             )
-
-    def test_get_blob_config(self):
-        blob_config = cfa_azure.helpers.get_blob_config(
-            container_name=FAKE_INPUT_CONTAINER,
-            rel_mount_path="some_path",
-            cache_blobfuse=True,
-            config=FAKE_CONFIG,
-        )
-        self.assertEqual(
-            blob_config["azureBlobFileSystemConfiguration"]["containerName"],
-            FAKE_INPUT_CONTAINER,
-        )
-        self.assertFalse(
-            blob_config["azureBlobFileSystemConfiguration"]["blobfuseOptions"]
-        )
-
-    def test_get_blob_config_nofuse(self):
-        blob_config = cfa_azure.helpers.get_blob_config(
-            container_name=FAKE_INPUT_CONTAINER,
-            rel_mount_path="some_path",
-            cache_blobfuse=False,
-            config=FAKE_CONFIG,
-        )
-        self.assertEqual(
-            blob_config["azureBlobFileSystemConfiguration"]["containerName"],
-            FAKE_INPUT_CONTAINER,
-        )
-        self.assertEqual(
-            blob_config["azureBlobFileSystemConfiguration"]["blobfuseOptions"],
-            "-o direct_io",
-        )
 
     @patch(
         "cfa_azure.helpers.get_batch_service_client",

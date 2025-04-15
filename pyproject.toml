@@ -4,7 +4,8 @@ version = "1.4.7"
 description = "module for use with Azure and Azure Batch"
 authors = ["Ryan Raasch <xng3@cdc.gov>"]
 readme = "README.md"
-packages = [{include = "cfa_azure"}]
+packages = [ { include = "cfa_azure" } ]
+exclude = [ "tests*", "tests/*.py" ]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -35,3 +36,7 @@ python_files = ["*_tests.py"]
 [tool.poetry.scripts]
 download_blob = "cfa_azure.helpers:download_blob"
 upload_blob = "cfa_azure.helpers:upload_blob"
+
+[tool.setuptools.packages.find]
+include = ["cfa_azure*"]
+exclude = ["docs*", "tests*"]

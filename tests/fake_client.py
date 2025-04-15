@@ -16,6 +16,7 @@ FAKE_CONTAINER_REGISTRY = "Test Container Registry"
 FAKE_REPO_NAME = "fake repo"
 FAKE_CREDENTIAL = "Test Credential"
 FAKE_FOLDER = "/test_folder"
+FAKE_FOLDER_CONTENTS_WALK = []
 FAKE_FOLDER_CONTENTS = [
     f"{FAKE_FOLDER}/test_file.csv",
     f"{FAKE_FOLDER}/test_file.txt",
@@ -218,19 +219,26 @@ class FakeClient:
             ]
 
     class FakeContainerClient:
-        def exists(self):
-            return False
+        @property
+        def container_name(self):
+            return FAKE_INPUT_CONTAINER
 
-        def get_blob_client(self, blob):
+        def exists(self):
+            return True
+
+        def get_blob_client(self, **kwargs):
             return FakeClient.FakeContainerClient()
 
         def create_container(self):
             return True
 
-        def download_blob(self, blob: str):
+        def download_blob(self, **kwargs):
             return "fake_stream"
 
-        def list_blobs(self, name_starts_with=None):
+        def upload_blob(self, **kwargs):
+            return True
+
+        def list_blobs(self, name_starts_with: str):
             return [FakeClient.FakeBlob(f) for f in FAKE_BLOBS]
 
     class FakeSecretClient:
@@ -392,3 +400,13 @@ def dict2obj(dict1):
     # using json.loads method and passing json.dumps
     # method and custom object hook as arguments
     return json.loads(json.dumps(dict1), object_hook=obj)
+
+
+FAKE_ARGUMENTS = dict2obj(
+    {
+        "account": FAKE_ACCOUNT,
+        "blobpath": FAKE_BLOB_CONTENT,
+        "container": FAKE_CONTAINER_IMAGE,
+        "localpath": FAKE_FOLDER,
+    }
+)

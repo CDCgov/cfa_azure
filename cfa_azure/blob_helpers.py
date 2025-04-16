@@ -6,8 +6,6 @@ import os
 from os import path, walk
 from pathlib import Path
 
-from cfa_azure import helpers
-
 from azure.core.paging import ItemPaged
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import (
@@ -16,6 +14,8 @@ from azure.storage.blob import (
     ContainerClient,
     StorageStreamDownloader,
 )
+
+from cfa_azure import helpers
 
 logger = logging.getLogger(__name__)
 

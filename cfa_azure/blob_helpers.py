@@ -6,7 +6,8 @@ import os
 from os import path, walk
 from pathlib import Path
 
-import helpers
+from cfa_azure import helpers
+
 from azure.core.paging import ItemPaged
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import (

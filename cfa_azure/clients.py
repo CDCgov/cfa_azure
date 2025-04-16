@@ -20,7 +20,6 @@ from azure.mgmt.appcontainers import ContainerAppsAPIClient
 
 from cfa_azure import helpers
 from cfa_azure.batch import Task
-from cfa_azure import container_app_helpers as cah
 
 logger = logging.getLogger(__name__)
 

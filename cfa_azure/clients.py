@@ -1817,12 +1817,16 @@ class ContainerAppClient:
         if resource_group is None:
             resource_group = os.getenv("RESOURCE_GROUP")
             if resource_group is None:
-                raise ValueError()
+                raise ValueError(
+                    "No resource_group provided and no RESOURCE_GROUP env var found."
+                )
         self.resource_group = resource_group
         if subscription_id is None:
             subscription_id = os.getenv("SUBSCRIPTION_ID")
             if subscription_id is None:
-                raise ValueError()
+                raise ValueError(
+                    "No subscription_id provided and no SUBSCRIPTION_ID env var found."
+                )
         self.subscription_id = subscription_id
         self.job_name = job_name
         if credential_method == "default":
@@ -1836,6 +1840,7 @@ class ContainerAppClient:
         self.client = ContainerAppsAPIClient(
             credential=self.credential, subscription_id=subscription_id
         )
+        logger.debug("client initialized.")
 
     def get_job_info(self, job_name):
         for i in self.client.jobs.list_by_resource_group(self.resource_group):
@@ -1873,7 +1878,7 @@ class ContainerAppClient:
         if job_name in self.list_jobs():
             return True
         else:
-            print(f"Container App Job {job_name} not found.")
+            logger.info(f"Container App Job {job_name} not found.")
             return False
 
     def start_job(
@@ -1889,6 +1894,7 @@ class ContainerAppClient:
             else:
                 job_name = self.job_name
         if not command and not args and not env:
+            logger.debug("submitting job start request.")
             self.client.jobs.begin_start(
                 resource_group_name=self.resource_group, job_name=job_name
             )
@@ -1920,6 +1926,7 @@ class ContainerAppClient:
                 )
                 new_containers.append(container)
             t = JobExecutionTemplate(containers=new_containers)
+            logger.debug("submitting job start request.")
             self.client.jobs.begin_start(
                 resource_group_name=self.resource_group,
                 job_name=job_name,

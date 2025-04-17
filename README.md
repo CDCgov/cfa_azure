@@ -12,7 +12,7 @@
 ## Created by Ryan Raasch (Peraton) for CFA
 
 # Outline
-- [Warnings](#warnings)
+- [Recent Updates](#recent-updates)
 - [Description](#description)
 - [Getting Started](#getting-started)
 - [Components](#components)
@@ -33,6 +33,7 @@
   - [helpers](#helpers)
     - [Helpers Functions](#helpers-functions)
   - [Common Use Case Scenarios](#common-use-case-scenarios)
+- [Warnings](#warnings)
 - [Public Domain Standard Notice](#public-domain-standard-notice)
 - [License Standard Notice](#license-standard-notice)
 - [Privacy Standard Notice](#privacy-standard-notice)
@@ -40,20 +41,12 @@
 - [Records Management Standard Notice](#records-management-standard-notice)
 - [Additional Standard Notices](#additional-standard-notices)
 
-# Warnings
-## ***Version 1.x.x WARNING***
-The expected configuration.toml has changed several keys to make it easier on users to find the right information in the Azure Management Console. The following keys have changed:
-- `client_id` is now `batch_application_id`
-- `principal_id` is now `batch_object_id`
-- `application_id` is now `sp_application_id`
-
-Refer to the example_config.toml in the examples folder, found [here](examples/example_config.toml) to view the required keys/values needed in the configuration file.
-
-## ***Version 1.3.x WARNING***
-The method `add_task()` no longer accepts parameters `use_uploaded_files` or `input_files`. Any files will need to be accounted for when specifying the docker command to run the task.
+# Recent Updates
+## v1.5.0
+Added integration for running container app jobs via `cfa_azure.clients.ContainerAppClient`.
 
 # Description
-The `cfa_azure` python module is intended to ease the challenge of working with Azure via multiple Azure python modules which require the correct steps and many lines of code to execute. `cfa_azure` simplifies many repeated workflows when interacting with Azure, Blob Storage, Batch, and more. For example, creating a pool in Azure may take different credentials and several clients to complete, but with `cfa_azure`, creating a pool is reduced to a single function with only a few parameters.
+The `cfa_azure` python module is intended to ease the challenge of working with Azure via multiple Azure python modules which require the correct steps and many lines of code to execute. `cfa_azure` simplifies many repeated workflows when interacting with Azure, Blob Storage, Batch, Container App Jobs and more. For example, creating a pool in Azure may take different credentials and several clients to complete, but with `cfa_azure`, creating a pool is reduced to a single function with only a few parameters.
 
 # Getting Started
 In order to use the `cfa_azure` library, you need [Python 3.10 or higher](https://www.python.org/downloads/), [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/), and any python package manager.
@@ -64,7 +57,7 @@ pip install git+https://github.com/CDCgov/cfa_azure.git
 ```
 
 # Components
-The `cfa_azure` module is composed of four submodules: `clients`, `automation`,  `helpers`, and `local`. The module `clients` contains what we call the AzureClient, which combines the multiple Azure Clients needed to interact with Azure and consolidates to a single client. The module `helpers` contains more fine-grained functions which are used within the `clients` module or independently for more control when working with Azure. The `automation` module introduces a simplified way to upload files and submit jobs/tasks to Batch via another configuration toml file. For help getting started with the `automation` module, please see [this overview](docs/automation_README.md).
+The `cfa_azure` module is composed of four submodules: `clients`, `automation`,  `helpers`, and `local`. The module `clients` contains what we call the AzureClient and the ContainerAppClient. The AzureClient combines the multiple Azure Clients needed to interact with Azure and consolidates to a single client. The ContainerAppClient provides a simple way to view and start container app jobs. The module `helpers` contains more fine-grained functions which are used within the `clients` module or independently for more control when working with Azure. The `automation` module introduces a simplified way to upload files and submit jobs/tasks to Batch via another configuration toml file. For help getting started with the `automation` module, please see [this overview](docs/automation_README.md).
 
 The `local` submodule is meant to mimic the `cfa_azure` package but in a local environment, and contains submodules also called `client`, `automation`, and `helpers`. This framework allows for users to easily switch between running code in Azure and locally. For example, someone with a working script importing the `AzureClient` by running `from cfa_azure.clients import AzureClient` could switch to running it locally by importing it through the `local` submodule like `from cfa_azure.local.clients import AzureClient`. The same holds for `local.automation` and `local.helpers`.
 
@@ -75,6 +68,7 @@ The `local` submodule is meant to mimic the `cfa_azure` package but in a local e
 |cfa_azure
     | clients
         | AzureClient
+        | ContainerAppClient
     | automation
     | helpers
     | local
@@ -87,6 +81,7 @@ The `local` submodule is meant to mimic the `cfa_azure` package but in a local e
 ## clients
 Classes:
 - AzureClient: a client object used for interacting with Azure. It initializes based on a supplied configuration file and creates various Azure clients under the hood. It can be used to upload containers, upload files, run jobs, and more.
+- ContainerAppClient: a client object used for viewing and starting container app jobs. Documentation available [here](/docs/ContainerAppClient_README.md)
 
 ### Logging
 To customize the logging capabilities of cfa_azure, two environment variables can be set. These are LOG_LEVEL and LOG_OUTPUT.
@@ -711,6 +706,18 @@ add_task_to_job("job-id", "task-id", "docker command", batch_client)
 # Step 6: Monitor the tasks
 monitor_tasks("job-id", batch_client)
 ```
+
+# Warnings
+## ***Version 1.x.x WARNING***
+The expected configuration.toml has changed several keys to make it easier on users to find the right information in the Azure Management Console. The following keys have changed:
+- `client_id` is now `batch_application_id`
+- `principal_id` is now `batch_object_id`
+- `application_id` is now `sp_application_id`
+
+Refer to the example_config.toml in the examples folder, found [here](examples/example_config.toml) to view the required keys/values needed in the configuration file.
+
+## ***Version 1.3.x WARNING***
+The method `add_task()` no longer accepts parameters `use_uploaded_files` or `input_files`. Any files will need to be accounted for when specifying the docker command to run the task.
 
 ## Public Domain Standard Notice
 This repository constitutes a work of the United States Government and is not

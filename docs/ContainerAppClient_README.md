@@ -1,7 +1,7 @@
 # Using the ContainerAppClient
 
 ## Overview
-The `ContainerAppClient` found in the `cfa_azure.clients` module is designed to work with Azure Container App Jobs. At this point, this client is not able to create new container app jobs. It can be used to view job information and start existing container app jobs. 
+The `ContainerAppClient` found in the `cfa_azure.clients` module is designed to work with Azure Container App Jobs. At this point, this client is not able to create new container app jobs. It can be used to view job information and start existing container app jobs.
 
 ## Instantiating the Client
 The `ContainerAppClient` takes in four parameters, with the two of these being required.

@@ -191,9 +191,13 @@ def add_job(
         if mark_complete
         else OnAllTasksComplete.no_action
     )
+    if timeout is None:
+        _to = None
+    else:
+        _to = datetime.timedelta(minutes=timeout)
     job_constraints = JobConstraints(
         max_task_retry_count=task_retries,
-        max_wall_clock_time=datetime.timedelta(minutes=timeout),
+        max_wall_clock_time=_to,
     )
 
     job = batchmodels.JobAddParameter(
@@ -370,9 +374,11 @@ def add_task_to_job(
         full_cmd = d_cmd_str
 
     # add contstraints
-    task_constraints = TaskConstraints(
-        max_wall_clock_time=datetime.timedelta(minutes=timeout)
-    )
+    if timeout is None:
+        _to = None
+    else:
+        _to = datetime.timedelta(minutes=timeout)
+    task_constraints = TaskConstraints(max_wall_clock_time=_to)
     command_line = full_cmd
     logger.debug(f"Adding task {task_id}")
     task = batchmodels.TaskAddParameter(

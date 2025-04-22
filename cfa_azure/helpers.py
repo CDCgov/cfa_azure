@@ -440,70 +440,86 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     logger.info(f"Total tasks to monitor: {total_tasks}")
 
     # pool setup and status
-
+    # initialize job complete status
     completed = False
-    while datetime.datetime.now() < timeout_expiration:
-        time.sleep(5)  # Polling interval
-        tasks = list(batch_client.task.list(job_id))
-        incomplete_tasks = [
-            task
-            for task in tasks
-            if task.state != batchmodels.TaskState.completed
-        ]
-        incompletions = len(incomplete_tasks)
-        completed_tasks = [
-            task
-            for task in tasks
-            if task.state == batchmodels.TaskState.completed
-        ]
-        completions = len(completed_tasks)
+    job = batch_client.job.get(job_id)
+    while job.as_dict()["state"] != "completed" or not completed:
+        if datetime.datetime.now() < timeout_expiration:
+            time.sleep(5)  # Polling interval
+            tasks = list(batch_client.task.list(job_id))
+            incomplete_tasks = [
+                task
+                for task in tasks
+                if task.state != batchmodels.TaskState.completed
+            ]
+            incompletions = len(incomplete_tasks)
+            completed_tasks = [
+                task
+                for task in tasks
+                if task.state == batchmodels.TaskState.completed
+            ]
+            completions = len(completed_tasks)
 
-        # initialize the counts
-        failures = 0
-        successes = 0
+            # initialize the counts
+            failures = 0
+            successes = 0
 
-        for task in completed_tasks:
-            if task.as_dict()["execution_info"]["result"] == "failure":
-                failures += 1
-            elif task.as_dict()["execution_info"]["result"] == "success":
-                successes += 1
+            for task in completed_tasks:
+                if task.as_dict()["execution_info"]["result"] == "failure":
+                    failures += 1
+                elif task.as_dict()["execution_info"]["result"] == "success":
+                    successes += 1
 
-        print(
-            completions,
-            "completed;",
-            incompletions,
-            "remaining;",
-            successes,
-            "successes;",
-            failures,
-            "failures",
-            end="\r",
-        )
-        logger.debug(
-            f"{completions} completed; {incompletions} remaining; {successes} successes; {failures} failures"
-        )
+            print(
+                completions,
+                "completed;",
+                incompletions,
+                "remaining;",
+                successes,
+                "successes;",
+                failures,
+                "failures",
+                end="\r",
+            )
+            logger.debug(
+                f"{completions} completed; {incompletions} remaining; {successes} successes; {failures} failures"
+            )
 
-        if not incomplete_tasks:
-            logger.info("\nAll tasks completed.")
-            completed = True
-            break
+            if not incomplete_tasks:
+                logger.info("\nAll tasks completed.")
+                completed = True
+                break
 
-    if completed:
-        logger.info(
-            "All tasks have reached 'Completed' state within the timeout period."
-        )
-        logger.info(f"{successes} task(s) succeeded, {failures} failed.")
-    else:
-        raise RuntimeError(
-            f"ERROR: Tasks did not reach 'Completed' state within timeout period of {timeout} minutes."
-        )
+            if completed:
+                logger.info(
+                    "All tasks have reached 'Completed' state within the timeout period."
+                )
+                logger.info(
+                    f"{successes} task(s) succeeded, {failures} failed."
+                )
+            else:
+                raise RuntimeError(
+                    f"ERROR: Tasks did not reach 'Completed' state within timeout period of {timeout} minutes."
+                )
+        job = batch_client.job.get(job_id)
 
     end_time = datetime.datetime.now().replace(microsecond=0)
+
+    # get terminate reason
+    if "terminate_reason" in job.as_dict()["execution_info"].keys():
+        terminate_reason = job.as_dict()["execution_info"]["terminate_reason"]
+    else:
+        terminate_reason = None
+
     runtime = end_time - start_time
     logger.info(
         f"Monitoring ended: {end_time}. Total elapsed time: {runtime}."
     )
-    return {"completed": completed, "elapsed time": runtime}
+    return {
+        "completed": completed,
+        "elapsed time": runtime,
+        "terminate_reason": terminate_reason,
+    }
 
 
 def df_to_yaml(df: pd.DataFrame):

@@ -489,22 +489,15 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
                 logger.info("\nAll tasks completed.")
                 completed = True
                 break
-
-            if completed:
-                logger.info(
-                    "All tasks have reached 'Completed' state within the timeout period."
-                )
-                logger.info(
-                    f"{successes} task(s) succeeded, {failures} failed."
-                )
-            else:
-                raise RuntimeError(
-                    f"ERROR: Tasks did not reach 'Completed' state within timeout period of {timeout} minutes."
-                )
         job = batch_client.job.get(job_id)
 
     end_time = datetime.datetime.now().replace(microsecond=0)
 
+    if completed:
+        logger.info(
+            "All tasks have reached 'Completed' state within the timeout period."
+        )
+        logger.info(f"{successes} task(s) succeeded, {failures} failed.")
     # get terminate reason
     if "terminate_reason" in job.as_dict()["execution_info"].keys():
         terminate_reason = job.as_dict()["execution_info"]["terminate_reason"]

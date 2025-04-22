@@ -6,8 +6,8 @@ from unittest.mock import MagicMock, patch
 from azure.core.exceptions import HttpResponseError
 
 import cfa_azure.clients
-import cfa_azure.helpers
-from tests.fake_client import *
+
+from .fake_client import *
 
 
 class TestClients(unittest.TestCase):
@@ -27,11 +27,11 @@ class TestClients(unittest.TestCase):
     @patch("cfa_azure.helpers.check_config_req", MagicMock(return_value=True))
     @patch("cfa_azure.helpers.get_sp_secret", MagicMock(return_value=True))
     @patch(
-        "cfa_azure.helpers.get_blob_service_client",
+        "cfa_azure.blob_helpers.get_blob_service_client",
         MagicMock(return_value=True),
     )
     @patch(
-        "cfa_azure.helpers.get_batch_mgmt_client",
+        "cfa_azure.batch_helpers.get_batch_mgmt_client",
         MagicMock(return_value=FakeClient()),
     )
     @patch(
@@ -50,7 +50,7 @@ class TestClients(unittest.TestCase):
 
     @patch("cfa_azure.clients.logger")
     @patch(
-        "cfa_azure.helpers.get_deployment_config",
+        "cfa_azure.batch_helpers.get_deployment_config",
         MagicMock(return_value={"virtualMachineConfiguration": {}}),
     )
     def test_set_pool_info(self, mock_logger):
@@ -85,7 +85,7 @@ class TestClients(unittest.TestCase):
         MagicMock(return_value=FAKE_CONTAINER_IMAGE),
     )
     @patch(
-        "cfa_azure.helpers.get_pool_full_info",
+        "cfa_azure.batch_helpers.get_pool_full_info",
         MagicMock(return_value=FakeClient.FakePool.FakePoolInfo()),
     )
     def test_add_task_nocontainer(self):
@@ -102,7 +102,7 @@ class TestClients(unittest.TestCase):
         MagicMock(return_value=FAKE_CONTAINER_IMAGE),
     )
     @patch(
-        "cfa_azure.helpers.get_pool_full_info",
+        "cfa_azure.batch_helpers.get_pool_full_info",
         MagicMock(return_value=FakeClient.FakePool.FakePoolInfo()),
     )
     def test_add_task_inputfiles(self):
@@ -118,7 +118,7 @@ class TestClients(unittest.TestCase):
         MagicMock(return_value=FAKE_CONTAINER_IMAGE),
     )
     @patch(
-        "cfa_azure.helpers.get_pool_full_info",
+        "cfa_azure.batch_helpers.get_pool_full_info",
         MagicMock(return_value=FakeClient.FakePool.FakePoolInfo()),
     )
     def test_add_task_dependencies(self):
@@ -167,7 +167,7 @@ class TestClients(unittest.TestCase):
         mock_logger.debug.assert_called_with("Debugging turned off.")
 
     @patch(
-        "cfa_azure.helpers.get_deployment_config",
+        "cfa_azure.batch_helpers.get_deployment_config",
         MagicMock(return_value={"virtualMachineConfiguration": {}}),
     )
     def test_create_pool(self):
@@ -206,14 +206,16 @@ class TestClients(unittest.TestCase):
             self.azure_client.create_pool(FAKE_BATCH_POOL)
 
     @patch(
-        "cfa_azure.helpers.list_blobs_flat", MagicMock(return_value=FAKE_BLOBS)
+        "cfa_azure.blob_helpers.list_blobs_flat",
+        MagicMock(return_value=FAKE_BLOBS),
     )
     def test_list_blob_files(self):
         filenames = self.azure_client.list_blob_files(FAKE_INPUT_CONTAINER)
         self.assertIsNotNone(filenames)
 
     @patch(
-        "cfa_azure.helpers.list_blobs_flat", MagicMock(return_value=FAKE_BLOBS)
+        "cfa_azure.blob_helpers.list_blobs_flat",
+        MagicMock(return_value=FAKE_BLOBS),
     )
     def test_list_blob_files_nocontainer(self):
         self.azure_client.mounts = ["some_mounts"]
@@ -221,9 +223,12 @@ class TestClients(unittest.TestCase):
         self.assertIsNotNone(filenames)
 
     @patch("cfa_azure.clients.logger")
-    @patch("cfa_azure.helpers.check_pool_exists", MagicMock(return_value=True))
     @patch(
-        "cfa_azure.helpers.get_pool_info",
+        "cfa_azure.batch_helpers.check_pool_exists",
+        MagicMock(return_value=True),
+    )
+    @patch(
+        "cfa_azure.batch_helpers.get_pool_info",
         MagicMock(return_value=json.dumps(FAKE_POOL_INFO)),
     )
     def test_set_pool(self, mock_logger):
@@ -235,7 +240,8 @@ class TestClients(unittest.TestCase):
 
     @patch("cfa_azure.clients.logger")
     @patch(
-        "cfa_azure.helpers.check_pool_exists", MagicMock(return_value=False)
+        "cfa_azure.batch_helpers.check_pool_exists",
+        MagicMock(return_value=False),
     )
     def test_set_pool_nopool(self, mock_logger):
         self.azure_client.set_pool(FAKE_BATCH_POOL)
@@ -321,11 +327,11 @@ class TestClients(unittest.TestCase):
         )
 
     @patch(
-        "cfa_azure.helpers.get_autoscale_formula",
+        "cfa_azure.batch_helpers.get_autoscale_formula",
         MagicMock(return_value=FAKE_AUTOSCALE_FORMULA),
     )
     @patch(
-        "cfa_azure.helpers.update_pool",
+        "cfa_azure.batch_helpers.update_pool",
         MagicMock(
             return_value={
                 "pool_id": FAKE_BATCH_POOL,
@@ -343,11 +349,11 @@ class TestClients(unittest.TestCase):
         self.assertEqual(pool_info["pool_id"], FAKE_BATCH_POOL)
 
     @patch(
-        "cfa_azure.helpers.get_autoscale_formula",
+        "cfa_azure.batch_helpers.get_autoscale_formula",
         MagicMock(return_value=FAKE_AUTOSCALE_FORMULA),
     )
     @patch(
-        "cfa_azure.helpers.update_pool",
+        "cfa_azure.batch_helpers.update_pool",
         MagicMock(
             return_value={
                 "pool_id": FAKE_BATCH_POOL,
@@ -369,7 +375,7 @@ class TestClients(unittest.TestCase):
         )
 
     @patch(
-        "cfa_azure.helpers.update_pool",
+        "cfa_azure.batch_helpers.update_pool",
         MagicMock(
             return_value={
                 "pool_id": FAKE_BATCH_POOL,
@@ -387,7 +393,7 @@ class TestClients(unittest.TestCase):
         self.assertEqual(pool_info["pool_id"], FAKE_BATCH_POOL)
 
     @patch(
-        "cfa_azure.helpers.update_pool",
+        "cfa_azure.batch_helpers.update_pool",
         MagicMock(
             return_value={
                 "pool_id": FAKE_BATCH_POOL,
@@ -409,7 +415,7 @@ class TestClients(unittest.TestCase):
         )
 
     @patch(
-        "cfa_azure.helpers.update_pool",
+        "cfa_azure.batch_helpers.update_pool",
         MagicMock(
             return_value={
                 "pool_id": FAKE_BATCH_POOL,
@@ -475,16 +481,20 @@ class TestClients(unittest.TestCase):
         mock_logger.info.assert_called_with(f"Job {job_id} does not exist.")
 
     @patch("cfa_azure.clients.logger")
-    @patch("cfa_azure.helpers.check_pool_exists", MagicMock(return_value=True))
+    @patch(
+        "cfa_azure.batch_helpers.check_pool_exists",
+        MagicMock(return_value=True),
+    )
     @patch(
         "cfa_azure.helpers.get_batch_service_client",
         MagicMock(return_value=FakeClient()),
     )
     @patch(
-        "cfa_azure.helpers.delete_pool", MagicMock(return_value=FakeClient())
+        "cfa_azure.batch_helpers.delete_pool",
+        MagicMock(return_value=FakeClient()),
     )
     @patch(
-        "cfa_azure.helpers.create_batch_pool",
+        "cfa_azure.batch_helpers.create_batch_pool",
         MagicMock(return_value=FAKE_BATCH_POOL),
     )
     def test_update_container_set(self, mock_logger):
@@ -500,35 +510,6 @@ class TestClients(unittest.TestCase):
             f"There are 2 compute nodes actively running tasks in pool {FAKE_BATCH_POOL}. Please wait for jobs to complete or retry withy force_update=True."
         )
         self.assertIsNone(pool_name)
-
-    @patch("cfa_azure.helpers.check_pool_exists", MagicMock(return_value=True))
-    @patch(
-        "cfa_azure.helpers.get_batch_service_client",
-        MagicMock(return_value=FakeClient()),
-    )
-    @patch(
-        "cfa_azure.helpers.delete_pool", MagicMock(return_value=FakeClient())
-    )
-    @patch(
-        "cfa_azure.helpers.format_rel_path",
-        MagicMock(return_value="/some_path"),
-    )
-    @patch(
-        "cfa_azure.helpers.create_batch_pool",
-        MagicMock(return_value=FAKE_BATCH_POOL),
-    )
-    @patch("cfa_azure.helpers.get_sp_secret", MagicMock(return_value=True))
-    def test_update_container_set_forced(self):
-        self.azure_client.blob_service_client = FakeClient()
-        containers = [
-            {"name": FAKE_INPUT_CONTAINER, "relative_mount_dir": "/input"},
-            {"name": FAKE_OUTPUT_CONTAINER, "relative_mount_dir": "/output"},
-            {"name": "Fake Logging Container", "relative_mount_dir": "/logs"},
-        ]
-        pool_name = self.azure_client.update_container_set(
-            pool_name=FAKE_BATCH_POOL, containers=containers, force_update=True
-        )
-        self.assertEqual(pool_name, FAKE_BATCH_POOL)
 
     @patch("cfa_azure.clients.logger")
     @patch(
@@ -546,17 +527,19 @@ class TestClients(unittest.TestCase):
         )
 
     @patch(
-        "cfa_azure.helpers.check_pool_exists", MagicMock(return_value=False)
+        "cfa_azure.batch_helpers.check_pool_exists",
+        MagicMock(return_value=False),
     )
     @patch(
         "cfa_azure.helpers.get_batch_service_client",
         MagicMock(return_value=FakeClient()),
     )
     @patch(
-        "cfa_azure.helpers.delete_pool", MagicMock(return_value=FakeClient())
+        "cfa_azure.batch_helpers.delete_pool",
+        MagicMock(return_value=FakeClient()),
     )
     @patch(
-        "cfa_azure.helpers.create_batch_pool",
+        "cfa_azure.batch_helpers.create_batch_pool",
         MagicMock(return_value=FAKE_BATCH_POOL),
     )
     def test_update_containers_new_pool(self):
@@ -573,16 +556,20 @@ class TestClients(unittest.TestCase):
         self.assertEqual(pool_name, FAKE_BATCH_POOL)
 
     @patch("cfa_azure.clients.logger")
-    @patch("cfa_azure.helpers.check_pool_exists", MagicMock(return_value=True))
+    @patch(
+        "cfa_azure.batch_helpers.check_pool_exists",
+        MagicMock(return_value=True),
+    )
     @patch(
         "cfa_azure.helpers.get_batch_service_client",
         MagicMock(return_value=FakeClient()),
     )
     @patch(
-        "cfa_azure.helpers.delete_pool", MagicMock(return_value=FakeClient())
+        "cfa_azure.batch_helpers.delete_pool",
+        MagicMock(return_value=FakeClient()),
     )
     @patch(
-        "cfa_azure.helpers.create_batch_pool",
+        "cfa_azure.batch_helpers.create_batch_pool",
         MagicMock(return_value=FAKE_BATCH_POOL),
     )
     def test_update_containers(self, mock_logger):
@@ -596,40 +583,20 @@ class TestClients(unittest.TestCase):
         )
         self.assertIsNone(pool_name)
 
-    @patch("cfa_azure.helpers.check_pool_exists", MagicMock(return_value=True))
     @patch(
-        "cfa_azure.helpers.get_batch_service_client",
-        MagicMock(return_value=FakeClient()),
-    )
-    @patch(
-        "cfa_azure.helpers.delete_pool", MagicMock(return_value=FakeClient())
-    )
-    @patch(
-        "cfa_azure.helpers.create_batch_pool",
-        MagicMock(return_value=FAKE_BATCH_POOL),
-    )
-    @patch("cfa_azure.helpers.get_sp_secret", MagicMock(return_value=True))
-    def test_update_containers_forced(self):
-        pool_name = self.azure_client.update_containers(
-            pool_name=FAKE_BATCH_POOL,
-            input_container_name=FAKE_INPUT_CONTAINER,
-            output_container_name=FAKE_OUTPUT_CONTAINER,
-            force_update=True,
-        )
-        self.assertEqual(pool_name, FAKE_BATCH_POOL)
-
-    @patch(
-        "cfa_azure.helpers.check_pool_exists", MagicMock(return_value=False)
+        "cfa_azure.batch_helpers.check_pool_exists",
+        MagicMock(return_value=False),
     )
     @patch(
         "cfa_azure.helpers.get_batch_service_client",
         MagicMock(return_value=FakeClient()),
     )
     @patch(
-        "cfa_azure.helpers.delete_pool", MagicMock(return_value=FakeClient())
+        "cfa_azure.batch_helpers.delete_pool",
+        MagicMock(return_value=FakeClient()),
     )
     @patch(
-        "cfa_azure.helpers.create_batch_pool",
+        "cfa_azure.batch_helpers.create_batch_pool",
         MagicMock(return_value=FAKE_BATCH_POOL),
     )
     def test_update_containers_new_pool(self):
@@ -668,7 +635,7 @@ class TestClients(unittest.TestCase):
         self.assertIsNone(container_name)
 
     @patch(
-        "cfa_azure.helpers.get_deployment_config",
+        "cfa_azure.batch_helpers.get_deployment_config",
         MagicMock(return_value={"virtualMachineConfiguration": {}}),
     )
     @patch(
@@ -686,7 +653,7 @@ class TestClients(unittest.TestCase):
 
     @patch("cfa_azure.clients.logger")
     @patch(
-        "cfa_azure.helpers.get_deployment_config",
+        "cfa_azure.batch_helpers.get_deployment_config",
         MagicMock(return_value={"virtualMachineConfiguration": {}}),
     )
     @patch(
@@ -726,7 +693,9 @@ class TestClients(unittest.TestCase):
         "tests.fake_client.FakeClient.FakeContainerClient.exists",
         MagicMock(return_value=True),
     )
-    @patch("cfa_azure.helpers.upload_blob_file", MagicMock(return_value=True))
+    @patch(
+        "cfa_azure.blob_helpers.upload_blob_file", MagicMock(return_value=True)
+    )
     def test_upload_files(self, mock_logger):
         self.azure_client.blob_service_client = FakeClient()
         self.azure_client.upload_files(

@@ -24,6 +24,7 @@ from azure.batch.models import (
     MetadataItem,
     OnAllTasksComplete,
     OnTaskFailure,
+    TaskConstraints,
 )
 from azure.containerregistry import ContainerRegistryClient
 from azure.keyvault.secrets import SecretClient
@@ -171,6 +172,7 @@ def add_job(
     batch_client: object,
     task_retries: int = 0,
     mark_complete: bool = False,
+    timeout: int | None = None,
 ):
     """takes in a job ID and config to create a job in the pool
 
@@ -180,6 +182,7 @@ def add_job(
         batch_client (object): BatchClient object
         task_retries (int): number of times to retry the task if it fails. Default 3.
         mark_complete (bool): whether to mark the job complete after tasks finish running. Default False.
+        timeout (int): timeout for job total runtime before forcing termination.
     """
     logger.debug(f"Attempting to create job '{job_id}'...")
     logger.debug("Adding job parameters to job.")
@@ -188,7 +191,10 @@ def add_job(
         if mark_complete
         else OnAllTasksComplete.no_action
     )
-    job_constraints = JobConstraints(max_task_retry_count=task_retries)
+    job_constraints = JobConstraints(
+        max_task_retry_count=task_retries, max_wall_clock_time=timeout
+    )
+
     job = batchmodels.JobAddParameter(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
@@ -228,6 +234,7 @@ def add_task_to_job(
     full_container_name: str | None = None,
     task_id_max: int = 0,
     task_id_ints: bool = False,
+    timeout: int | None = None,
 ) -> str:
     """add a defined task(s) to a job in the pool
 
@@ -246,6 +253,7 @@ def add_task_to_job(
         full_container_name (str): name ACR container to run task on
         task_id_max (int): current max task id in use by Batch
         task_id_ints (bool): whether to use incremental integers for task IDs. Optional.
+        timeout (int): timeout in minutes before forcing task termination. Default None (infinity).
     Returns:
         str: task ID created
     """
@@ -360,6 +368,8 @@ def add_task_to_job(
     else:
         full_cmd = d_cmd_str
 
+    # add contstraints
+    task_constraints = TaskConstraints(max_wall_clock_time=timeout)
     command_line = full_cmd
     logger.debug(f"Adding task {task_id}")
     task = batchmodels.TaskAddParameter(
@@ -373,6 +383,7 @@ def add_task_to_job(
         user_identity=user_identity,
         depends_on=task_deps,
         exit_conditions=exit_conditions,
+        constraints=task_constraints,
     )
     batch_client.task.add(job_id=job_id, task=task)
     logger.debug(f"Task '{task_id}' added to job '{job_id}'.")

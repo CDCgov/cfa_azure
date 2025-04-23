@@ -113,7 +113,10 @@ class FakeClient:
     class FakeBatchJob:
         class FakeJobExec:
             def as_dict(self):
-                return {"state": "completed"}
+                return {
+                    "state": "completed",
+                    "execution_info": {"terminate_reason": None},
+                }
 
         def delete(self, *args):
             return True

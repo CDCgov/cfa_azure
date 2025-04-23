@@ -111,6 +111,10 @@ FAKE_POOL_INFO = {
 
 class FakeClient:
     class FakeBatchJob:
+        class FakeJobExec:
+            def as_dict(self):
+                return {"state": "completed"}
+
         def delete(self, *args):
             return True
 
@@ -118,11 +122,10 @@ class FakeClient:
             return True
 
         def get(self, job):
-            return {"state": "completed"}
+            return FakeClient.FakeBatchJob.FakeJobExec()
 
         def list(self):
             return []
-
 
     class FakeTag:
         def __init__(self, tag):

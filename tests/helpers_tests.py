@@ -162,7 +162,7 @@ class TestHelpers(unittest.TestCase):
             10,
             batch_client,
         )
-        self.assertisNotNone(status["completed"])
+        self.assertIsNotNone(status["completed"])
         self.assertIsNotNone(status["elapsed time"])
 
     def test_add_task_to_job(self):

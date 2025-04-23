@@ -515,7 +515,7 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
         "tasks complete": completions,
         "tasks remaining": incompletions,
         "success": successes,
-        "fail": failures
+        "fail": failures,
     }
 
 

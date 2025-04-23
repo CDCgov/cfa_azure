@@ -444,8 +444,6 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     completed = False
     job = batch_client.job.get(job_id)
     while job.as_dict()["state"] != "completed" and not completed:
-        print(job.as_dict()["state"])
-        print(completed)
         if datetime.datetime.now() < timeout_expiration:
             time.sleep(5)  # Polling interval
             tasks = list(batch_client.task.list(job_id))
@@ -516,6 +514,8 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
         "terminate_reason": terminate_reason,
         "tasks complete": completions,
         "tasks remaining": incompletions,
+        "success": successes,
+        "fail": failures
     }
 
 

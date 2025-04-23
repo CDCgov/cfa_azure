@@ -444,6 +444,7 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     # pool setup and status
     # initialize job complete status
     completed = False
+    completions, incompletions, successes, failures = 0, 0, 0, 0
     job = batch_client.job.get(job_id)
     while job.as_dict()["state"] != "completed" and not completed:
         if datetime.datetime.now() < timeout_expiration:

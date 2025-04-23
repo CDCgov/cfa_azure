@@ -118,10 +118,11 @@ class FakeClient:
             return True
 
         def get(self, job):
-            return True
+            return {"state": "completed"}
 
         def list(self):
             return []
+
 
     class FakeTag:
         def __init__(self, tag):

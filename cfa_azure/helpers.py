@@ -443,7 +443,7 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     # initialize job complete status
     completed = False
     job = batch_client.job.get(job_id)
-    while job.as_dict()["state"] != "completed" or not completed:
+    while job.as_dict()["state"] != "completed" and not completed:
         print(job.as_dict()['state'])
         print(completed)
         if datetime.datetime.now() < timeout_expiration:

@@ -150,8 +150,10 @@ def get_batch_service_client(config: dict, credential: object):
     return batch_client
 
 
-def list_nodes_by_pool(pool_name: str, config: dict, node_state: str = None):
-    batch_client = get_batch_service_client(config)
+def list_nodes_by_pool(
+    pool_name: str, config: dict, credential: object, node_state: str = None
+):
+    batch_client = get_batch_service_client(config, credential)
     if node_state:
         filter_option = f"state eq '{node_state}'"
         nodes = batch_client.compute_node.list(

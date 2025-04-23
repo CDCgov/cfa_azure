@@ -365,7 +365,10 @@ class TestHelpers(unittest.TestCase):
     )
     def test_list_nodes_by_pool(self):
         compute_nodes = cfa_azure.helpers.list_nodes_by_pool(
-            pool_name=FAKE_BATCH_POOL, config=FAKE_CONFIG, node_state="running"
+            pool_name=FAKE_BATCH_POOL,
+            config=FAKE_CONFIG,
+            credential=FAKE_CREDENTIAL,
+            node_state="running",
         )
         self.assertEqual(len(compute_nodes), 2)
 
@@ -375,7 +378,9 @@ class TestHelpers(unittest.TestCase):
     )
     def test_list_all_nodes_by_pool(self):
         compute_nodes = cfa_azure.helpers.list_nodes_by_pool(
-            pool_name=FAKE_BATCH_POOL, config=FAKE_CONFIG
+            pool_name=FAKE_BATCH_POOL,
+            config=FAKE_CONFIG,
+            credential=FAKE_CREDENTIAL,
         )
         self.assertEqual(len(compute_nodes), 4)
 

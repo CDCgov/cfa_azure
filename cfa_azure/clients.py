@@ -678,6 +678,7 @@ class AzureClient:
                     helpers.list_nodes_by_pool(
                         pool_name=pool_name,
                         config=self.config,
+                        credential=self.batch_cred,
                         node_state="running",
                     )
                 )
@@ -797,6 +798,7 @@ class AzureClient:
                     helpers.list_nodes_by_pool(
                         pool_name=pool_name,
                         config=self.config,
+                        credential=self.batch_cred,
                         node_state="running",
                     )
                 )

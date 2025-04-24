@@ -1114,7 +1114,6 @@ class AzureClient:
         task_retries: int = 0,
         mark_complete_after_tasks_run: bool = False,
         task_id_ints: bool = False,
-        timeout: int | None = None,
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
@@ -1126,14 +1125,10 @@ class AzureClient:
             task_retries (int): number of times to retry a task that fails. Default 0.
             mark_complete_after_tasks_run (bool): whether to mark the job as completed when all tasks finish running. Default False.
             task_id_ints (bool): whether to use incremental integer values for task id values rather than a string. Default False.
-            timeout (int): timeout in minutes for total job run time before forcing termination. Default None (infinity).
         """
         # make sure the job_id does not have spaces
         job_id_r = job_id.replace(" ", "")
         logger.debug(f"job_id: {job_id_r}")
-
-        # capture job timeout
-        self.job_timeout = timeout
 
         if pool_name:
             p_name = pool_name
@@ -1169,7 +1164,6 @@ class AzureClient:
             batch_client=self.batch_client,
             task_retries=task_retries,
             mark_complete=mark_complete_after_tasks_run,
-            timeout=self.job_timeout,
         )
         self.jobs.add(job_id_r)
 
@@ -1182,7 +1176,6 @@ class AzureClient:
         depends_on_range: tuple | None = None,
         run_dependent_tasks_on_fail: bool = False,
         container: str = None,
-        timeout: int | None = None,
     ) -> str:
         """adds task to existing job.
 
@@ -1194,7 +1187,6 @@ class AzureClient:
             depends_on_range (tuple): range of dependent tasks when task IDs are integers, given as (start_int, end_int). Optional.
             run_dependent_tasks_on_fail (bool): whether to run the dependent tasks if parent task fails. Default is False.
             container (str): name of ACR container in form "registry_name/repo_name:tag_name". Default is None to use container attached to client.
-            timeout (int): timeout in minutes for task before forcing termination. Default None (infinity).
 
         Returns:
             str: task ID created
@@ -1274,7 +1266,6 @@ class AzureClient:
             full_container_name=container_name,
             task_id_max=self.task_id_max,
             task_id_ints=self.task_id_ints,
-            timeout=timeout,
         )
         self.task_id_max += 1
         return task_id

@@ -47,7 +47,7 @@
 - [Additional Standard Notices](#additional-standard-notices)
 
 # Recent Updates
-## v1.5.1
+## v1.5.3
 Added timeout parameter for `AzureClient.add_task` and `AzureClient.add_job` methods.
 Updated `AzureClient.monitor_job` to provide more detail in output.
 

@@ -454,7 +454,6 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
                 task
                 for task in tasks
                 if task.state != batchmodels.TaskState.completed
-                and task.state != batchmodels.TaskState.running
             ]
             incompletions = len(incomplete_tasks)
             completed_tasks = [
@@ -484,7 +483,7 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
                 completions,
                 "completed;",
                 running,
-                "running",
+                "running;",
                 incompletions,
                 "remaining;",
                 successes,

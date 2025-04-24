@@ -24,7 +24,6 @@ from azure.batch.models import (
     MetadataItem,
     OnAllTasksComplete,
     OnTaskFailure,
-    TaskConstraints,
 )
 from azure.containerregistry import ContainerRegistryClient
 from azure.keyvault.secrets import SecretClient
@@ -174,7 +173,6 @@ def add_job(
     batch_client: object,
     task_retries: int = 0,
     mark_complete: bool = False,
-    timeout: int | None = None,
 ):
     """takes in a job ID and config to create a job in the pool
 
@@ -184,7 +182,6 @@ def add_job(
         batch_client (object): BatchClient object
         task_retries (int): number of times to retry the task if it fails. Default 3.
         mark_complete (bool): whether to mark the job complete after tasks finish running. Default False.
-        timeout (int): timeout for job total runtime before forcing termination.
     """
     logger.debug(f"Attempting to create job '{job_id}'...")
     logger.debug("Adding job parameters to job.")
@@ -193,15 +190,7 @@ def add_job(
         if mark_complete
         else OnAllTasksComplete.no_action
     )
-    if timeout is None:
-        _to = None
-    else:
-        _to = datetime.timedelta(minutes=timeout)
-    job_constraints = JobConstraints(
-        max_task_retry_count=task_retries,
-        max_wall_clock_time=_to,
-    )
-
+    job_constraints = JobConstraints(max_task_retry_count=task_retries)
     job = batchmodels.JobAddParameter(
         id=job_id,
         pool_info=batchmodels.PoolInformation(pool_id=pool_id),
@@ -241,7 +230,6 @@ def add_task_to_job(
     full_container_name: str | None = None,
     task_id_max: int = 0,
     task_id_ints: bool = False,
-    timeout: int | None = None,
 ) -> str:
     """add a defined task(s) to a job in the pool
 
@@ -260,7 +248,6 @@ def add_task_to_job(
         full_container_name (str): name ACR container to run task on
         task_id_max (int): current max task id in use by Batch
         task_id_ints (bool): whether to use incremental integers for task IDs. Optional.
-        timeout (int): timeout in minutes before forcing task termination. Default None (infinity).
     Returns:
         str: task ID created
     """
@@ -375,12 +362,6 @@ def add_task_to_job(
     else:
         full_cmd = d_cmd_str
 
-    # add contstraints
-    if timeout is None:
-        _to = None
-    else:
-        _to = datetime.timedelta(minutes=timeout)
-    task_constraints = TaskConstraints(max_wall_clock_time=_to)
     command_line = full_cmd
     logger.debug(f"Adding task {task_id}")
     task = batchmodels.TaskAddParameter(
@@ -394,7 +375,6 @@ def add_task_to_job(
         user_identity=user_identity,
         depends_on=task_deps,
         exit_conditions=exit_conditions,
-        constraints=task_constraints,
     )
     batch_client.task.add(job_id=job_id, task=task)
     logger.debug(f"Task '{task_id}' added to job '{job_id}'.")
@@ -442,93 +422,70 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     logger.info(f"Total tasks to monitor: {total_tasks}")
 
     # pool setup and status
-    # initialize job complete status
+
     completed = False
-    completions, incompletions, running, successes, failures = 0, 0, 0, 0, 0
-    job = batch_client.job.get(job_id)
-    while job.as_dict()["state"] != "completed" and not completed:
-        if datetime.datetime.now() < timeout_expiration:
-            time.sleep(5)  # Polling interval
-            tasks = list(batch_client.task.list(job_id))
-            incomplete_tasks = [
-                task
-                for task in tasks
-                if task.state != batchmodels.TaskState.completed
-                and task.state != batchmodels.TaskState.running
-            ]
-            incompletions = len(incomplete_tasks)
-            completed_tasks = [
-                task
-                for task in tasks
-                if task.state == batchmodels.TaskState.completed
-            ]
-            completions = len(completed_tasks)
-            running_tasks = [
-                task
-                for task in tasks
-                if task.state == batchmodels.TaskState.running
-            ]
-            running = len(running_tasks)
+    while datetime.datetime.now() < timeout_expiration:
+        time.sleep(5)  # Polling interval
+        tasks = list(batch_client.task.list(job_id))
+        incomplete_tasks = [
+            task
+            for task in tasks
+            if task.state != batchmodels.TaskState.completed
+        ]
+        incompletions = len(incomplete_tasks)
+        completed_tasks = [
+            task
+            for task in tasks
+            if task.state == batchmodels.TaskState.completed
+        ]
+        completions = len(completed_tasks)
 
-            # initialize the counts
-            failures = 0
-            successes = 0
+        # initialize the counts
+        failures = 0
+        successes = 0
 
-            for task in completed_tasks:
-                if task.as_dict()["execution_info"]["result"] == "failure":
-                    failures += 1
-                elif task.as_dict()["execution_info"]["result"] == "success":
-                    successes += 1
+        for task in completed_tasks:
+            if task.as_dict()["execution_info"]["result"] == "failure":
+                failures += 1
+            elif task.as_dict()["execution_info"]["result"] == "success":
+                successes += 1
 
-            print(
-                completions,
-                "completed;",
-                running,
-                "running",
-                incompletions,
-                "remaining;",
-                successes,
-                "successes;",
-                failures,
-                "failures",
-                end="\r",
-            )
-            logger.debug(
-                f"{completions} completed; {running} running; {incompletions} remaining; {successes} successes; {failures} failures"
-            )
+        print(
+            completions,
+            "completed;",
+            incompletions,
+            "remaining;",
+            successes,
+            "successes;",
+            failures,
+            "failures",
+            end="\r",
+        )
+        logger.debug(
+            f"{completions} completed; {incompletions} remaining; {successes} successes; {failures} failures"
+        )
 
-            if not incomplete_tasks:
-                logger.info("\nAll tasks completed.")
-                completed = True
-                break
-            job = batch_client.job.get(job_id)
-
-    end_time = datetime.datetime.now().replace(microsecond=0)
+        if not incomplete_tasks:
+            logger.info("\nAll tasks completed.")
+            completed = True
+            break
 
     if completed:
         logger.info(
             "All tasks have reached 'Completed' state within the timeout period."
         )
         logger.info(f"{successes} task(s) succeeded, {failures} failed.")
-    # get terminate reason
-    if "terminate_reason" in job.as_dict()["execution_info"].keys():
-        terminate_reason = job.as_dict()["execution_info"]["terminate_reason"]
     else:
-        terminate_reason = None
+        raise RuntimeError(
+            f"ERROR: Tasks did not reach 'Completed' state within timeout period of {timeout} minutes."
+        )
 
+    end_time = datetime.datetime.now().replace(microsecond=0)
     runtime = end_time - start_time
     logger.info(
         f"Monitoring ended: {end_time}. Total elapsed time: {runtime}."
     )
-    return {
-        "completed": completed,
-        "elapsed time": runtime,
-        "terminate_reason": terminate_reason,
-        "tasks complete": completions,
-        "tasks remaining": incompletions,
-        "success": successes,
-        "fail": failures,
-    }
+    return {"completed": completed, "elapsed time": runtime}
 
 
 def df_to_yaml(df: pd.DataFrame):

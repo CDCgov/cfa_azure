@@ -2,9 +2,9 @@
 ## Created by Fawad Rafi (Peraton) for CFA
 
 # Outline
-Developers can use `read_blob` and `write_blob` methods of `AzureClient` class to read and writes files from within a Docker container. The container may be launched either in Docker Desktop running on VAP or as a job in Azure Batch service. This document provides a quick guide for setting up the container as well as Azure Batch job. 
+Developers can use `read_blob` and `write_blob` methods of `AzureClient` class to read and writes files from within a Docker container. The container may be launched either in Docker Desktop running on VAP or as a job in Azure Batch service. This document provides a quick guide for setting up the container as well as Azure Batch job.
 
-The Docker image shall use CFA Azure library to interact with Azure Blob service. It also needs Python 3.10+, Rust, Cargo and PIP package manager. 
+The Docker image shall use CFA Azure library to interact with Azure Blob service. It also needs Python 3.10+, Rust, Cargo and PIP package manager.
 
 # Steps
 1. Create a minimal `requirements.txt` file that will be installed in the Docker container:
@@ -17,7 +17,7 @@ The Docker image shall use CFA Azure library to interact with Azure Blob service
   cfa-azure @ git+https://github.com/CDCgov/cfa_azure.git
   ```
 
-2. Create a `blob_config.toml` configuration file for connecting to Azure Blob service. Replace `azure_blob_test` with the desired container image name. 
+2. Create a `blob_config.toml` configuration file for connecting to Azure Blob service. Replace `azure_blob_test` with the desired container image name.
   ```text
   [Authentication]
   subscription_id="REPLACE_WITH_AZURE_SUBSCRIPTION_ID"
@@ -100,10 +100,10 @@ The Docker image shall use CFA Azure library to interact with Azure Blob service
   scaling_mode="fixed"
   ```
 
-6. Create a `client.py` Python file for orchestrating the batch job. The `repo_name` should match the `container_image_name` and `container_name` used in step 2. 
+6. Create a `client.py` Python file for orchestrating the batch job. The `repo_name` should match the `container_image_name` and `container_name` used in step 2.
   ```python
   from cfa_azure.clients import AzureClient
-  
+
   client = AzureClient(config_path="./batch_config.toml")
   client.set_debugging(True)
   client.package_and_upload_dockerfile(
@@ -116,7 +116,7 @@ The Docker image shall use CFA Azure library to interact with Azure Blob service
   client.add_job(job_id=job_id)
   docker_cmd = "python app.py"
   task_1 = client.add_task(
-      job_id=job_id, 
+      job_id=job_id,
       docker_cmd=docker_cmd,
       name_suffix="azure_blob_task",
       run_dependent_tasks_on_fail=False

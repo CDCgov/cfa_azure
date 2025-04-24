@@ -1090,7 +1090,7 @@ class AzureClient:
         _files = []
         for _folder in folder_names:
             logger.debug(f"trying to upload folder {_folder}.")
-            _uploaded_files = helpers.upload_files_in_folder(
+            _uploaded_files = blob_helpers.upload_files_in_folder(
                 folder=_folder,
                 container_name=container_name,
                 include_extensions=include_extensions,

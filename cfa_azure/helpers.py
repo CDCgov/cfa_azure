@@ -444,7 +444,7 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
     # pool setup and status
     # initialize job complete status
     completed = False
-    completions, incompletions, successes, failures = 0, 0, 0, 0
+    completions, incompletions, running, successes, failures = 0, 0, 0, 0, 0
     job = batch_client.job.get(job_id)
     while job.as_dict()["state"] != "completed" and not completed:
         if datetime.datetime.now() < timeout_expiration:
@@ -454,6 +454,7 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
                 task
                 for task in tasks
                 if task.state != batchmodels.TaskState.completed
+                and task.state != batchmodels.TaskState.running
             ]
             incompletions = len(incomplete_tasks)
             completed_tasks = [
@@ -462,6 +463,12 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
                 if task.state == batchmodels.TaskState.completed
             ]
             completions = len(completed_tasks)
+            running_tasks = [
+                task
+                for task in tasks
+                if task.state == batchmodels.TaskState.running
+            ]
+            running = len(running_tasks)
 
             # initialize the counts
             failures = 0
@@ -476,6 +483,8 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
             print(
                 completions,
                 "completed;",
+                running,
+                "running",
                 incompletions,
                 "remaining;",
                 successes,
@@ -485,7 +494,7 @@ def monitor_tasks(job_id: str, timeout: int, batch_client: object):
                 end="\r",
             )
             logger.debug(
-                f"{completions} completed; {incompletions} remaining; {successes} successes; {failures} failures"
+                f"{completions} completed; {running} running; {incompletions} remaining; {successes} successes; {failures} failures"
             )
 
             if not incomplete_tasks:

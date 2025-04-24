@@ -36,9 +36,9 @@ The Docker image shall use CFA Azure library to interact with Azure Blob service
   storage_account_url="https://cfaazurebatchprd.blob.core.windows.net"
 
   [Container]
-  container_registry_username="cfaprdbatchcr"
-  container_registry_url="https:/cfaprdbatchcr.azurecr.io/"
-  container_registry_password="REPLACE_WITH_CONTAINER_REGISTRY_PASSWORD"
+  container_registry_username="REPLACE_WITH_CONTAINER_REGISTRY_USERNAME"
+  container_registry_url="REPLACE_WITH_CONTAINER_REGISTRY_URL"
+  container_registry_password="*****"
   container_name="azure_blob_test:latest"
   container_image_name="azure_blob_test:latest"
   ```
@@ -82,7 +82,7 @@ The Docker image shall use CFA Azure library to interact with Azure Blob service
   ```text
   [Authentication]
   subscription_id="REPLACE_WITH_AZURE_SUBSCRIPTION_ID"
-  resource_group="EXT-EDAV-CFA-PRD"
+  resource_group="REPLACE_WITH_AZURE_RESOURCE_GROUP"
   user_assigned_identity="REPLACE_WITH_USER_ASSIGNED_ID"
   tenant_id="REPLACE_WITH_TENANT_ID"
   batch_application_id="REPLACE_WITH_BATCH_APP_ID"
@@ -93,7 +93,7 @@ The Docker image shall use CFA Azure library to interact with Azure Blob service
   subnet_id="REPLACE_WITH_AZURE_SUBNET_ID"
 
   [Batch]
-  batch_account_name="cfaprdba"
+  batch_account_name="REPLACE_WITH_BATCH_ACCOUNT"
   batch_service_url="REPLACE_WITH_BATCH_SERVICE_URL"
   pool_vm_size="STANDARD_A2_V2"
   pool_name="REPLACE_WITH_POOL_NAME"

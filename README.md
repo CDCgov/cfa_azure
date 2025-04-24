@@ -25,6 +25,7 @@
     - [Configuration](#configuration)
     - [AzureClient Methods](#azureclient-methods)
     - [Running Jobs and Tasks](#running-jobs-and-tasks)
+    - [Running Jobs and Tasks with Timeout](#running-jobs-and-tasks-with-timeout)
     - [Running Tasks from Yaml](#running-tasks-from-yaml)
     - [Download Blob Files After Job Completes](#download-blob-files-after-job-completes)
     - [Run DAGs](#run-dags)
@@ -46,6 +47,10 @@
 - [Additional Standard Notices](#additional-standard-notices)
 
 # Recent Updates
+## v1.5.1
+Added timeout parameter for `AzureClient.add_task` and `AzureClient.add_job` methods.
+Updated `AzureClient.monitor_job` to provide more detail in output.
+
 ## v1.5.0
 Added integration for running container app jobs via `cfa_azure.clients.ContainerAppClient`.
 
@@ -334,6 +339,13 @@ for item in range(20):
 #add dependent task which depends on tasks 1 to 20.
 client.add_task("python3 some_cmd.py", depends_on_range = (1, 20))
   ```
+
+### Running Jobs and Tasks with Timeout
+Jobs and tasks can also be given a timeout value (in minutes) to prevent jobs/tasks from running too long. For example, a certain job should take less than 30 minutes or each task should take no more than 5 minutes. The following code can be used in this instance:
+```python
+client.add_job("job_timeout_example", timeout = 30)
+client.add_task("python3 run_task.py", job_id = "job_timeout_example", timeout = 5)
+```
 
 ### Running Tasks from Yaml
 Tasks can also be added to a job based on a yaml file containing various parameters and flags. The yaml is parsed into command line arguments and appended to a base command to be used as the docker command in Azure Batch. The yaml/argument parsing utilizes [pygriddler](https://github.com/CDCgov/pygriddler). The basic structure for this method is `client.add_tasks_from_yaml(job_id, base_cmd, file_path)`.

@@ -70,7 +70,9 @@ class AzureClient:
         logger.debug("Attributes initialized in client.")
 
         if not config_path and not use_env_vars:
-            logger.error("No configuration method specified in initialization.")
+            logger.error(
+                "No configuration method specified in initialization."
+            )
             raise Exception(
                 "No configuration method specified. Please provide a config path or set `use_env_vars=True` to load settings from environment variables."
             )
@@ -80,7 +82,9 @@ class AzureClient:
             try:
                 missing_vars = helpers.check_env_req()
                 if missing_vars:
-                    logger.error(f"Missing the following variables: {missing_vars}.")
+                    logger.error(
+                        f"Missing the following variables: {missing_vars}."
+                    )
                     raise ValueError(
                         f"Missing required environment variables: {', '.join(missing_vars)}"
                     )
@@ -94,21 +98,35 @@ class AzureClient:
                             "AZURE_USER_ASSIGNED_IDENTITY"
                         ),
                         "tenant_id": os.getenv("AZURE_TENANT_ID"),
-                        "batch_application_id": os.getenv("AZURE_BATCH_APPLICATION_ID"),
+                        "batch_application_id": os.getenv(
+                            "AZURE_BATCH_APPLICATION_ID"
+                        ),
                         "batch_object_id": os.getenv("AZURE_BATCH_OBJECT_ID"),
-                        "sp_application_id": os.getenv("AZURE_SP_APPLICATION_ID"),
+                        "sp_application_id": os.getenv(
+                            "AZURE_SP_APPLICATION_ID"
+                        ),
                         "vault_url": os.getenv("AZURE_VAULT_URL"),
-                        "vault_sp_secret_id": os.getenv("AZURE_VAULT_SP_SECRET_ID"),
+                        "vault_sp_secret_id": os.getenv(
+                            "AZURE_VAULT_SP_SECRET_ID"
+                        ),
                         "subnet_id": os.getenv("AZURE_SUBNET_ID"),
                     },
                     "Batch": {
-                        "batch_account_name": os.getenv("AZURE_BATCH_ACCOUNT_NAME"),
-                        "batch_service_url": os.getenv("AZURE_BATCH_SERVICE_URL"),
+                        "batch_account_name": os.getenv(
+                            "AZURE_BATCH_ACCOUNT_NAME"
+                        ),
+                        "batch_service_url": os.getenv(
+                            "AZURE_BATCH_SERVICE_URL"
+                        ),
                         "pool_vm_size": os.getenv("AZURE_POOL_VM_SIZE"),
                     },
                     "Storage": {
-                        "storage_account_name": os.getenv("AZURE_STORAGE_ACCOUNT_NAME"),
-                        "storage_account_url": os.getenv("AZURE_STORAGE_ACCOUNT_URL"),
+                        "storage_account_name": os.getenv(
+                            "AZURE_STORAGE_ACCOUNT_NAME"
+                        ),
+                        "storage_account_url": os.getenv(
+                            "AZURE_STORAGE_ACCOUNT_URL"
+                        ),
                     },
                 }
                 logger.debug(
@@ -134,7 +152,9 @@ class AzureClient:
                     print("Missing:", config_missing_keys)
                     print(".~" * 35)
             except FileNotFoundError:
-                logger.error("Configuration file not found at path: %s", config_path)
+                logger.error(
+                    "Configuration file not found at path: %s", config_path
+                )
                 raise
             except ValueError as e:
                 logger.error("Configuration file setup failed: %s", e)
@@ -150,7 +170,9 @@ class AzureClient:
             logger.warning("Could not find batch account name in config.")
 
         try:
-            self.resource_group_name = self.config["Authentication"]["resource_group"]
+            self.resource_group_name = self.config["Authentication"][
+                "resource_group"
+            ]
         except Exception:
             logger.warning("Could not find resource group name in config.")
 
@@ -195,7 +217,9 @@ class AzureClient:
         print(
             "Please recreate pools with the create_pool() method to use the new microsoft-dsvm image running Ubuntu 22.04."
         )
-        print("A-series VMs will no longer be compatible. Use D-series VMs instead.")
+        print(
+            "A-series VMs will no longer be compatible. Use D-series VMs instead."
+        )
         print("-" * 60)
 
     def _initialize_authentication(self, credential_method):
@@ -204,9 +228,9 @@ class AzureClient:
             config (str): config dict
         """
         if "credential_method" in self.config["Authentication"].keys():
-            self.credential_method = credential_method = self.config["Authentication"][
-                "credential_method"
-            ]
+            self.credential_method = credential_method = self.config[
+                "Authentication"
+            ]["credential_method"]
         else:
             self.credential_method = credential_method
         if "identity" in self.credential_method.lower():
@@ -313,7 +337,9 @@ class AzureClient:
                 self.scaling == "autoscale"
                 and "autoscale_formula_path" in self.config["Batch"].keys()
             ):
-                autoscale_formula_path = self.config["Batch"]["autoscale_formula_path"]
+                autoscale_formula_path = self.config["Batch"][
+                    "autoscale_formula_path"
+                ]
                 print("Creating pool with autoscaling mode")
                 self.set_pool_info(
                     mode=self.scaling,
@@ -420,7 +446,9 @@ class AzureClient:
         """
         # check if debug and scaling mode match, otherwise alert the user
         if self.debug is True and mode == "autoscale":
-            logger.debug("Debugging is set to True and autoscale is desired...")
+            logger.debug(
+                "Debugging is set to True and autoscale is desired..."
+            )
             logger.debug("This is not possible.")
             logger.info(
                 "Either change debugging to False or set the scaling mode to fixed."
@@ -429,7 +457,9 @@ class AzureClient:
         if mode == "autoscale" and autoscale_formula_path is None:
             use_default_autoscale_formula = True
             self.debug = False
-            logger.debug("Autoscale will be used with the default autoscale formula.")
+            logger.debug(
+                "Autoscale will be used with the default autoscale formula."
+            )
         else:
             use_default_autoscale_formula = False
             logger.debug("Autoscale formula provided by user.")
@@ -474,7 +504,9 @@ class AzureClient:
         else:
             logger.warning("Please enter 'fixed' or 'autoscale' as the mode.")
 
-    def create_input_container(self, name: str, input_mount_dir: str = "input") -> None:
+    def create_input_container(
+        self, name: str, input_mount_dir: str = "input"
+    ) -> None:
         """Creates an input container in Blob Storage.
 
         Args:
@@ -485,7 +517,9 @@ class AzureClient:
         self.input_mount_dir = helpers.format_rel_path(input_mount_dir)
         # add to self.mounts
         self.mounts.append((name, self.input_mount_dir))
-        logger.debug(f"Mounted {name} with relative mount dir {self.input_mount_dir}.")
+        logger.debug(
+            f"Mounted {name} with relative mount dir {self.input_mount_dir}."
+        )
         # create container and save the container client
         self.in_cont_client = helpers.create_container(
             self.input_container_name, self.blob_service_client
@@ -505,7 +539,9 @@ class AzureClient:
         self.output_mount_dir = helpers.format_rel_path(output_mount_dir)
         # add to self.mounts
         self.mounts.append((name, self.output_mount_dir))
-        logger.debug(f"Mounted {name} with relative mount dir {self.output_mount_dir}.")
+        logger.debug(
+            f"Mounted {name} with relative mount dir {self.output_mount_dir}."
+        )
         # create_container and save the container client
         self.out_cont_client = helpers.create_container(
             self.output_container_name, self.blob_service_client
@@ -522,7 +558,9 @@ class AzureClient:
         rel_mount_dir = helpers.format_rel_path(rel_mount_dir)
         # add to self.mounts
         self.mounts.append((name, rel_mount_dir))
-        logger.debug(f"Mounted {name} with relative mount dir {rel_mount_dir}.")
+        logger.debug(
+            f"Mounted {name} with relative mount dir {rel_mount_dir}."
+        )
         # create_container and save the container client
         mount_container_client = helpers.create_container(
             name, self.blob_service_client
@@ -530,15 +568,21 @@ class AzureClient:
         self.mount_container_clients.append((name, mount_container_client))
         logger.debug(f"Created container client for container {name}.")
 
-    def set_input_container(self, name: str, input_mount_dir: str = "input") -> None:
+    def set_input_container(
+        self, name: str, input_mount_dir: str = "input"
+    ) -> None:
         """Sets the input container to be used with the client.
 
         Args:
             name (str): name of input container
             input_mount_dir (str, optional): input mount directory. Defaults to "input".
         """
-        container_client = self.blob_service_client.get_container_client(container=name)
-        logger.debug("input container client generated from blob service client.")
+        container_client = self.blob_service_client.get_container_client(
+            container=name
+        )
+        logger.debug(
+            "input container client generated from blob service client."
+        )
         input_mount_dir = helpers.format_rel_path(input_mount_dir)
         logger.debug("formatted relative mount directory.")
         if not container_client.exists():
@@ -552,7 +596,9 @@ class AzureClient:
             self.mounts.append((name, input_mount_dir))
             logger.debug(f"Added input Blob container {name} to AzureClient.")
 
-    def set_output_container(self, name: str, output_mount_dir: str = "output") -> None:
+    def set_output_container(
+        self, name: str, output_mount_dir: str = "output"
+    ) -> None:
         """Sets the output container to be used with the client.
 
         Args:
@@ -561,8 +607,12 @@ class AzureClient:
         """
         output_mount_dir = helpers.format_rel_path(output_mount_dir)
         logger.debug("formatted relative mount directory.")
-        container_client = self.blob_service_client.get_container_client(container=name)
-        logger.debug("output container client generated from blob service client.")
+        container_client = self.blob_service_client.get_container_client(
+            container=name
+        )
+        logger.debug(
+            "output container client generated from blob service client."
+        )
         if not container_client.exists():
             logger.warning(
                 f"Container [{name}] does not exist. Please create it if desired."
@@ -583,8 +633,12 @@ class AzureClient:
         """
         rel_mount_dir = helpers.format_rel_path(rel_mount_dir)
         logger.debug("formatted relative mount directory.")
-        container_client = self.blob_service_client.get_container_client(container=name)
-        logger.debug("Blob container client generated from blob service client.")
+        container_client = self.blob_service_client.get_container_client(
+            container=name
+        )
+        logger.debug(
+            "Blob container client generated from blob service client."
+        )
         if not container_client.exists():
             logger.warning(
                 f"Container [{name}] does not exist. Please create it if desired."
@@ -634,16 +688,20 @@ class AzureClient:
                     )
                     return None
 
-            vm_configuration = self.get_virtual_machine_configuration(pool_name)
+            vm_configuration = self.get_virtual_machine_configuration(
+                pool_name
+            )
             container_image_name = vm_configuration["container_image_name"]
             self.scaling = vm_configuration["scaling"]
             self.registry_url = None
-            self.container_registry_server = vm_configuration["registry_server"]
+            self.container_registry_server = vm_configuration[
+                "registry_server"
+            ]
             if "Container" not in self.config:
                 self.config["Container"] = {}
-            self.config["Container"]["container_registry_username"] = vm_configuration[
-                "user_name"
-            ]
+            self.config["Container"][
+                "container_registry_username"
+            ] = vm_configuration["user_name"]
 
             # Delete existing pool
             logger.info(f"Deleting pool {pool_name}")
@@ -657,7 +715,9 @@ class AzureClient:
                 sleep(5.0)
 
         else:
-            logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
+            logger.info(
+                f"Pool {pool_name} does not exist. New pool will be created."
+            )
             container_image_name = self.container_image_name
 
         if "pool_id" not in self.config["Batch"]:
@@ -667,7 +727,9 @@ class AzureClient:
         mount_config = [
             {
                 "azureBlobFileSystemConfiguration": {
-                    "accountName": self.config["Storage"]["storage_account_name"],
+                    "accountName": self.config["Storage"][
+                        "storage_account_name"
+                    ],
                     "identityReference": {
                         "resourceId": self.config["Authentication"][
                             "user_assigned_identity"
@@ -680,7 +742,9 @@ class AzureClient:
             },
             {
                 "azureBlobFileSystemConfiguration": {
-                    "accountName": self.config["Storage"]["storage_account_name"],
+                    "accountName": self.config["Storage"][
+                        "storage_account_name"
+                    ],
                     "identityReference": {
                         "resourceId": self.config["Authentication"][
                             "user_assigned_identity"
@@ -744,16 +808,20 @@ class AzureClient:
                     )
                     return None
 
-            vm_configuration = self.get_virtual_machine_configuration(pool_name)
+            vm_configuration = self.get_virtual_machine_configuration(
+                pool_name
+            )
             container_image_name = vm_configuration["container_image_name"]
             self.scaling = vm_configuration["scaling"]
             self.registry_url = None
-            self.container_registry_server = vm_configuration["registry_server"]
+            self.container_registry_server = vm_configuration[
+                "registry_server"
+            ]
             if "Container" not in self.config:
                 self.config["Container"] = {}
-            self.config["Container"]["container_registry_username"] = vm_configuration[
-                "user_name"
-            ]
+            self.config["Container"][
+                "container_registry_username"
+            ] = vm_configuration["user_name"]
 
             # Delete existing pool
             logger.info(f"Deleting pool {pool_name}")
@@ -767,7 +835,9 @@ class AzureClient:
                 sleep(5.0)
 
         else:
-            logger.info(f"Pool {pool_name} does not exist. New pool will be created.")
+            logger.info(
+                f"Pool {pool_name} does not exist. New pool will be created."
+            )
             container_image_name = self.container_image_name
 
         if "pool_id" not in self.config["Batch"]:
@@ -783,7 +853,9 @@ class AzureClient:
             mount_config.append(
                 {
                     "azureBlobFileSystemConfiguration": {
-                        "accountName": self.config["Storage"]["storage_account_name"],
+                        "accountName": self.config["Storage"][
+                            "storage_account_name"
+                        ],
                         "identityReference": {
                             "resourceId": self.config["Authentication"][
                                 "user_assigned_identity"
@@ -860,7 +932,9 @@ class AzureClient:
                 if formula:
                     autoScalingParameters["formula"] = formula
             if evaluation_interval:
-                autoScalingParameters["evaluationInterval"] = evaluation_interval
+                autoScalingParameters[
+                    "evaluationInterval"
+                ] = evaluation_interval
             scale_settings["autoScale"] = autoScalingParameters
         else:
             validation_errors = helpers.check_autoscale_parameters(
@@ -874,13 +948,17 @@ class AzureClient:
             # Fixed scaling
             fixedScalingParameters = {}
             if dedicated_nodes:
-                fixedScalingParameters["targetDedicatedNodes"] = dedicated_nodes
+                fixedScalingParameters[
+                    "targetDedicatedNodes"
+                ] = dedicated_nodes
             if low_priority_nodes:
-                fixedScalingParameters["targetLowPriorityNodes"] = low_priority_nodes
+                fixedScalingParameters[
+                    "targetLowPriorityNodes"
+                ] = low_priority_nodes
             if node_deallocation_option:
-                fixedScalingParameters["nodeDeallocationOption"] = (
-                    node_deallocation_option
-                )
+                fixedScalingParameters[
+                    "nodeDeallocationOption"
+                ] = node_deallocation_option
             scale_settings["fixedScale"] = fixedScalingParameters
 
         if scale_settings:
@@ -923,7 +1001,9 @@ class AzureClient:
         logger.info(
             f"Attempting to create a pool with {(self.config)['Batch']['pool_vm_size']} VMs."
         )
-        logger.info("Verify the size of the VM is appropriate for the use case.")
+        logger.info(
+            "Verify the size of the VM is appropriate for the use case."
+        )
         print("Verify the size of the VM is appropriate for the use case.")
         print("**Please use smaller VMs for dev/testing.**")
         try:
@@ -1148,7 +1228,9 @@ class AzureClient:
                     pool_info.deployment_configuration.virtual_machine_configuration
                 )
                 logger.debug("Generated VM config.")
-                pool_container = vm_config.container_configuration.container_image_names
+                pool_container = (
+                    vm_config.container_configuration.container_image_names
+                )
                 container_name = pool_container[0].split("://")[-1]
                 logger.debug(f"Container name set to {container_name}.")
             else:
@@ -1164,7 +1246,9 @@ class AzureClient:
                 batch_mgmt_client=self.batch_mgmt_client,
             )
             if rel_mnt_path != "ERROR!":
-                rel_mnt_path = "/" + helpers.format_rel_path(rel_path=rel_mnt_path)
+                rel_mnt_path = "/" + helpers.format_rel_path(
+                    rel_path=rel_mnt_path
+                )
         else:
             rel_mnt_path = None
 
@@ -1486,10 +1570,16 @@ class AzureClient:
         pool_info = self.get_pool_full_info(pool_name)
         scale_settings = pool_info.scale_settings
         scaling = "autoscale" if scale_settings.auto_scale else "fixed"
-        vm_config = pool_info.deployment_configuration.virtual_machine_configuration
-        pool_container = vm_config.container_configuration.container_image_names
+        vm_config = (
+            pool_info.deployment_configuration.virtual_machine_configuration
+        )
+        pool_container = (
+            vm_config.container_configuration.container_image_names
+        )
         container_image_name = pool_container[0].split("://")[-1]
-        container_registry = vm_config.container_configuration.container_registries[0]
+        container_registry = (
+            vm_config.container_configuration.container_registries[0]
+        )
         return {
             "container_image_name": container_image_name,
             "registry_server": container_registry.registry_server,
@@ -1539,7 +1629,9 @@ class AzureClient:
                 filenames += _files
         return filenames
 
-    def read_blob(self, blob_url: str, **kwargs) -> StorageStreamDownloader[str]:
+    def read_blob(
+        self, blob_url: str, **kwargs
+    ) -> StorageStreamDownloader[str]:
         """
         Args:
             blob_url (str): Url of Blob Storage location
@@ -1559,7 +1651,9 @@ class AzureClient:
             blob_url=blob_url, container_client=container_client, do_check=True
         )
 
-    def write_blob(self, data: bytes, blob_url: str, container: str = None) -> bool:
+    def write_blob(
+        self, data: bytes, blob_url: str, container: str = None
+    ) -> bool:
         """
         Args:
             data: bytes data to be persisted
@@ -1632,7 +1726,9 @@ class AzureClient:
             list[str]: list of task IDs from submitted tasks
         """
         # get tasks from yaml
-        task_strs = helpers.get_tasks_from_yaml(base_cmd=base_cmd, file_path=file_path)
+        task_strs = helpers.get_tasks_from_yaml(
+            base_cmd=base_cmd, file_path=file_path
+        )
         # submit tasks
         task_list = []
         for task_str in task_strs:
@@ -1785,7 +1881,10 @@ class ContainerAppClient:
 
     def list_jobs(self):
         job_list = [
-            i.name for i in self.client.jobs.list_by_resource_group(self.resource_group)
+            i.name
+            for i in self.client.jobs.list_by_resource_group(
+                self.resource_group
+            )
         ]
         return job_list
 
@@ -1822,7 +1921,9 @@ class ContainerAppClient:
             if env is not None and not isinstance(env, list):
                 raise ValueError("Env must be in list format.")
             new_containers = []
-            for i in self.client.jobs.list_by_resource_group(self.resource_group):
+            for i in self.client.jobs.list_by_resource_group(
+                self.resource_group
+            ):
                 if i.name == job_name:
                     job_info = i
             for c in job_info.__dict__["template"].__dict__["containers"]:

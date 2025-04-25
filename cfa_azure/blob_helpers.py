@@ -129,7 +129,9 @@ def infer_prefix_split(blob_url: str) -> str:
         if len(data_path_candidate_parts) > 0:
             data_path = f"{data_path_candidate_parts[0]}/"
             file_pattern = (
-                "/".join(data_path_candidate_parts[1:]) + "*" + "".join(suffix_pattern)
+                "/".join(data_path_candidate_parts[1:])
+                + "*"
+                + "".join(suffix_pattern)
             )
         else:
             data_path = data_path_candidate
@@ -181,7 +183,9 @@ def blob_search(
     )
     sort_key = kwargs.get("sort_key")
     if sort_key:
-        filtered_subset = sorted(filtered_subset, key=lambda blob: blob[sort_key])
+        filtered_subset = sorted(
+            filtered_subset, key=lambda blob: blob[sort_key]
+        )
     return filtered_subset
 
 
@@ -359,7 +363,9 @@ def download_directory(
     elif exclude_extensions is not None:
         exclude_extensions = format_extensions(exclude_extensions)
     if include_extensions is not None and exclude_extensions is not None:
-        logger.error("Use included_extensions or exclude_extensions, not both.")
+        logger.error(
+            "Use included_extensions or exclude_extensions, not both."
+        )
         print("Use included_extensions or exclude_extensions, not both.")
         raise Exception(
             "Use included_extensions or exclude_extensions, not both."
@@ -367,9 +373,13 @@ def download_directory(
     # check container exists
     logger.debug(f"Checking Blob container {container_name} exists.")
     # create container client
-    c_client = blob_service_client.get_container_client(container=container_name)
+    c_client = blob_service_client.get_container_client(
+        container=container_name
+    )
     if not check_virtual_directory_existence(c_client, src_path):
-        raise ValueError(f"Source virtual directory: {src_path} does not exist.")
+        raise ValueError(
+            f"Source virtual directory: {src_path} does not exist."
+        )
 
     blob_list = []
     if not src_path.endswith("/"):
@@ -396,7 +406,9 @@ def download_directory(
             if os.path.splitext(_file)[1] in include_extensions:
                 flist.append(_file)
     for blob in flist:
-        download_file(c_client, blob, os.path.join(dest_path, blob), False, verbose)
+        download_file(
+            c_client, blob, os.path.join(dest_path, blob), False, verbose
+        )
     logger.debug("Download complete.")
 
 
@@ -509,7 +521,9 @@ def get_blob_config(
         "azureBlobFileSystemConfiguration": {
             "accountName": config["Storage"]["storage_account_name"],
             "identityReference": {
-                "resourceId": config["Authentication"]["user_assigned_identity"]
+                "resourceId": config["Authentication"][
+                    "user_assigned_identity"
+                ]
             },
             "containerName": container_name,
             "blobfuseOptions": blob_str,
@@ -540,11 +554,15 @@ def initialize_blob_arguments():
     """
     Initialize command line arguments for copy_blob and write_blob
     """
-    parser = argparse.ArgumentParser(description="Argument parser for copy_blob")
+    parser = argparse.ArgumentParser(
+        description="Argument parser for copy_blob"
+    )
     parser.add_argument(
         "--account", required=True, type=str, help="Azure Blob Storage Account"
     )
-    parser.add_argument("--container", required=True, type=str, help="Blob container")
+    parser.add_argument(
+        "--container", required=True, type=str, help="Blob container"
+    )
     parser.add_argument(
         "--blobpath",
         required=True,
@@ -622,7 +640,9 @@ def upload_blob_file(
         _name = path.join(location, _file)
         container_client.upload_blob(name=_name, data=data, overwrite=True)
     if verbose:
-        print(f"Uploaded {filepath} to {container_client.container_name} as {_name}.")
+        print(
+            f"Uploaded {filepath} to {container_client.container_name} as {_name}."
+        )
         logger.info(
             f"Uploaded {filepath} to {container_client.container_name} as {_name}."
         )
@@ -699,7 +719,9 @@ def upload_files_in_folder(
     elif exclude_extensions is not None:
         exclude_extensions = format_extensions(exclude_extensions)
     if include_extensions is not None and exclude_extensions is not None:
-        logger.error("Use included_extensions or exclude_extensions, not both.")
+        logger.error(
+            "Use included_extensions or exclude_extensions, not both."
+        )
         raise Exception(
             "Use included_extensions or exclude_extensions, not both."
         ) from None
@@ -770,6 +792,7 @@ def upload_files_in_folder(
         if exclude_patterns is not None and any(
             pattern in file for pattern in exclude_patterns
         ):
+            # dont upload this file if an excluded pattern is found within
             continue
         # get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders
         drop_folder = path.dirname(file).replace(folder, "", 1)
@@ -876,7 +899,9 @@ def list_blobs_flat(
     return blob_names
 
 
-def list_files_in_container(container_name: str, credential: str, config: dict):
+def list_files_in_container(
+    container_name: str, credential: str, config: dict
+):
     """lists out files in blob container
 
     Args:
@@ -896,7 +921,9 @@ def list_files_in_container(container_name: str, credential: str, config: dict):
         )
         files = [f for f in cc.list_blob_names()]
         logger.info(files)
-        logger.info(f"Found {len(files)} files in container '{container_name}'.")
+        logger.info(
+            f"Found {len(files)} files in container '{container_name}'."
+        )
         return files
     except Exception as e:
         logger.error(f"Error connecting to container '{container_name}': {e}")
@@ -929,7 +956,9 @@ def delete_blob_folder(
         blob_service_client (object): instance of BlobServiceClient
     """
     # create container client
-    c_client = blob_service_client.get_container_client(container=container_name)
+    c_client = blob_service_client.get_container_client(
+        container=container_name
+    )
     # list out files in folder
     blob_names = c_client.list_blob_names(name_starts_with=folder_path)
     _files = [blob for blob in blob_names]

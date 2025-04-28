@@ -1069,6 +1069,7 @@ class AzureClient:
         container_name: str,
         include_extensions: str | list | None = None,
         exclude_extensions: str | list | None = None,
+        exclude_patterns: str | list | None = None,
         location_in_blob: str = "",
         verbose: bool = True,
         force_upload: bool = True,
@@ -1080,6 +1081,7 @@ class AzureClient:
             container_name (str): the name of the Blob container
             include_extensions (str, list): a string or list of extensions desired for upload. Optional. Example: ".py" or [".py", ".csv"]
             exclude_extensions (str, list): a string or list of extensions of files not to include in the upload. Optional. Example: ".py" or [".py", ".csv"]
+            exclude_patterns (str, list): a string or list of string patterns used to exclude certain folders or files from upload.
             location_in_blob (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
             verbose (bool): whether to print the name of files uploaded. Default True.
             force_upload (bool): whether to force the upload despite the file count in folder. Default False.
@@ -1095,6 +1097,7 @@ class AzureClient:
                 container_name=container_name,
                 include_extensions=include_extensions,
                 exclude_extensions=exclude_extensions,
+                exclude_patterns=exclude_patterns,
                 location_in_blob=location_in_blob,
                 blob_service_client=self.blob_service_client,
                 verbose=verbose,

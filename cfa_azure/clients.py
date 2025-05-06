@@ -1069,6 +1069,7 @@ class AzureClient:
         container_name: str,
         include_extensions: str | list | None = None,
         exclude_extensions: str | list | None = None,
+        exclude_patterns: str | list | None = None,
         location_in_blob: str = "",
         verbose: bool = True,
         force_upload: bool = True,
@@ -1080,6 +1081,7 @@ class AzureClient:
             container_name (str): the name of the Blob container
             include_extensions (str, list): a string or list of extensions desired for upload. Optional. Example: ".py" or [".py", ".csv"]
             exclude_extensions (str, list): a string or list of extensions of files not to include in the upload. Optional. Example: ".py" or [".py", ".csv"]
+            exclude_patterns (str, list): a string or list of string patterns used to exclude certain folders or files from upload.
             location_in_blob (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
             verbose (bool): whether to print the name of files uploaded. Default True.
             force_upload (bool): whether to force the upload despite the file count in folder. Default False.
@@ -1095,6 +1097,7 @@ class AzureClient:
                 container_name=container_name,
                 include_extensions=include_extensions,
                 exclude_extensions=exclude_extensions,
+                exclude_patterns=exclude_patterns,
                 location_in_blob=location_in_blob,
                 blob_service_client=self.blob_service_client,
                 verbose=verbose,
@@ -1114,6 +1117,7 @@ class AzureClient:
         task_retries: int = 0,
         mark_complete_after_tasks_run: bool = False,
         task_id_ints: bool = False,
+        timeout: int | None = None,
     ) -> None:
         """Adds a job to the pool and creates tasks based on input files.
 
@@ -1125,10 +1129,14 @@ class AzureClient:
             task_retries (int): number of times to retry a task that fails. Default 0.
             mark_complete_after_tasks_run (bool): whether to mark the job as completed when all tasks finish running. Default False.
             task_id_ints (bool): whether to use incremental integer values for task id values rather than a string. Default False.
+            timeout (int): timeout in minutes for total job run time before forcing termination. Default None (infinity).
         """
         # make sure the job_id does not have spaces
         job_id_r = job_id.replace(" ", "")
         logger.debug(f"job_id: {job_id_r}")
+
+        # capture job timeout
+        self.job_timeout = timeout
 
         if pool_name:
             p_name = pool_name
@@ -1164,6 +1172,7 @@ class AzureClient:
             batch_client=self.batch_client,
             task_retries=task_retries,
             mark_complete=mark_complete_after_tasks_run,
+            timeout=self.job_timeout,
         )
         self.jobs.add(job_id_r)
 
@@ -1176,6 +1185,7 @@ class AzureClient:
         depends_on_range: tuple | None = None,
         run_dependent_tasks_on_fail: bool = False,
         container: str = None,
+        timeout: int | None = None,
     ) -> str:
         """adds task to existing job.
 
@@ -1187,6 +1197,7 @@ class AzureClient:
             depends_on_range (tuple): range of dependent tasks when task IDs are integers, given as (start_int, end_int). Optional.
             run_dependent_tasks_on_fail (bool): whether to run the dependent tasks if parent task fails. Default is False.
             container (str): name of ACR container in form "registry_name/repo_name:tag_name". Default is None to use container attached to client.
+            timeout (int): timeout in minutes for task before forcing termination. Default None (infinity).
 
         Returns:
             str: task ID created
@@ -1266,6 +1277,7 @@ class AzureClient:
             full_container_name=container_name,
             task_id_max=self.task_id_max,
             task_id_ints=self.task_id_ints,
+            timeout=timeout,
         )
         self.task_id_max += 1
         return task_id

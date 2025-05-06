@@ -430,10 +430,10 @@ def generate_autoscale_formula(max_nodes: int = 5) -> str:
     logger.debug("Creating default autoscale formula.")
     formula = f"""
     // Get pending tasks for the past 10 minutes.
-    $samples = $ActiveTasks.GetSamplePercent(TimeInterval_Minute * 10);
+    $samples = $PendingTasks.GetSamplePercent(TimeInterval_Minute * 10);
     // If we have fewer than 70 percent data points, we use the last sample point, otherwise we use the maximum of last sample point and the history average.
-    $tasks = $samples < 70 ? max(0, $ActiveTasks.GetSample(1)) :
-    max( $ActiveTasks.GetSample(1), avg($ActiveTasks.GetSample(TimeInterval_Minute * 10)));
+    $tasks = $samples < 70 ? max(0, $PendingTasks.GetSample(1)) :
+    max( $PendingTasks.GetSample(1), avg($PendingTasks.GetSample(TimeInterval_Minute * 10)));
     // If number of pending tasks is not 0, set targetVM to pending tasks, otherwise half of current dedicated.
     $targetVMs = $tasks > 0 ? $tasks : max(0, $TargetLowPriorityNodes / 2);
     // The pool size is capped to max_nodes input

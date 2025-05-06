@@ -689,6 +689,7 @@ def upload_files_in_folder(
     container_name: str,
     include_extensions: str | list | None = None,
     exclude_extensions: str | list | None = None,
+    exclude_patterns: str | list | None = None,
     location_in_blob: str = "",
     blob_service_client=None,
     verbose: bool = True,
@@ -703,6 +704,7 @@ def upload_files_in_folder(
         container_name (str): the name of the Blob container
         include_extensions (str, list): a string or list of extensions desired for upload. Optional. Example: ".py" or [".py", ".csv"]
         exclude_extensions (str, list): a string or list of extensions of files not to include in the upload. Optional. Example: ".py" or [".py", ".csv"]
+        exclude_patterns (str, list): a string or list of string patterns used to exclude certain folders or files from upload.
         location_in_blob (str): location (folder) to upload in Blob container. Will create the folder if it does not exist. Default is "" (root of Blob Container).
         blob_service_client (object): instance of Blob Service Client
         verbose (bool): whether to print the name of files uploaded. Default True.
@@ -723,6 +725,12 @@ def upload_files_in_folder(
         raise Exception(
             "Use included_extensions or exclude_extensions, not both."
         ) from None
+    if exclude_patterns is not None:
+        exclude_patterns = (
+            [exclude_patterns]
+            if not isinstance(exclude_patterns, list)
+            else exclude_patterns
+        )
     # check container exists
     logger.debug(f"Checking Blob container {container_name} exists.")
     # create container client
@@ -780,6 +788,12 @@ def upload_files_in_folder(
 
     # iteratively call the upload_blob_file function to upload individual files
     for file in flist:
+        # if a pattern from exclude_patterns is found, skip uploading this file
+        if exclude_patterns is not None and any(
+            pattern in file for pattern in exclude_patterns
+        ):
+            # dont upload this file if an excluded pattern is found within
+            continue
         # get the right folder location, need to drop the folder from the beginning and remove the file name, keeping only middle folders
         drop_folder = path.dirname(file).replace(folder, "", 1)
         if drop_folder.startswith("/"):

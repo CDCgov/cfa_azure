@@ -7,17 +7,7 @@ Developers can use `read_blob` and `write_blob` methods of `AzureClient` class t
 The Docker image shall use CFA Azure library to interact with Azure Blob service. It also needs Python 3.10+, Rust, Cargo and PIP package manager.
 
 # Steps
-1. Create a minimal `requirements.txt` file that will be installed in the Docker container:
-  ```text
-  azure-batch==14.0.0
-  azure-mgmt-batch==17.1.0
-  azure-storage-blob==12.17.0
-  azure-containerregistry==1.2.0
-  pandas
-  cfa-azure @ git+https://github.com/CDCgov/cfa_azure.git
-  ```
-
-2. Create a `blob_config.toml` configuration file for connecting to Azure Blob service. Replace `azure_blob_test` with the desired container image name.
+1. Create a `blob_config.toml` configuration file for connecting to Azure Blob service. Replace `azure_blob_test` with the desired container image name.
   ```text
   [Authentication]
   subscription_id="REPLACE_WITH_AZURE_SUBSCRIPTION_ID"
@@ -43,7 +33,7 @@ The Docker image shall use CFA Azure library to interact with Azure Blob service
   container_image_name="azure_blob_test:latest"
   ```
 
-3. Create a Python script `app.py` file that imports CFA Azure library, reads and writes data into Blob service:
+2. Create a Python script `app.py` file that imports CFA Azure library, reads and writes data into Blob service:
   ```python
   import pandas as pd
   from datetime import datetime
@@ -64,21 +54,19 @@ The Docker image shall use CFA Azure library to interact with Azure Blob service
       client.write_blob(df.to_csv(index=False).encode('utf-8'), blob_url=blob_url, container='input-test')
   ```
 
-4. Create a `Dockerfile` that packages all files together:
+3. Create a `Dockerfile` that packages all files together:
   ```text
   FROM python:3.10.17-slim-bullseye
   RUN apt-get update -y --fix-missing && apt-get install git -y
   WORKDIR /app
   COPY app.py /app
-  COPY requirements.txt /app
   COPY blob_config.toml /app
-  RUN pip install --upgrade pip
-  RUN pip install --no-cache-dir -r requirements.txt
+  RUN pip install --upgrade pip && pip install git+https://github.com/CDCgov/cfa_azure.git
 
   CMD ["python", "app.py"]
   ```
 
-5. Create a `batch_config.toml` file for configuring the connection to Azure Batch Service:
+4. Create a `batch_config.toml` file for configuring the connection to Azure Batch Service:
   ```text
   [Authentication]
   subscription_id="REPLACE_WITH_AZURE_SUBSCRIPTION_ID"
@@ -100,7 +88,7 @@ The Docker image shall use CFA Azure library to interact with Azure Blob service
   scaling_mode="fixed"
   ```
 
-6. Create a `client.py` Python file for orchestrating the batch job. The `repo_name` should match the `container_image_name` and `container_name` used in step 2.
+5. Create a `client.py` Python file for orchestrating the batch job. The `repo_name` should match the `container_image_name` and `container_name` used in step 2.
   ```python
   from cfa_azure.clients import AzureClient
 
@@ -125,4 +113,4 @@ The Docker image shall use CFA Azure library to interact with Azure Blob service
   client.monitor_job(job_id=job_id)
   ```
 
-7. Run the previous script with `python client.py` to orchestrate the process
+6. Run the previous script with `python client.py` to orchestrate the process

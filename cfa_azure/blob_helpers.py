@@ -322,8 +322,8 @@ def download_file(
             if blob.name == src_path:
                 t_size = blob.size
                 print("Size of file to download: ", ns(t_size))
-                if t_size > 1e6:
-                    print("Warning: File size is greater than 1MB.")
+                if t_size > 1e9:
+                    print("Warning: File size is greater than 1 GB.")
                     cont = input("Continue? [Y/n]: ")
                     if cont.lower() != "y":
                         print("Download aborted.")
@@ -427,14 +427,14 @@ def download_directory(
     if check_size:
         lblobs = c_client.list_blobs(name_starts_with=src_path)
         t_size = 0
-        gb = 1e6
+        gb = 1e9
         for blob in lblobs:
             if blob.name in flist:
                 t_size += blob.size
         print("Total size of files to download: ", ns(t_size))
         if t_size > 2 * gb:
             print(
-                "Warning: Total size of files to download is greater than 2MB."
+                "Warning: Total size of files to download is greater than 2 GB."
             )
             cont = input("Continue? [Y/n]: ")
             if cont.lower() != "y":
@@ -442,7 +442,12 @@ def download_directory(
                 return None
     for blob in flist:
         download_file(
-            c_client, blob, os.path.join(dest_path, blob), False, verbose=verbose, check_size=False
+            c_client,
+            blob,
+            os.path.join(dest_path, blob),
+            False,
+            verbose=verbose,
+            check_size=False,
         )
     logger.debug("Download complete.")
 

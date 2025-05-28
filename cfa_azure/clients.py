@@ -211,17 +211,6 @@ class AzureClient:
             self.create_pool(self.pool_name)
         logger.info("Client initialized! Happy coding!")
 
-        print("-" * 60)
-        print("REMINDER")
-        print("Pools using Ubuntu 20.04 image were deprecated in April.")
-        print(
-            "Please recreate pools with the create_pool() method to use the new microsoft-dsvm image running Ubuntu 22.04."
-        )
-        print(
-            "A-series VMs are no longer compatible. Use D-series VMs instead."
-        )
-        print("-" * 60)
-
     def _initialize_authentication(self, credential_method):
         """Called by init method to set up authentication
         Args:

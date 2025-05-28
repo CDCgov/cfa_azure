@@ -213,12 +213,12 @@ class AzureClient:
 
         print("-" * 60)
         print("REMINDER")
-        print("Pools using Ubuntu 20.04 image will be deprecated in April.")
+        print("Pools using Ubuntu 20.04 image were deprecated in April.")
         print(
             "Please recreate pools with the create_pool() method to use the new microsoft-dsvm image running Ubuntu 22.04."
         )
         print(
-            "A-series VMs will no longer be compatible. Use D-series VMs instead."
+            "A-series VMs are no longer compatible. Use D-series VMs instead."
         )
         print("-" * 60)
 

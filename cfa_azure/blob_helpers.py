@@ -442,7 +442,7 @@ def download_directory(
                 return None
     for blob in flist:
         download_file(
-            c_client, blob, os.path.join(dest_path, blob), False, verbose
+            c_client, blob, os.path.join(dest_path, blob), False, verbose=verbose, check_size=False
         )
     logger.debug("Download complete.")
 

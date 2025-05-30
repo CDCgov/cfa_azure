@@ -1431,6 +1431,7 @@ class AzureClient:
         dest_path: str,
         container_name: str = None,
         do_check: bool = True,
+        check_size: bool = True,
     ) -> None:
         """download a file from Blob storage
 
@@ -1442,7 +1443,10 @@ class AzureClient:
             container_name (str):
                 Name of the storage container containing the file to be downloaded.
             do_check (bool):
-                Whether or not to do an existence check\
+                Whether or not to do an existence check
+            check_size (bool):
+                Whether or not to check the size of the file before downloading.
+                Defaults to True.
         """
         # use the output container client by default for downloading files
         logger.debug(f"Creating container client for {container_name}.")
@@ -1451,7 +1455,9 @@ class AzureClient:
         )
 
         logger.debug("Attempting to download file.")
-        blob_helpers.download_file(c_client, src_path, dest_path, do_check)
+        blob_helpers.download_file(
+            c_client, src_path, dest_path, do_check, check_size
+        )
 
     def download_directory(
         self,
@@ -1461,6 +1467,7 @@ class AzureClient:
         include_extensions: str | list | None = None,
         exclude_extensions: str | list | None = None,
         verbose=True,
+        check_size=True,
     ) -> None:
         """download a whole directory from Azure Blob Storage
 
@@ -1479,7 +1486,7 @@ class AzureClient:
             a Boolean whether to print file names when downloaded.
         """
         logger.debug("Attempting to download directory.")
-        helpers.download_directory(
+        blob_helpers.download_directory(
             container_name,
             src_path,
             dest_path,
@@ -1487,6 +1494,7 @@ class AzureClient:
             include_extensions,
             exclude_extensions,
             verbose,
+            check_size,
         )
         logger.debug("finished call to download")
 

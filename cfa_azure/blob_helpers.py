@@ -14,6 +14,7 @@ from azure.storage.blob import (
     ContainerClient,
     StorageStreamDownloader,
 )
+from humanize import naturalsize as ns
 
 from cfa_azure import helpers
 
@@ -290,6 +291,7 @@ def download_file(
     src_path: str,
     dest_path: str,
     do_check: bool = True,
+    check_size: bool = True,
     verbose: bool = False,
 ) -> None:
     """
@@ -302,10 +304,10 @@ def download_file(
             Path within the container to the desired file (including filename)
         dest_path (str):
             Path to desired location to save the downloaded file
-        container (str):
-            Name of the storage container containing the file to be downloaded
         do_check (bool):
             Whether or not to do an existence check
+        check_size (bool):
+            Whether to check the size of the file before downloading. Default is True.
         verbose (bool):
             Whether to be verbose in printing information
 
@@ -313,6 +315,19 @@ def download_file(
         ValueError:
             When no blobs exist with the specified name (src_path)
     """
+    # check size
+    if check_size:
+        lblobs = c_client.list_blobs(name_starts_with=src_path)
+        for blob in lblobs:
+            if blob.name == src_path:
+                t_size = blob.size
+                print("Size of file to download: ", ns(t_size))
+                if t_size > 1e9:
+                    print("Warning: File size is greater than 1 GB.")
+                    cont = input("Continue? [Y/n]: ")
+                    if cont.lower() != "y":
+                        print("Download aborted.")
+                        return None
     download_stream = read_blob_stream(
         src_path, container_client=c_client, do_check=do_check
     )
@@ -333,6 +348,7 @@ def download_directory(
     include_extensions: str | list | None = None,
     exclude_extensions: str | list | None = None,
     verbose=True,
+    check_size=True,
 ) -> None:
     """
     Downloads a directory using prefix matching and the .list_blobs() method
@@ -352,6 +368,8 @@ def download_directory(
             a string of list of extensions to exclude from the download. Optional.
         verbose (bool):
             a Boolean whether to print file names when downloaded.
+        check_size (bool):
+            whether to check the size of the files before downloading. Default is True.
 
     Raises:
         ValueError:
@@ -405,9 +423,31 @@ def download_directory(
         for _file in blob_list:
             if os.path.splitext(_file)[1] in include_extensions:
                 flist.append(_file)
+    # input check on file size here
+    if check_size:
+        lblobs = c_client.list_blobs(name_starts_with=src_path)
+        t_size = 0
+        gb = 1e9
+        for blob in lblobs:
+            if blob.name in flist:
+                t_size += blob.size
+        print("Total size of files to download: ", ns(t_size))
+        if t_size > 2 * gb:
+            print(
+                "Warning: Total size of files to download is greater than 2 GB."
+            )
+            cont = input("Continue? [Y/n]: ")
+            if cont.lower() != "y":
+                print("Download aborted.")
+                return None
     for blob in flist:
         download_file(
-            c_client, blob, os.path.join(dest_path, blob), False, verbose
+            c_client,
+            blob,
+            os.path.join(dest_path, blob),
+            False,
+            verbose=verbose,
+            check_size=False,
         )
     logger.debug("Download complete.")
 
@@ -592,6 +632,7 @@ def download_blob():
         src_path=args.blobpath,
         dest_path=args.localpath,
         do_check=True,
+        check_size=True,
         verbose=True,
     )
 

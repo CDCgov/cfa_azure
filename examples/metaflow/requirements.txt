@@ -1,0 +1,2 @@
+metaflow
+cfa-azure @ git+https://github.com/CDCgov/cfa_azure.git

@@ -74,7 +74,8 @@ base_cmd = "python3 main.py"
 exp_yaml = "path/to/file.yaml"
 ```
 
-If we have a yaml file like the one [here](/examples/automation/params.yaml), the following tasks will be created for the job. Note that the version must be v0.3 to meet pygriddler requirements, and more information on yaml files for pygriddler can be found [here](https://github.com/CDCgov/pygriddler/blob/v0.3.0/README.md).
+If we have a yaml file like the one [here](/examples/automation/params.yaml), the following tasks will be created for the job. Note that the schema must be v0.3 to meet pygriddler requirements and compatibility with cfa_azure, and more information on yaml files for pygriddler can be found [here](https://github.com/CDCgov/pygriddler/blob/v0.3.0/README.md).
+
 ```python
 python3 main.py --method newton --start_point 0.25
 python3 main.py --method newton --start_point 0.5

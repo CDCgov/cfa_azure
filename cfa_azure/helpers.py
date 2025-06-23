@@ -1107,7 +1107,7 @@ def get_args_from_yaml(file_path: str) -> list[str]:
     with open(file_path) as f:
         raw_griddle = yaml.safe_load(f)
     griddle = griddler.parse(raw_griddle)
-    parameter_sets = griddle.__dict__["specs"]
+    parameter_sets = griddle.to_dicts()
     output = []
     for i in parameter_sets:
         full_cmd = ""

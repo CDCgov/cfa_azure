@@ -47,6 +47,10 @@
 - [Additional Standard Notices](#additional-standard-notices)
 
 # Recent Updates
+
+## v1.5.9
+Accommodated updates to the pygriddler package. If using a parameters yaml file for the automation, it must include 'schema: v0.3' at the top of the file instead of using the 'version' key.
+
 ## v1.5.3
 Added timeout parameter for `AzureClient.add_task` and `AzureClient.add_job` methods.
 Updated `AzureClient.monitor_job` to provide more detail in output.

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cfa_azure"
-version = "1.5.8"
+version = "1.5.9"
 description = "module for use with Azure and Azure Batch"
 authors = ["Ryan Raasch <xng3@cdc.gov>"]
 readme = "README.md"
@@ -26,6 +26,9 @@ pyyaml = "*"
 polars = "*"
 griddler = {git = "https://github.com/CDCgov/pygriddler.git"}
 humanize = "*"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
 
 [build-system]
 requires = ["poetry-core"]

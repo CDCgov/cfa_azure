@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo as zi
 
 import azure.batch.models as batchmodels
 import docker
+import griddler
 import numpy as np
 import pandas as pd
 import toml
@@ -29,7 +30,6 @@ from azure.batch.models import (
 from azure.containerregistry import ContainerRegistryClient
 from azure.keyvault.secrets import SecretClient
 from docker.errors import DockerException
-from griddler import Griddle
 from yaml import SafeLoader, dump, load
 
 logger = logging.getLogger(__name__)
@@ -1106,8 +1106,8 @@ def get_args_from_yaml(file_path: str) -> list[str]:
     """
     with open(file_path) as f:
         raw_griddle = yaml.safe_load(f)
-    griddle = Griddle(raw_griddle)
-    parameter_sets = griddle.parse()
+    griddle = griddler.parse(raw_griddle)
+    parameter_sets = griddle.__dict__["specs"]
     output = []
     for i in parameter_sets:
         full_cmd = ""

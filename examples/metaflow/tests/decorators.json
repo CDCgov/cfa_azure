@@ -1,0 +1,11 @@
+{
+  "steps": {
+    "azure_step": {
+      "decorators": {
+        "azure_batch": {
+          "config": "examples/metaflow/configs/sample_config.json"
+        }
+      }
+    }
+  }
+}

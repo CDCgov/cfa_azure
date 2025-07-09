@@ -8,7 +8,7 @@ COPY custom_metaflow /app/custom_metaflow
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENV USERNAME="xop5"
+ENV USERNAME="YOUR_USER_NAME"
 ENV PYTHONPATH="/app:/app/custom_metaflow"
 
 CMD ["python", "main.py", "run"]

@@ -3,7 +3,8 @@ config*
 __pycache__
 main*
 Make*
-Dockerfile
+/Dockerfile
+!/examples/**/Dockerfile
 docker*
 build/*
 cfaAzure.egg_info*

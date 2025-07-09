@@ -47,19 +47,6 @@ class CFAAzureBatchDecorator(StepDecorator):
         'Container': None
     }
 
-    #defaults = {
-    #    "cpu": 1,
-    #    "gpu": 0,
-    #    "memory": 4096,
-    #    "image": "python:3.9-slim",
-    #    "queue": None,
-    #    "resource_group": None,
-    #    "batch_url": None,
-    #    "container_registry_url": None,
-    #    "container_image_name": None,
-    #    "timeout_seconds": 3600,
-    #}
-
     def __init__(self, config_file=None, **kwargs):
         super(CFAAzureBatchDecorator, self).__init__(**kwargs)
         self.attributes = self.defaults.copy()
@@ -71,19 +58,20 @@ class CFAAzureBatchDecorator(StepDecorator):
         """
         Initialize the step with Azure Batch-specific settings.
         """
-        self.logger = logger
         self.environment = environment
         self.step = step
         self.flow_datastore = flow_datastore
+        print("step_init")
 
         # Log the configuration
-        self.logger(f"Initializing Azure Batch for step: {step}")
-        self.logger(f"Azure Batch configuration: {self.attributes}")
+        print(f"Initializing Azure Batch for step: {step}")
+        print(f"Azure Batch configuration: {self.attributes}")
 
     def runtime_init(self, flow, graph, package, run_id):
         """
         Initialize runtime-specific settings for Azure Batch.
         """
+        print('Runtime init called.')
         self.flow = flow
         self.graph = graph
         self.package = package
@@ -92,21 +80,50 @@ class CFAAzureBatchDecorator(StepDecorator):
         # Setup Azure Batch client
         self._setup_batch_client()
 
+    def create_batch_pool(self):
+        self._setup_batch_client()
+        
+        print('Batch client setup complete.')
+
+        resource_group_name = self.attributes["Authentication"]["resource_group"]
+        container_image_name = self.attributes["Container"].get("container_image_name", DEFAULT_CONTAINER_IMAGE_NAME)
+        container_registry_server = self.attributes["Container"]["container_registry_server"]
+        container_registry_url = self.attributes["Container"]["container_registry_url"]
+        pool_parameters = get_pool_parameters(
+            mode="autoscale",
+            container_image_name=container_image_name,
+            container_registry_url=container_registry_url,
+            container_registry_server=container_registry_server,
+            config=self.attributes,
+            mount_config=[],
+            credential=self.secret_cred,
+            use_default_autoscale_formula=True
+        )
+        batch_mgmt_client = get_batch_mgmt_client(config=self.attributes, credential=DefaultAzureCredential())
+        batch_json = {
+            "account_name": self.attributes["Batch"]["batch_account_name"],
+            "pool_id": self.attributes["Batch"]["pool_name"],
+            "pool_parameters": pool_parameters,
+            "resource_group_name": resource_group_name 
+        }
+        self.pool_id = create_batch_pool(batch_mgmt_client, batch_json)
+
     def _setup_batch_client(self):
         """
         Initialize the Azure Batch client using DefaultAzureCredential.
         """
         self.credentials = DefaultAzureCredential()
         self.batch_client = BatchServiceClient(
-            credential=self.credentials,
-            batch_url=self.attributes["batch_url"]
+            credentials=self.credentials,
+            batch_url=self.attributes['Batch']['batch_service_url']
         )
-        self.logger("Azure Batch client setup complete.")
+        print("Azure Batch client setup complete.")
 
     def runtime_step_cli(self, cli_args, retry_count, max_user_code_retries, ubf_context):
         """
         Modify the CLI arguments to execute the step on Azure Batch.
         """
+        print("runtime_step_cli")
         if retry_count <= max_user_code_retries:
             cli_args.commands = ["azure_batch", "step"]
             cli_args.command_options.update(self.attributes)
@@ -130,6 +147,7 @@ class CFAAzureBatchDecorator(StepDecorator):
         """
         self.metadata = metadata
         self.task_datastore = task_datastore
+        print("task_pre_step")
 
         # Log Azure Batch metadata
         meta = {
@@ -150,13 +168,16 @@ class CFAAzureBatchDecorator(StepDecorator):
     def task_finished(self, step_name, flow, graph, is_task_ok, retry_count, max_retries):
         """
         Perform cleanup after the task finishes.
-        """
-        self.logger(f"Task {step_name} finished with status: {'OK' if is_task_ok else 'FAILED'}")
+        """        
+        print("task_finished")
+        print(f"Task {step_name} finished with status: {'OK' if is_task_ok else 'FAILED'}")
 
     def __call__(self, func):
         # This makes the class behave like a decorator
         @wraps(func)
         def wrapper(*args, **kwargs):
+            if not hasattr(self, 'pool_id'):
+                self.create_batch_pool()
             print("Using Azure Batch with config")
             return func(*args, **kwargs)
         return wrapper

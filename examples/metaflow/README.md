@@ -9,7 +9,7 @@ Each job is defined as a class that inherits from the FlowSpec class and overrid
 1. Add a step to the `main.py` workflow for the operation you want to perform in the Azure Batch. Decorate that method with `@cfa_azure_batch`. 
   ```python
   @step
-  @cfa_azure_batch(config_file="client_config.toml")
+  @cfa_azure_batch
   def foo(self):
       # YOUR CODE GOES IN HERE
       self.next(self.end)

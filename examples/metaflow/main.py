@@ -20,7 +20,7 @@ class MyFlow(FlowSpec):
         self.next(self.foo)
 
     @step
-    @cfa_azure_batch(config_file="client_config.toml")
+    @cfa_azure_batch
     def foo(self):
         print("Running the foo step in Azure Batch...")
         #from cfa_azure.clients import AzureClient

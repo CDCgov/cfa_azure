@@ -1,10 +1,9 @@
-import os
+#import os
 from metaflow.decorators import StepDecorator
-from metaflow.metadata import MetaDatum
-from metaflow.sidecar import Sidecar
-from metaflow.metaflow_config import DATASTORE_LOCAL_DIR
-from metaflow.plugins.timeout_decorator import get_run_time_limit_for_task
-from azure.common.credentials import ServicePrincipalCredentials
+#from metaflow.sidecar import Sidecar
+#from metaflow.metaflow_config import DATASTORE_LOCAL_DIR
+#from metaflow.plugins.timeout_decorator import get_run_time_limit_for_task
+#from azure.common.credentials import ServicePrincipalCredentials
 from azure.identity import (
     DefaultAzureCredential,
     ClientSecretCredential,
@@ -141,42 +140,42 @@ class CFAAzureBatchDecorator(StepDecorator):
             cli_args.commands = ["azure_batch", "step"]
             cli_args.command_options.update(self.attributes)
 
-    def task_pre_step(
-        self,
-        step_name,
-        task_datastore,
-        metadata,
-        run_id,
-        task_id,
-        flow,
-        graph,
-        retry_count,
-        max_retries,
-        ubf_context,
-        inputs,
-    ):
-        """
-        Perform pre-step initialization for Azure Batch.
-        """
-        self.metadata = metadata
-        self.task_datastore = task_datastore
-        print("task_pre_step")
-
-        # Log Azure Batch metadata
-        meta = {
-            "azure-batch-job-id": os.getenv("AZURE_BATCH_JOB_ID", "unknown"),
-            "azure-batch-job-attempt": os.getenv("AZURE_BATCH_JOB_ATTEMPT", "unknown"),
-        }
-        entries = [
-            MetaDatum(
-                field=k,
-                value=v,
-                type=k,
-                tags=["attempt_id:{0}".format(retry_count)],
-            )
-            for k, v in meta.items()
-        ]
-        metadata.register_metadata(run_id, step_name, task_id, entries)
+    #def task_pre_step(
+    #    self,
+    #    step_name,
+    #    task_datastore,
+    #    metadata,
+    #    run_id,
+    #    task_id,
+    #    flow,
+    #    graph,
+    #    retry_count,
+    #    max_retries,
+    #    ubf_context,
+    #    inputs,
+    #):
+    #    """
+    #    Perform pre-step initialization for Azure Batch.
+    #    """
+    #    self.metadata = metadata
+    #    self.task_datastore = task_datastore
+    #    print("task_pre_step")
+    #
+    #    # Log Azure Batch metadata
+    #    meta = {
+    #        "azure-batch-job-id": os.getenv("AZURE_BATCH_JOB_ID", "unknown"),
+    #        "azure-batch-job-attempt": os.getenv("AZURE_BATCH_JOB_ATTEMPT", "unknown"),
+    #    }
+    #    entries = [
+    #        MetaDatum(
+    #            field=k,
+    #            value=v,
+    #            type=k,
+    #            tags=["attempt_id:{0}".format(retry_count)],
+    #        )
+    #        for k, v in meta.items()
+    #    ]
+    #    metadata.register_metadata(run_id, step_name, task_id, entries)
 
     def task_finished(self, step_name, flow, graph, is_task_ok, retry_count, max_retries):
         """

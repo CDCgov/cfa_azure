@@ -4,7 +4,6 @@ from metaflow.metadata import MetaDatum
 from metaflow.sidecar import Sidecar
 from metaflow.metaflow_config import DATASTORE_LOCAL_DIR
 from metaflow.plugins.timeout_decorator import get_run_time_limit_for_task
-# from metaflow.metadata_provider.util import sync_local_metadata_to_datastore
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.identity import (
     DefaultAzureCredential,
@@ -114,10 +113,10 @@ class CFAAzureBatchDecorator(StepDecorator):
         """
         Initialize the Azure Batch client using DefaultAzureCredential.
         """
-        sp_secret = get_sp_secret(self.config, ManagedIdentityCredential())        
+        sp_secret = get_sp_secret(self.attributes, ManagedIdentityCredential())        
         self.secret_cred = ClientSecretCredential(
-            tenant_id=self.config["Authentication"]["tenant_id"],
-            client_id=self.config["Authentication"]["sp_application_id"],
+            tenant_id=self.attributes["Authentication"]["tenant_id"],
+            client_id=self.attributes["Authentication"]["sp_application_id"],
             client_secret=sp_secret,
         )
         print("Secret credentials setup complete.")

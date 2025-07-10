@@ -8,6 +8,7 @@ from metaflow.metadata_provider.util import sync_local_metadata_to_datastore
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.identity import (
     DefaultAzureCredential,
+    ClientSecretCredential,
     ManagedIdentityCredential,
 )
 from azure.batch import BatchServiceClient
@@ -89,6 +90,7 @@ class CFAAzureBatchDecorator(StepDecorator):
         container_image_name = self.attributes["Container"].get("container_image_name", DEFAULT_CONTAINER_IMAGE_NAME)
         container_registry_server = self.attributes["Container"]["container_registry_server"]
         container_registry_url = self.attributes["Container"]["container_registry_url"]
+        self._setup_secret_credentials()
         pool_parameters = get_pool_parameters(
             mode="autoscale",
             container_image_name=container_image_name,
@@ -107,6 +109,18 @@ class CFAAzureBatchDecorator(StepDecorator):
             "resource_group_name": resource_group_name 
         }
         self.pool_id = create_batch_pool(batch_mgmt_client, batch_json)
+
+    def _setup_secret_credentials(self):
+        """
+        Initialize the Azure Batch client using DefaultAzureCredential.
+        """
+        sp_secret = get_sp_secret(self.config, ManagedIdentityCredential())        
+        self.secret_cred = ClientSecretCredential(
+            tenant_id=self.config["Authentication"]["tenant_id"],
+            client_id=self.config["Authentication"]["sp_application_id"],
+            client_secret=sp_secret,
+        )
+        print("Secret credentials setup complete.")
 
     def _setup_batch_client(self):
         """

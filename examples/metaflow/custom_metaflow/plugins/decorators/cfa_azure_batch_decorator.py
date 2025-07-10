@@ -49,25 +49,11 @@ class CFAAzureBatchDecorator(StepDecorator):
     }
 
     def __init__(self, config_file=None, **kwargs):
-<<<<<<< Updated upstream
         super(CFAAzureBatchDecorator, self).__init__(**kwargs)
         self.attributes = self.defaults.copy()
         # Load configuration from the JSON file if provided
         if config_file:
             self.attributes.update(read_config(config_file))
-=======
-        # self.attributes = read_config(config_file)
-        self.config_file = config_file
-        self.attributes = self.defaults.copy()
-        # super(CFAAzureBatchDecorator, self).__init__(self.attributes)
-        if config_file:
-            self.attributes.update(read_config(config_file))
-        super().__init__(self.attributes)
-
-        # Load configuration from the client-config.json file if provided
-        # if self.config_file:
-        #    self.attributes.update(self._read_config(self.config_file))
->>>>>>> Stashed changes
 
     def step_init(self, flow, graph, step, decos, environment, flow_datastore, logger):
         """
@@ -200,7 +186,6 @@ class CFAAzureBatchDecorator(StepDecorator):
         print("task_finished")
         print(f"Task {step_name} finished with status: {'OK' if is_task_ok else 'FAILED'}")
 
-<<<<<<< Updated upstream
     def __call__(self, func):
         # This makes the class behave like a decorator
         @wraps(func)
@@ -210,67 +195,3 @@ class CFAAzureBatchDecorator(StepDecorator):
             print("Using Azure Batch with config")
             return func(*args, **kwargs)
         return wrapper
-=======
-        # Sync metadata to the datastore if necessary
-        if hasattr(self, "metadata") and self.metadata.TYPE == "local":
-            sync_local_metadata_to_datastore(DATASTORE_LOCAL_DIR, self.task_datastore)
-
-
-    def setup_batch_management_client(self):
-        credentials = DefaultAzureCredential()
-        #self.credentials = DefaultAzureCredential()
-        self.batch_client = BatchServiceClient(
-            credential=credentials,
-            batch_url=os.getenv("AZURE_BATCH_URL")
-        )
-        print('Batch client setup complete.')
-
-        resource_group_name = self.attributes["Authentication"]["resource_group"]
-        container_image_name = self.attributes["Container"].get("container_image_name", DEFAULT_CONTAINER_IMAGE_NAME)
-        container_registry_server = self.attributes["Container"]["container_registry_server"]
-        container_registry_url = self.attributes["Container"]["container_registry_url"]
-        pool_parameters = get_pool_parameters(
-            mode="autoscale",
-            container_image_name=container_image_name,
-            container_registry_url=container_registry_url,
-            container_registry_server=container_registry_server,
-            config=self.attributes,
-            mount_config=self.mount_config,
-            credential=self.secret_cred,
-            use_default_autoscale_formula=True
-        )
-        batch_mgmt_client = get_batch_mgmt_client(self.attributes, credentials)
-        batch_json = {
-            "account_name": self.attributes["Batch"]["batch_account_name"],
-            "pool_id": self.attributes["Batch"]["pool_name"],
-            "pool_parameters": pool_parameters,
-            "resource_group_name": resource_group_name 
-        }
-        create_batch_pool(batch_mgmt_client, batch_json)
-
-
-    def submit_task_to_azure_batch(self):
-        sp_secret = get_sp_secret(
-            self.attributes, ManagedIdentityCredential()
-        )
-        batch_cred = ServicePrincipalCredentials(
-            client_id=self.attributes["Authentication"]["sp_application_id"],
-            tenant=self.attributes["Authentication"]["tenant_id"],
-            secret=sp_secret,
-            resource="https://batch.core.windows.net/",
-        )
-        batch_service_client = get_batch_service_client(
-            self.attributes, batch_cred
-        )
-        job_id = "my_job_id"
-        add_job(job_id, self.attributes["Batch"]["pool_name"], batch_service_client)
-        add_task_to_job(job_id=job_id, task_id_base=job_id, docker_command="python app.py")
-
-    def apply(self, step_name, flow, graph, decos, environment, datastore, logger):
-        print(f"[apply] Triggered AzureBatchDecorator for step: {step_name}")
-        self.setup_batch_management_client()
-        self.submit_task_to_azure_batch()
-
-        #self.submit_task_to_azure_batch(step.run)
-        # step.run = self._wrap_step_run(step.run)
->>>>>>> Stashed changes

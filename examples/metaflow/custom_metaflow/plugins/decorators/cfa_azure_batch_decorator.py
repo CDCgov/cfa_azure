@@ -1,10 +1,10 @@
 import os
 from metaflow.decorators import StepDecorator
-from metaflow.metadata_provider import MetaDatum
+from metaflow.metadata import MetaDatum
 from metaflow.sidecar import Sidecar
 from metaflow.metaflow_config import DATASTORE_LOCAL_DIR
 from metaflow.plugins.timeout_decorator import get_run_time_limit_for_task
-from metaflow.metadata_provider.util import sync_local_metadata_to_datastore
+# from metaflow.metadata_provider.util import sync_local_metadata_to_datastore
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.identity import (
     DefaultAzureCredential,

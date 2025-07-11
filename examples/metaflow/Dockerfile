@@ -2,6 +2,7 @@ FROM python:3.10.17-slim-bullseye
 RUN apt-get update -y --fix-missing && apt-get install git vim -y
 WORKDIR /app
 COPY client_config.toml /app
+COPY storage_config.toml /app
 COPY main.py /app
 COPY requirements.txt /app
 COPY custom_metaflow /app/custom_metaflow

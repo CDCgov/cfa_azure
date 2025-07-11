@@ -185,6 +185,12 @@ class CFAAzureBatchDecorator(StepDecorator):
             job_id=self.attributes['Batch']['job_id']
             add_job(job_id=job_id, pool_id=self.pool_id, batch_client=self.batch_client, mark_complete=True)
             print("Azure Batch Job created")
-            add_task_to_job(job_id=job_id, task_id_base=f"{job_id}_task_", docker_command="print 'hello'", batch_client=self.batch_client)
+            add_task_to_job(
+                job_id=job_id, 
+                task_id_base=f"{job_id}_task_", 
+                docker_command="print 'hello'", 
+                batch_client=self.batch_client, 
+                full_container_name=DEFAULT_CONTAINER_IMAGE_NAME
+            )
             return func(*args, **kwargs)
         return wrapper

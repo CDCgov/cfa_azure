@@ -10,7 +10,7 @@ Each job is defined as a class that inherits from the FlowSpec class and overrid
   ```python
   @step
   @cfa_azure_batch
-  def foo(self):
+  def perform_remote_task(self):
       # YOUR CODE GOES IN HERE
       self.next(self.end)
   ```
@@ -41,6 +41,10 @@ Each job is defined as a class that inherits from the FlowSpec class and overrid
   container_registry_username="USER_NAME_FOR_CONTAINER_REGISTRY"
   container_registry_password="PASSWORD_FOR_CONTAINER_REGISTRY"
   container_image_name="CONTAINER_IMAGE_NAME"
+
+  [Storage]
+  storage_account_name="AZURE_BLOB_STORAGE_ACCOUNT"
+  storage_account_url="AZURE_BLOB_STORAGE_URL"
   ```
 
 3. Replace user name in `Dockerfile` with your CDC EXT user name

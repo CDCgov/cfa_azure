@@ -21,6 +21,7 @@ from cfa_azure.helpers import (
 )
 from cfa_azure.batch_helpers import (
     create_batch_pool, 
+    delete_pool,
     get_batch_mgmt_client, 
     get_pool_parameters
 )
@@ -203,11 +204,17 @@ class CFAAzureBatchDecorator(StepDecorator):
         """
         Perform cleanup after the task finishes.
         """        
-        print("task_finished")
-        print(f"Task {step_name} finished with status: {'OK' if is_task_ok else 'FAILED'}")
+        if hasattr(self, 'pool_id') and self.pool_id:
+            print(f"Task {step_name} finished with status: {'OK' if is_task_ok else 'FAILED'}. Deleting batch pool {self.pool_id}.")    
+            delete_pool(
+                resource_group_name=self.attributes["Authentication"]["resource_group"],
+                account_name=self.attributes["Batch"]["batch_account_name"],
+                pool_name=self.pool_id,
+                batch_mgmt_client=self.batch_mgmt_client
+            )
+            print(f"Batch pool {self.pool_id} has been deleted.")    
 
     def __call__(self, func):
-        # This makes the class behave like a decorator
         @wraps(func)
         def wrapper(*args, **kwargs):
             if not hasattr(self, 'pool_id'):
@@ -215,7 +222,7 @@ class CFAAzureBatchDecorator(StepDecorator):
             job_id=self.attributes['Batch']['job_id']
             add_job(job_id=job_id, pool_id=self.pool_id, batch_client=self.batch_client, mark_complete=True)
             print("Azure Batch Job created")
-            add_task_to_job(
+            self.task_id = add_task_to_job(
                 job_id=job_id, 
                 task_id_base=f"{job_id}_task_", 
                 docker_command="print 'hello'", 

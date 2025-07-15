@@ -15,24 +15,19 @@ class MyFlow(FlowSpec):
     @step
     def start(self):
         print("Starting the flow...")
-        self.next(self.foo)
+        self.next(self.perform_remote_task)
 
     @step
     @cfa_azure_batch
-    def foo(self):
-        print("Running the foo step in Azure Batch...")
+    def perform_remote_task(self):
+        print("Running the perform_remote_task step in Azure Batch...")
 
         from cfa_azure.clients import AzureClient
         import pandas as pd
-        from datetime import datetime
-
         client = AzureClient(config_path="./storage_config.toml", credential_method='sp')
         data_stream = client.read_blob("input/AZ.csv", container="input-test")
         df = pd.read_csv(data_stream)
-        dt = datetime.now()
-        seq = int(dt.strftime("%Y%m%d%H%M%S"))
-        blob_url = f"input/AZ_{seq}.csv"
-        #client.write_blob(df.to_csv(index=False).encode('utf-8'), blob_url=blob_url, container='input-test')
+        print(df.head(1))
         self.next(self.end)
 
     @step

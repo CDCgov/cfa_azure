@@ -13,14 +13,21 @@ from azure.identity import (
 from cfa_azure.helpers import (
     add_job, 
     add_task_to_job,
-    read_config, 
+    create_container,
+    format_rel_path,
     get_batch_service_client, 
-    get_sp_secret
+    get_sp_secret,
+    read_config
 )
 from cfa_azure.batch_helpers import (
     create_batch_pool, 
     get_batch_mgmt_client, 
     get_pool_parameters
+)
+from cfa_azure.blob_helpers import (
+    get_blob_config,
+    get_blob_service_client,
+    get_mount_config
 )
 from functools import wraps
 
@@ -41,7 +48,8 @@ class CFAAzureBatchDecorator(StepDecorator):
     defaults = {
         'Authentication': None,
         'Batch': None,
-        'Container': None
+        'Container': None,
+        'Storage': None
     }
 
     def __init__(self, config_file=None, **kwargs):
@@ -76,6 +84,18 @@ class CFAAzureBatchDecorator(StepDecorator):
     #    # Setup Azure Batch client
     #    self._setup_batch_client()
 
+    def create_containers(self):
+        self.mounts = []
+        self.mount_container_clients = []
+        self.blob_service_client = get_blob_service_client(
+            self.attributes, self.secret_cred
+        )
+        container_names = ['input', 'output']
+        for name in container_names:
+            rel_mount_dir = format_rel_path(f"/{name}")
+            self.mounts.append((f"cfa{name}", rel_mount_dir))
+            create_container(f"cfa{name}", self.blob_service_client)
+
     def create_batch_pool(self):
         resource_group_name = self.attributes["Authentication"]["resource_group"]
         container_image_name = self.attributes["Container"].get("container_image_name", DEFAULT_CONTAINER_IMAGE_NAME)
@@ -84,14 +104,24 @@ class CFAAzureBatchDecorator(StepDecorator):
         self._setup_secret_credentials()
         self.batch_client = get_batch_service_client(self.attributes, self.batch_cred)
         print("Azure Batch client setup complete.")
-
+        self.create_containers()
+        blob_config = []
+        if self.mounts:
+            for mount in self.mounts:
+                blob_config.append(
+                    get_blob_config(
+                        mount[0], mount[1], True, self.attributes
+                    )
+                )
+        self.mount_config = get_mount_config(blob_config)
+        print("Azure Batch containers setup complete.")
         pool_parameters = get_pool_parameters(
             mode="autoscale",
             container_image_name=container_image_name,
             container_registry_url=container_registry_url,
             container_registry_server=container_registry_server,
             config=self.attributes,
-            mount_config=[],
+            mount_config=self.mount_config,
             credential=self.secret_cred,
             use_default_autoscale_formula=True
         )

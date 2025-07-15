@@ -32,7 +32,7 @@ class MyFlow(FlowSpec):
         dt = datetime.now()
         seq = int(dt.strftime("%Y%m%d%H%M%S"))
         blob_url = f"input/AZ_{seq}.csv"
-        client.write_blob(df.to_csv(index=False).encode('utf-8'), blob_url=blob_url, container='input-test')
+        #client.write_blob(df.to_csv(index=False).encode('utf-8'), blob_url=blob_url, container='input-test')
         self.next(self.end)
 
     @step

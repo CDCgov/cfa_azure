@@ -47,13 +47,27 @@ Each job is defined as a class that inherits from the FlowSpec class and overrid
   storage_account_url="AZURE_BLOB_STORAGE_URL"
   ```
 
-3. Replace user name in `Dockerfile` with your CDC EXT user name
-  ```text
-  ENV USERNAME="YOUR_USER_NAME"
-  ```
+3. There are two options available for running the job: in a Windows Subsystem for Linux (WSL) or a Docker container from a Windows environment. Metaflow does not offer native support for Windows. 
 
-4. Build and run Docker container
-  ```shell
-  docker build . -t my_metaflow_container
-  docker run my_metaflow_container
-  ```
+### Running as Docker container
+Replace user name in `Dockerfile` with your CDC EXT user name
+```text
+ENV USERNAME="YOUR_USER_NAME"
+```
+
+Build and run Docker container
+```shell
+docker build . -t my_metaflow_container
+docker run my_metaflow_container
+```
+
+### Running in WSL  
+```shell
+python3 -m venv metaflow_env
+source metaflow_env/bin/activate
+pip install -r requirements.txt
+
+export USERNAME="YOUR_USER_NAME"
+
+python main.py run
+```

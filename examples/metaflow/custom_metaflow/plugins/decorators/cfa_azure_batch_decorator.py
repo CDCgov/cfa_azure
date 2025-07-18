@@ -26,6 +26,14 @@ from cfa_azure.blob_helpers import (
     get_mount_config
 )
 from functools import wraps
+import random
+import string
+
+def generate_random_string(length):
+    """Generates a random string of specified length using letters and digits."""
+    characters = string.ascii_letters + string.digits
+    random_string = ''.join(random.choice(characters) for _ in range(length))
+    return random_string
 
 DEFAULT_CONTAINER_IMAGE_NAME = "python:latest"
 
@@ -55,8 +63,8 @@ class CFAAzureBatchDecorator(StepDecorator):
         # Load configuration from the JSON file if provided
         if config_file:
             self.attributes.update(read_config(config_file))
-        self.attributes['Batch']['job_id'] = kwargs.get('pool_name', self.attributes['Batch']['job_id'])
-        self.attributes['Batch']['pool_name'] = kwargs.get('pool_name', self.attributes['Batch']['pool_name'])
+        #self.attributes['Batch']['job_id'] = kwargs.get('pool_name', self.attributes['Batch']['job_id'])
+        #self.attributes['Batch']['pool_name'] = kwargs.get('pool_name', self.attributes['Batch']['pool_name'])
 
     def create_containers(self):
         self.mounts = []
@@ -100,9 +108,11 @@ class CFAAzureBatchDecorator(StepDecorator):
             use_default_autoscale_formula=True
         )
         self.batch_mgmt_client = get_batch_mgmt_client(config=self.attributes, credential=self.secret_cred)
+        pool_name = self.attributes["Batch"]["pool_name"]
+        random_pool_name = f'{pool_name}_{generate_random_string(5)}'
         batch_json = {
             "account_name": self.attributes["Batch"]["batch_account_name"],
-            "pool_id": self.attributes["Batch"]["pool_name"],
+            "pool_id": random_pool_name,
             "pool_parameters": pool_parameters,
             "resource_group_name": resource_group_name 
         }
@@ -151,11 +161,12 @@ class CFAAzureBatchDecorator(StepDecorator):
             if not hasattr(self, 'pool_id'):
                 self.create_batch_pool()
             job_id=self.attributes['Batch']['job_id']
-            add_job(job_id=job_id, pool_id=self.pool_id, batch_client=self.batch_client, mark_complete=True)
+            random_job_id = f'{job_id}_{generate_random_string(5)}'
+            add_job(job_id=random_job_id, pool_id=self.pool_id, batch_client=self.batch_client, mark_complete=True)
             print("Azure Batch Job created")
             self.task_id = add_task_to_job(
-                job_id=job_id, 
-                task_id_base=f"{job_id}_task_", 
+                job_id=random_job_id, 
+                task_id_base=f"{random_job_id}_task_", 
                 docker_command="print 'hello'", 
                 batch_client=self.batch_client, 
                 full_container_name=DEFAULT_CONTAINER_IMAGE_NAME

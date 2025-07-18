@@ -9,6 +9,8 @@ if plugins_folder not in sys.path:
 
 from custom_metaflow.plugins.decorators.cfa_azure_batch_decorator import CFAAzureBatchDecorator
 
+cfa_azure_batch = CFAAzureBatchDecorator(config_file="client_config.toml")
+
 class MyFlow(FlowSpec):
     @step
     def start(self):
@@ -16,7 +18,7 @@ class MyFlow(FlowSpec):
         self.next(self.perform_remote_read_arizona, self.perform_remote_read_california)
 
     @step
-    @CFAAzureBatchDecorator(config_file="client_config.toml", pool_name='my_test_pool_1')
+    @cfa_azure_batch
     def perform_remote_read_arizona(self):
         print("Running the perform_remote_read_arizona step in Azure Batch...")
 
@@ -29,7 +31,7 @@ class MyFlow(FlowSpec):
         self.next(self.join)
 
     @step
-    @CFAAzureBatchDecorator(config_file="client_config.toml", pool_name='my_test_pool_2')
+    @cfa_azure_batch
     def perform_remote_read_california(self):
         print("Running the perform_remote_read_california step in Azure Batch...")
 

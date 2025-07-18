@@ -49,11 +49,14 @@ class CFAAzureBatchDecorator(StepDecorator):
     }
 
     def __init__(self, config_file=None, **kwargs):
-        super(CFAAzureBatchDecorator, self).__init__(**kwargs)
+        #super(CFAAzureBatchDecorator, self).__init__(**kwargs)
+        super(CFAAzureBatchDecorator, self).__init__()
         self.attributes = self.defaults.copy()
         # Load configuration from the JSON file if provided
         if config_file:
             self.attributes.update(read_config(config_file))
+        self.attributes['Batch']['job_id'] = kwargs.get('pool_name', self.attributes['Batch']['job_id'])
+        self.attributes['Batch']['pool_name'] = kwargs.get('pool_name', self.attributes['Batch']['pool_name'])
 
     def create_containers(self):
         self.mounts = []
@@ -129,15 +132,18 @@ class CFAAzureBatchDecorator(StepDecorator):
         """
         Perform cleanup after the task finishes.
         """    
-        if hasattr(self, 'pool_id') and self.pool_id:
-            print(f"Task {step_name} finished with status: {'OK' if is_task_ok else 'FAILED'}. Deleting batch pool {self.pool_id}.")    
-            delete_pool(
-                resource_group_name=self.attributes["Authentication"]["resource_group"],
-                account_name=self.attributes["Batch"]["batch_account_name"],
-                pool_name=self.pool_id,
-                batch_mgmt_client=self.batch_mgmt_client
-            )
-            print(f"Batch pool {self.pool_id} has been deleted.")    
+        print(f"Task finished for step: {step_name}")
+        print(f"Task status: {'OK' if is_task_ok else 'FAILED'}")
+        print(f"Retry count: {retry_count}/{max_retries}")
+        #if hasattr(self, 'pool_id') and self.pool_id:
+        #    print(f"Task {step_name} finished with status: {'OK' if is_task_ok else 'FAILED'}. Deleting batch pool {self.pool_id}.")    
+        #    delete_pool(
+        #        resource_group_name=self.attributes["Authentication"]["resource_group"],
+        #        account_name=self.attributes["Batch"]["batch_account_name"],
+        #        pool_name=self.pool_id,
+        #        batch_mgmt_client=self.batch_mgmt_client
+        #    )
+        #    print(f"Batch pool {self.pool_id} has been deleted.")    
 
     def __call__(self, func):
         @wraps(func)

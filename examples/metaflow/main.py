@@ -15,12 +15,12 @@ class MyFlow(FlowSpec):
     @step
     def start(self):
         print("Starting the flow...")
-        self.next(self.perform_remote_task)
+        self.next(self.perform_remote_read_arizona)
 
     @step
     @cfa_azure_batch
-    def perform_remote_task(self):
-        print("Running the perform_remote_task step in Azure Batch...")
+    def perform_remote_read_arizona(self):
+        print("Running the perform_remote_read_arizona step in Azure Batch...")
 
         from cfa_azure.clients import AzureClient
         import pandas as pd

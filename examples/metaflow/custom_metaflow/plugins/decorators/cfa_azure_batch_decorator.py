@@ -8,6 +8,7 @@ from azure.identity import (
 from cfa_azure.helpers import (
     add_job, 
     add_task_to_job,
+    check_job_exists,
     create_container,
     format_rel_path,
     get_batch_service_client, 
@@ -15,6 +16,7 @@ from cfa_azure.helpers import (
     read_config
 )
 from cfa_azure.batch_helpers import (
+    check_pool_exists,
     create_batch_pool, 
     delete_pool,
     get_batch_mgmt_client, 
@@ -28,6 +30,7 @@ from cfa_azure.blob_helpers import (
 from functools import wraps
 import random
 import string
+
 
 def generate_random_string(length):
     """Generates a random string of specified length using letters and digits."""
@@ -66,7 +69,7 @@ class CFAAzureBatchDecorator(StepDecorator):
         #self.attributes['Batch']['job_id'] = kwargs.get('pool_name', self.attributes['Batch']['job_id'])
         #self.attributes['Batch']['pool_name'] = kwargs.get('pool_name', self.attributes['Batch']['pool_name'])
 
-    def create_containers(self):
+    def _create_containers(self):
         self.mounts = []
         self.mount_container_clients = []
         self.blob_service_client = get_blob_service_client(
@@ -78,15 +81,14 @@ class CFAAzureBatchDecorator(StepDecorator):
             self.mounts.append((f"cfa{name}", rel_mount_dir))
             create_container(f"cfa{name}", self.blob_service_client)
 
-    def create_batch_pool(self):
-        resource_group_name = self.attributes["Authentication"]["resource_group"]
-        container_image_name = self.attributes["Container"].get("container_image_name", DEFAULT_CONTAINER_IMAGE_NAME)
-        container_registry_server = self.attributes["Container"]["container_registry_server"]
-        container_registry_url = self.attributes["Container"]["container_registry_url"]
+    def _initialize(self):
+        """
+        Initialize the Azure Blob Storage containers for input and output.
+        """
         self._setup_secret_credentials()
         self.batch_client = get_batch_service_client(self.attributes, self.batch_cred)
         print("Azure Batch client setup complete.")
-        self.create_containers()
+        self._create_containers()
         blob_config = []
         if self.mounts:
             for mount in self.mounts:
@@ -96,28 +98,57 @@ class CFAAzureBatchDecorator(StepDecorator):
                     )
                 )
         self.mount_config = get_mount_config(blob_config)
+        self.batch_mgmt_client = get_batch_mgmt_client(config=self.attributes, credential=self.secret_cred)
         print("Azure Batch containers setup complete.")
+
+    def fetch_or_create_job(self):
+        if 'job_id_prefix' in self.attributes['Batch'] and self.attributes['Batch']['job_id_prefix']:
+            job_id_prefix = self.attributes['Batch']['job_id_prefix']
+            job_id = f'{job_id_prefix}{generate_random_string(5)}'
+        else:
+            job_id=self.attributes['Batch']['job_id']
+        if check_job_exists(job_id=job_id, batch_client=self.batch_client):
+            print(f'Existing Azure batch job {job_id} is being reused')
+        else:
+            add_job(job_id=job_id, pool_id=self.pool_id, batch_client=self.batch_client, mark_complete=True)
+            print("Azure Batch Job created")
+        return job_id
+
+    def fetch_or_create_batch_pool(self):
+        self._initialize()
         pool_parameters = get_pool_parameters(
             mode="autoscale",
-            container_image_name=container_image_name,
-            container_registry_url=container_registry_url,
-            container_registry_server=container_registry_server,
+            container_image_name=self.attributes["Container"].get("container_image_name", DEFAULT_CONTAINER_IMAGE_NAME),
+            container_registry_url=self.attributes["Container"]["container_registry_url"],
+            container_registry_server=self.attributes["Container"]["container_registry_server"],
             config=self.attributes,
             mount_config=self.mount_config,
             credential=self.secret_cred,
             use_default_autoscale_formula=True
         )
-        self.batch_mgmt_client = get_batch_mgmt_client(config=self.attributes, credential=self.secret_cred)
-        pool_name = self.attributes["Batch"]["pool_name"]
-        random_pool_name = f'{pool_name}_{generate_random_string(5)}'
-        batch_json = {
-            "account_name": self.attributes["Batch"]["batch_account_name"],
-            "pool_id": random_pool_name,
-            "pool_parameters": pool_parameters,
-            "resource_group_name": resource_group_name 
-        }
-        self.pool_id = create_batch_pool(self.batch_mgmt_client, batch_json)
-        print(f'Azure batch pool {self.pool_id} was created')
+        if 'pool_name_prefix' in self.attributes['Batch'] and self.attributes['Batch']['pool_name_prefix']:
+            pool_name_prefix = self.attributes['Batch']['pool_name_prefix']
+            pool_name = f'{pool_name_prefix}{generate_random_string(5)}'
+        else:
+            pool_name = self.attributes["Batch"]["pool_name"]
+
+        if check_pool_exists(
+            resource_group_name=self.attributes["Authentication"]["resource_group"], 
+            account_name=self.attributes["Batch"]["batch_account_name"],
+            pool_name=pool_name,
+            batch_mgmt_client=self.batch_mgmt_client
+        ):
+            self.pool_id = pool_name
+            print(f'Existing Azure batch pool {self.pool_id} is being reused')
+        else:
+            batch_json = {
+                "account_name": self.attributes["Batch"]["batch_account_name"],
+                "pool_id": pool_name,
+                "pool_parameters": pool_parameters,
+                "resource_group_name": self.attributes["Authentication"]["resource_group"] 
+            }
+            self.pool_id = create_batch_pool(self.batch_mgmt_client, batch_json)
+            print(f'Azure batch pool {self.pool_id} was created')
 
     def _setup_secret_credentials(self):
         """
@@ -145,31 +176,32 @@ class CFAAzureBatchDecorator(StepDecorator):
         print(f"Task finished for step: {step_name}")
         print(f"Task status: {'OK' if is_task_ok else 'FAILED'}")
         print(f"Retry count: {retry_count}/{max_retries}")
-        #if hasattr(self, 'pool_id') and self.pool_id:
-        #    print(f"Task {step_name} finished with status: {'OK' if is_task_ok else 'FAILED'}. Deleting batch pool {self.pool_id}.")    
-        #    delete_pool(
-        #        resource_group_name=self.attributes["Authentication"]["resource_group"],
-        #        account_name=self.attributes["Batch"]["batch_account_name"],
-        #        pool_name=self.pool_id,
-        #        batch_mgmt_client=self.batch_mgmt_client
-        #    )
-        #    print(f"Batch pool {self.pool_id} has been deleted.")    
+        if hasattr(self, 'pool_id') and self.pool_id:
+            print(f"Task {step_name} finished with status: {'OK' if is_task_ok else 'FAILED'}. Deleting batch pool {self.pool_id}.")    
+            delete_pool(
+                resource_group_name=self.attributes["Authentication"]["resource_group"],
+                account_name=self.attributes["Batch"]["batch_account_name"],
+                pool_name=self.pool_id,
+                batch_mgmt_client=self.batch_mgmt_client
+            )
+            print(f"Batch pool {self.pool_id} has been deleted.")    
 
     def __call__(self, func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             if not hasattr(self, 'pool_id'):
-                self.create_batch_pool()
-            job_id=self.attributes['Batch']['job_id']
-            random_job_id = f'{job_id}_{generate_random_string(5)}'
-            add_job(job_id=random_job_id, pool_id=self.pool_id, batch_client=self.batch_client, mark_complete=True)
-            print("Azure Batch Job created")
+                self.fetch_or_create_batch_pool()
+            job_id = self.fetch_or_create_job()
+            task_dependencies = None
+            if 'parent_task' in self.attributes["Batch"] and self.attributes["Batch"]["parent_task"]:
+                task_dependencies = self.attributes["Batch"]["parent_task"].split(",")
             self.task_id = add_task_to_job(
-                job_id=random_job_id, 
-                task_id_base=f"{random_job_id}_task_", 
+                job_id=job_id, 
+                task_id_base=f"{job_id}_task_{generate_random_string(3)}_", 
                 docker_command="print 'hello'", 
                 batch_client=self.batch_client, 
-                full_container_name=DEFAULT_CONTAINER_IMAGE_NAME
+                full_container_name=DEFAULT_CONTAINER_IMAGE_NAME,
+                depends_on=task_dependencies
             )
             return func(*args, **kwargs)
         return wrapper

@@ -60,14 +60,12 @@ class CFAAzureBatchDecorator(StepDecorator):
     }
 
     def __init__(self, config_file=None, **kwargs):
-        #super(CFAAzureBatchDecorator, self).__init__(**kwargs)
         super(CFAAzureBatchDecorator, self).__init__()
         self.attributes = self.defaults.copy()
         # Load configuration from the JSON file if provided
         if config_file:
             self.attributes.update(read_config(config_file))
-        #self.attributes['Batch']['job_id'] = kwargs.get('pool_name', self.attributes['Batch']['job_id'])
-        #self.attributes['Batch']['pool_name'] = kwargs.get('pool_name', self.attributes['Batch']['pool_name'])
+        self.docker_command = kwargs.get('docker_command', 'python main.py')
 
     def _create_containers(self):
         self.mounts = []
@@ -198,7 +196,7 @@ class CFAAzureBatchDecorator(StepDecorator):
             self.task_id = add_task_to_job(
                 job_id=job_id, 
                 task_id_base=f"{job_id}_task_{generate_random_string(3)}_", 
-                docker_command="print 'hello'", 
+                docker_command=self.docker_command, 
                 batch_client=self.batch_client, 
                 full_container_name=DEFAULT_CONTAINER_IMAGE_NAME,
                 depends_on=task_dependencies

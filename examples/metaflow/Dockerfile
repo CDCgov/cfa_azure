@@ -2,9 +2,14 @@ FROM python:3.10.17-slim-bullseye
 RUN apt-get update -y --fix-missing && apt-get install git vim -y
 WORKDIR /app
 COPY client_config.toml /app
+COPY client_config_states.toml /app
 COPY storage_config.toml /app
 COPY main.py /app
+COPY main_parallel.py /app
+COPY main_parallel_dynamic.py /app
+COPY multiple_states.py /app
 COPY requirements.txt /app
+COPY states.txt /app
 COPY custom_metaflow /app/custom_metaflow
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt

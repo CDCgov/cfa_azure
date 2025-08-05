@@ -8,11 +8,13 @@ if plugins_folder not in sys.path:
     sys.path.insert(0, plugins_folder)
 
 from custom_metaflow.plugins.decorators.cfa_azure_batch_decorator import CFAAzureBatchDecorator
+from custom_metaflow.cfa_batch_pool_service import CFABatchPoolService
 
 class MyFlow(FlowSpec):
     @step
     def start(self):
         print("Starting the flow...")
+        self.batch_pool_service = CFABatchPoolService()
         self.all_states = []
         with open('states.txt', 'r') as file:
             self.all_states = file.read().splitlines()
@@ -21,7 +23,11 @@ class MyFlow(FlowSpec):
     @step
     def process_state(self):
         # Dynamically apply the decorator
-        decorator = CFAAzureBatchDecorator(config_file="client_config_states.toml", docker_command=f'echo {self.input}')
+        decorator = CFAAzureBatchDecorator(
+            config_file="client_config_states.toml", 
+            docker_command=f'echo {self.input}', 
+            batch_pool_service=self.batch_pool_service
+        )
         decorator(self._process_state)()
         self.next(self.join)
 
@@ -35,6 +41,7 @@ class MyFlow(FlowSpec):
 
     @step
     def end(self):
+        self.batch_pool_service.delete_all_pools()
         print("Flow completed.")
 
 

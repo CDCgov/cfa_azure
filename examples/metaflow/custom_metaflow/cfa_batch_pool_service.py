@@ -37,6 +37,9 @@ class CFABatchPoolService:
         self.batch_cred = None
         self.secret_cred = None
         self.batch_pools = {}
+        self.resource_group_name = None
+        self.account_name = None
+
 
     def has_secret_credentials(self) -> bool:
         """
@@ -48,15 +51,15 @@ class CFABatchPoolService:
         return hasattr(self, 'secret_credentials') and self.secret_credentials is not None
     
     def setup_secret_credentials(self, attributes):
-        sp_secret = get_sp_secret(self.attributes, ManagedIdentityCredential())        
+        sp_secret = get_sp_secret(attributes, ManagedIdentityCredential())        
         self.secret_cred = ClientSecretCredential(
-            tenant_id=attributes["tenant_id"],
+            tenant_id=attributes["Authentication"]["tenant_id"],
             client_id=attributes["Authentication"]["sp_application_id"],
             client_secret=sp_secret,
         )
         self.batch_cred = ServicePrincipalCredentials(
-            client_id=self.attributes["Authentication"]["sp_application_id"],
-            tenant=self.attributes["Authentication"]["tenant_id"],
+            client_id=attributes["Authentication"]["sp_application_id"],
+            tenant=attributes["Authentication"]["tenant_id"],
             secret=sp_secret,
             resource="https://batch.core.windows.net/",
         )
@@ -66,59 +69,57 @@ class CFABatchPoolService:
         self.batch_client = get_batch_service_client(attributes, self.batch_cred)
         self.batch_mgmt_client = get_batch_mgmt_client(config=attributes, credential=self.secret_cred)
 
-    def _create_containers(self):
-        self.mounts = []
-        self.mount_container_clients = []
+    def _create_containers(self, attributes) -> list:
+        mounts = []
         self.blob_service_client = get_blob_service_client(
-            self.attributes, self.secret_cred
+            attributes, self.secret_cred
         )
         container_names = ['input', 'output']
         for name in container_names:
             rel_mount_dir = format_rel_path(f"/{name}")
-            self.mounts.append((f"cfa{name}", rel_mount_dir))
+            mounts.append((f"cfa{name}", rel_mount_dir))
             create_container(f"cfa{name}", self.blob_service_client)
+        return mounts
 
     def fetch_or_create_pool(self, pool_name, attributes) -> bool:
-        resource_group_name = attributes["Authentication"]["resource_group"]
-        account_name = attributes["Batch"]["batch_account_name"]
-        if pool_name in self.batch_pools.keys() or check_pool_exists(resource_group_name, account_name, pool_name, self.batch_mgmt_client):
+        self.resource_group_name = attributes["Authentication"]["resource_group"]
+        self.account_name = attributes["Batch"]["batch_account_name"]
+        if pool_name in self.batch_pools.keys() or check_pool_exists(self.resource_group_name, self.account_name, pool_name, self.batch_mgmt_client):
             self.pool_id = pool_name
             self.batch_pools[pool_name] = {'container_created': True}
             print(f'Existing Azure batch pool {self.pool_id} is being reused')           
         else:
-            self._create_containers()
+            mounts = self._create_containers(attributes)
             blob_config = []
-            if self.mounts:
-                for mount in self.mounts:
+            if mounts:
+                for mount in mounts:
                     blob_config.append(
                         get_blob_config(
-                            mount[0], mount[1], True, self.attributes
+                            mount[0], mount[1], True, attributes
                         )
                     )
-            self.mount_config = get_mount_config(blob_config)
+            mount_config = get_mount_config(blob_config)
             pool_parameters = get_pool_parameters(
                 mode="autoscale",
-                container_image_name=self.attributes["Container"].get("container_image_name", DEFAULT_CONTAINER_IMAGE_NAME),
-                container_registry_url=self.attributes["Container"]["container_registry_url"],
-                container_registry_server=self.attributes["Container"]["container_registry_server"],
-                config=self.attributes,
-                mount_config=self.mount_config,
+                container_image_name=attributes["Container"].get("container_image_name", DEFAULT_CONTAINER_IMAGE_NAME),
+                container_registry_url=attributes["Container"]["container_registry_url"],
+                container_registry_server=attributes["Container"]["container_registry_server"],
+                config=attributes,
+                mount_config=mount_config,
                 credential=self.secret_cred,
                 use_default_autoscale_formula=True
             )
             batch_json = {
-                "account_name": self.attributes["Batch"]["batch_account_name"],
+                "account_name": attributes["Batch"]["batch_account_name"],
                 "pool_id": pool_name,
                 "pool_parameters": pool_parameters,
-                "resource_group_name": self.attributes["Authentication"]["resource_group"] 
+                "resource_group_name": attributes["Authentication"]["resource_group"] 
             }
-            self.pool_id = create_batch_pool(self.batch_mgmt_client, batch_json)
-            self.batch_pools[self.pool_id] = {'container_created': True}
-        return self.pool_id
+            pool_id = create_batch_pool(self.batch_mgmt_client, batch_json)
+            self.batch_pools[pool_id] = {'container_created': True}
+        return pool_id
 
     def delete_all_pools(self):
         for pool_name, _ in self.batch_pools.items():
-            resource_group_name = self.attributes["Authentication"]["resource_group"]
-            account_name = self.attributes["Batch"]["batch_account_name"]
-            delete_pool(resource_group_name, account_name, pool_name, self.batch_mgmt_client)
+            delete_pool(self.resource_group_name, self.account_name, pool_name, self.batch_mgmt_client)
             print(f"Deleted Azure Batch Pool: {pool_name}")

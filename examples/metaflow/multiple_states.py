@@ -24,9 +24,9 @@ class MyFlow(FlowSpec):
     def process_state(self):
         # Dynamically apply the decorator
         decorator = CFAAzureBatchDecorator(
+            batch_pool_service=self.batch_pool_service,
             config_file="client_config_states.toml", 
-            docker_command=f'echo {self.input}', 
-            batch_pool_service=self.batch_pool_service
+            docker_command=f'echo {self.input}'
         )
         decorator(self._process_state)()
         self.next(self.join)

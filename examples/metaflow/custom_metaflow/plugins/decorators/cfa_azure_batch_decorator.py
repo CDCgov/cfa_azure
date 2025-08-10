@@ -37,13 +37,13 @@ class CFAAzureBatchDecorator(StepDecorator):
         'Storage': None
     }
 
-    def __init__(self, config_file=None, **kwargs):
+    def __init__(self, batch_pool_service, config_file=None, **kwargs):
         super(CFAAzureBatchDecorator, self).__init__()
         self.attributes = self.defaults.copy()
+        self.batch_pool_service = batch_pool_service
         # Load configuration from the JSON file if provided
         if config_file:
             self.attributes.update(read_config(config_file))
-        self.batch_pool_service = kwargs.get('batch_pool_service')
         self.docker_command = kwargs.get('docker_command', 'python main.py')
 
     def fetch_or_create_job(self):
@@ -61,7 +61,7 @@ class CFAAzureBatchDecorator(StepDecorator):
 
     def fetch_or_create_batch_pool(self):
         if not self.batch_pool_service.secret_cred and not self.batch_pool_service.batch_cred:
-            self.batch_pool_service.setup_secret_credentials(self.attributes['Authentication'])
+            self.batch_pool_service.setup_secret_credentials(self.attributes)
         if not self.batch_pool_service.batch_client and not self.batch_pool_service.batch_mgmt_client:
             self.batch_pool_service.setup_clients(self.attributes)
         if not self.batch_pool_service.check_pool_exists(self.attributes['Batch']):

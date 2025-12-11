@@ -8,6 +8,8 @@
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/cdcgov/cfa_azure?style=plastic)
 
 
+# --***DEPRECATED***--
+*cfa_azure is now deprecated. No new development will be added to this repo. For continued python/Azure integrations, please use [cfa-cloudops](https://github.com/CDCgov/cfa-cloudops).*
 # cfa_azure Python Package
 ## Created by Ryan Raasch (Peraton) for CFA
 

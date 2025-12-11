@@ -2,6 +2,7 @@ import datetime
 import json
 import logging
 import os
+import warnings
 from graphlib import CycleError, TopologicalSorter
 from time import sleep
 
@@ -67,11 +68,11 @@ class AzureClient:
         self.pool_name = None
         self.pool_parameters = None
 
-        print("*" * 60)
-        print(
-            "WARNING: The cfa_azure package is deprecated and will be removed in a future release. Please use cfa-cloudops instead."
+        warnings.warn(
+            "WARNING: The cfa_azure package is deprecated and will be removed in a future release. Please use cfa-cloudops instead.",
+            DeprecationWarning,
+            stacklevel=2,
         )
-        print("*" * 60)
 
         logger.debug("Attributes initialized in client.")
 

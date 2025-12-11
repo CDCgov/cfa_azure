@@ -67,6 +67,12 @@ class AzureClient:
         self.pool_name = None
         self.pool_parameters = None
 
+        print("*" * 60)
+        print(
+            "WARNING: The cfa_azure package is deprecated and will be removed in a future release. Please use cfa-cloudops instead."
+        )
+        print("*" * 60)
+
         logger.debug("Attributes initialized in client.")
 
         if not config_path and not use_env_vars:

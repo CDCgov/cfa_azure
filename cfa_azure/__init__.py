@@ -2,10 +2,18 @@ import datetime
 import logging
 import os
 import sys
+import warnings
 
 from cfa_azure import helpers
 
 __all__ = ["helpers", "clients", "automation", "batch"]
+
+warnings.warn(
+    "The cfa_azure package is deprecated and will be removed in a future release. "
+    "Please use cfa-cloudops instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 logger = logging.getLogger(__name__)
 run_time = datetime.datetime.now()
